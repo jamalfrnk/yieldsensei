@@ -4,6 +4,7 @@ from services.coingecko_service import get_token_price, get_token_market_data
 from services.technical_analysis import get_signal_analysis
 from services.openai_service import get_crypto_news, process_nlp_query
 from services.firebase_service import store_user_query
+from services.dexscreener_service import get_token_pairs, get_token_search
 from utils.rate_limiter import rate_limit
 from utils.cache import cache
 
@@ -36,6 +37,10 @@ Analysis:   @yieldsensei_bot /signal btc
 
 AI Chat:    @yieldsensei_bot what is yield farming?
             @yieldsensei_bot explain how DEX works
+
+🔍 DEXScreener Commands:
+@yieldsensei_bot /dexinfo <token_address> - Get detailed DEX pair info
+@yieldsensei_bot /dexsearch <query> - Search for tokens on DEX
 """
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -165,6 +170,69 @@ async def technical_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"• Resistance 1: {analysis['resistance_1']}\n"
             f"• Support 1: {analysis['support_1']}\n"
             f"• Support 2: {analysis['support_2']}\n\n"
+
+@rate_limit
+@cache
+async def dexinfo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Get token information from DEXScreener."""
+    if not context.args:
+        await update.message.reply_text(f"Please provide a token address. Example: @{BOT_USERNAME} /dexinfo 0x123...")
+        return
+
+    token_address = context.args[0]
+    try:
+        data = await get_token_pairs(token_address)
+        if not data or "pairs" not in data or not data["pairs"]:
+            await update.message.reply_text("No DEX pairs found for this token.")
+            return
+
+        pair = data["pairs"][0]  # Get the most relevant pair
+        price_usd = pair.get("priceUsd", "N/A")
+        price_change = pair.get("priceChange", {}).get("h24", "N/A")
+        liquidity_usd = pair.get("liquidity", {}).get("usd", "N/A")
+        volume_usd = pair.get("volume", {}).get("h24", "N/A")
+
+        message = (
+            f"🔍 Token DEX Information\n\n"
+            f"Chain: {pair.get('chainId', 'N/A')}\n"
+            f"DEX: {pair.get('dexId', 'N/A')}\n"
+            f"Price: ${price_usd}\n"
+            f"24h Change: {price_change}%\n"
+            f"Liquidity: ${liquidity_usd:,.2f}\n"
+            f"24h Volume: ${volume_usd:,.2f}\n"
+            f"Pair Address: {pair.get('pairAddress', 'N/A')}"
+        )
+        await update.message.reply_text(message)
+    except Exception as e:
+        await update.message.reply_text(str(e))
+
+@rate_limit
+@cache
+async def dexsearch_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Search for tokens on DEXScreener."""
+    if not context.args:
+        await update.message.reply_text(f"Please provide a search term. Example: @{BOT_USERNAME} /dexsearch pepe")
+        return
+
+    query = " ".join(context.args)
+    try:
+        data = await get_token_search(query)
+        if not data or "pairs" not in data or not data["pairs"]:
+            await update.message.reply_text("No tokens found.")
+            return
+
+        message = "🔍 Top 5 Search Results:\n\n"
+        for pair in data["pairs"][:5]:
+            message += (
+                f"Token: {pair.get('baseToken', {}).get('symbol', 'N/A')}\n"
+                f"Chain: {pair.get('chainId', 'N/A')}\n"
+                f"Price: ${pair.get('priceUsd', 'N/A')}\n"
+                f"Address: {pair.get('baseToken', {}).get('address', 'N/A')}\n\n"
+            )
+        await update.message.reply_text(message)
+    except Exception as e:
+        await update.message.reply_text(str(e))
+
             f"Overall: {analysis['signal']} (Strength: {analysis['signal_strength']:.1f}%)\n\n"
             f"Remember: This is not financial advice. Always DYOR 📚"
         )

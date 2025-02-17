@@ -50,6 +50,8 @@ def main():
         application.add_handler(CommandHandler("technical", technical_command))
         application.add_handler(CommandHandler("signal", signal_command))
         application.add_handler(CommandHandler("news", news_command))
+        application.add_handler(CommandHandler("dexinfo", dexinfo_command))
+        application.add_handler(CommandHandler("dexsearch", dexsearch_command))
 
         # Add message handler for NLP with username prefix requirement
         application.add_handler(MessageHandler(
