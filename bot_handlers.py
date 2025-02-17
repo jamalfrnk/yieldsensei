@@ -4,7 +4,10 @@ from services.coingecko_service import get_token_price, get_token_market_data
 from services.technical_analysis import get_signal_analysis
 from services.openai_service import get_crypto_news, process_nlp_query
 from services.firebase_service import store_user_query
-from services.dexscreener_service import get_token_pairs, get_token_search
+from services.dexscreener_service import (
+    get_token_pairs, get_token_search, get_trending_tokens,
+    add_price_alert, check_price_alerts, remove_price_alert
+)
 from utils.rate_limiter import rate_limit
 from utils.cache import cache
 
@@ -41,6 +44,9 @@ AI Chat:    @yieldsensei_bot what is yield farming?
 🔍 DEXScreener Commands:
 @yieldsensei_bot /dexinfo <token_address> - Get detailed DEX pair info
 @yieldsensei_bot /dexsearch <query> - Search for tokens on DEX
+@yieldsensei_bot /trending - Get trending Solana tokens
+@yieldsensei_bot /setalert <address> <price> <above/below> - Set price alert
+@yieldsensei_bot /removealert <address> <price> - Remove price alert
 """
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -170,6 +176,11 @@ async def technical_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"• Resistance 1: {analysis['resistance_1']}\n"
             f"• Support 1: {analysis['support_1']}\n"
             f"• Support 2: {analysis['support_2']}\n\n"
+            f"Overall: {analysis['signal']} (Strength: {analysis['signal_strength']:.1f}%)\n\n"
+            f"Remember: This is not financial advice. Always DYOR 📚"
+        )
+    except Exception as e:
+        await update.message.reply_text(str(e))
 
 @rate_limit
 @cache
@@ -233,11 +244,82 @@ async def dexsearch_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         await update.message.reply_text(str(e))
 
-            f"Overall: {analysis['signal']} (Strength: {analysis['signal_strength']:.1f}%)\n\n"
-            f"Remember: This is not financial advice. Always DYOR 📚"
-        )
+@rate_limit
+@cache
+async def trending_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Get trending Solana tokens."""
+    try:
+        data = await get_trending_tokens()
+        if not data or "pairs" not in data or not data["pairs"]:
+            await update.message.reply_text("No trending Solana tokens found.")
+            return
+
+        message = "🔥 Trending Solana Tokens:\n\n"
+        for pair in data["pairs"][:5]:  # Show top 5 trending tokens
+            price_usd = pair.get("priceUsd", "N/A")
+            price_change = pair.get("priceChange", {}).get("h24", "N/A")
+            symbol = pair.get("baseToken", {}).get("symbol", "Unknown")
+
+            message += (
+                f"Token: {symbol}\n"
+                f"Price: ${price_usd}\n"
+                f"24h Change: {price_change}%\n"
+                f"DEX: {pair.get('dexId', 'N/A')}\n\n"
+            )
+
+        await update.message.reply_text(message)
     except Exception as e:
         await update.message.reply_text(str(e))
+
+@rate_limit
+async def setalert_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Set a price alert for a token."""
+    if len(context.args) < 3:
+        await update.message.reply_text(
+            f"Please provide: token address, target price, and direction (above/below)\n"
+            f"Example: @{BOT_USERNAME} /setalert <address> 1.5 above"
+        )
+        return
+
+    token_address = context.args[0]
+    try:
+        target_price = float(context.args[1])
+        is_above = context.args[2].lower() == "above"
+    except ValueError:
+        await update.message.reply_text("Invalid price format. Please use a number.")
+        return
+
+    success = await add_price_alert(token_address, target_price, is_above)
+    if success:
+        direction = "above" if is_above else "below"
+        await update.message.reply_text(
+            f"✅ Alert set! You'll be notified when the token price goes {direction} ${target_price}"
+        )
+    else:
+        await update.message.reply_text("❌ Failed to set alert. Please check the token address.")
+
+@rate_limit
+async def removealert_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Remove a price alert."""
+    if len(context.args) < 2:
+        await update.message.reply_text(
+            f"Please provide: token address and target price\n"
+            f"Example: @{BOT_USERNAME} /removealert <address> 1.5"
+        )
+        return
+
+    token_address = context.args[0]
+    try:
+        target_price = float(context.args[1])
+    except ValueError:
+        await update.message.reply_text("Invalid price format. Please use a number.")
+        return
+
+    success = await remove_price_alert(token_address, target_price)
+    if success:
+        await update.message.reply_text("✅ Alert removed successfully!")
+    else:
+        await update.message.reply_text("❌ Alert not found.")
 
 @rate_limit
 async def news_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
