@@ -43,25 +43,25 @@ def calculate_macd(prices):
     return macd_value > signal_value, abs(macd_value - signal_value)
 
 def calculate_support_resistance(prices):
-    """Calculate two levels of support and resistance."""
+    """Calculate two levels of support and resistance using improved price clustering."""
     # Sort prices and remove duplicates
     sorted_prices = np.sort(prices)
     price_range = sorted_prices[-1] - sorted_prices[0]
 
-    # Define price clusters
+    # Define price clusters with adaptive threshold
     clusters = []
-    cluster_threshold = price_range * 0.02  # 2% of price range
+    cluster_threshold = price_range * 0.015  # Reduced to 1.5% for more precise levels
     current_cluster = [sorted_prices[0]]
 
     for price in sorted_prices[1:]:
         if price - current_cluster[-1] <= cluster_threshold:
             current_cluster.append(price)
         else:
-            if len(current_cluster) > 2:  # Only consider clusters with multiple points
+            if len(current_cluster) > 3:  # Increased minimum points for stronger levels
                 clusters.append(np.mean(current_cluster))
             current_cluster = [price]
 
-    if len(current_cluster) > 2:
+    if len(current_cluster) > 3:
         clusters.append(np.mean(current_cluster))
 
     clusters = np.array(clusters)
@@ -70,14 +70,33 @@ def calculate_support_resistance(prices):
     # Find support levels (below current price)
     supports = clusters[clusters < current_price]
     supports = np.sort(supports)[::-1]  # Sort descending
-    support_levels = supports[:2] if len(supports) >= 2 else \
-                    np.append(supports, [supports[-1] * 0.95] * (2 - len(supports)))
+
+    # Ensure proper spacing between support levels
+    min_level_spacing = price_range * 0.01  # 1% minimum spacing
+    filtered_supports = []
+    for s in supports:
+        if not filtered_supports or abs(s - filtered_supports[-1]) >= min_level_spacing:
+            filtered_supports.append(s)
+        if len(filtered_supports) == 2:
+            break
+
+    support_levels = filtered_supports if len(filtered_supports) >= 2 else \
+                    np.append(filtered_supports, [filtered_supports[-1] * 0.95] * (2 - len(filtered_supports)))
 
     # Find resistance levels (above current price)
     resistances = clusters[clusters > current_price]
     resistances = np.sort(resistances)  # Sort ascending
-    resistance_levels = resistances[:2] if len(resistances) >= 2 else \
-                       np.append(resistances, [resistances[-1] * 1.05] * (2 - len(resistances)))
+
+    # Ensure proper spacing between resistance levels
+    filtered_resistances = []
+    for r in resistances:
+        if not filtered_resistances or abs(r - filtered_resistances[-1]) >= min_level_spacing:
+            filtered_resistances.append(r)
+        if len(filtered_resistances) == 2:
+            break
+
+    resistance_levels = filtered_resistances if len(filtered_resistances) >= 2 else \
+                       np.append(filtered_resistances, [filtered_resistances[-1] * 1.05] * (2 - len(filtered_resistances)))
 
     return {
         "support_1": support_levels[0],
