@@ -8,6 +8,8 @@ from bot_handlers import (
     price_command,
     market_command,
     technical_command,
+    volume_command,
+    signals_command,
     news_command,
     handle_message,
     BOT_USERNAME
@@ -40,6 +42,8 @@ def main():
     application.add_handler(CommandHandler("price", price_command))
     application.add_handler(CommandHandler("market", market_command))
     application.add_handler(CommandHandler("technical", technical_command))
+    application.add_handler(CommandHandler("volume", volume_command))
+    application.add_handler(CommandHandler("signals", signals_command))
     application.add_handler(CommandHandler("news", news_command))
 
     # Add message handler for NLP with username prefix requirement

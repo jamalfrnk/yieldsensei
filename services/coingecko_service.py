@@ -56,3 +56,35 @@ async def get_token_market_data(token_id: str):
                 }
         except aiohttp.ClientError as e:
             raise Exception(f"Failed to fetch market data: {str(e)}")
+
+async def get_token_volume(token_id: str):
+    """Fetch detailed volume data from CoinGecko API."""
+    async with aiohttp.ClientSession() as session:
+        try:
+            url = f"{COINGECKO_BASE_URL}/coins/{token_id}"
+            params = {
+                "localization": "false",
+                "tickers": "true",
+                "market_data": "true",
+                "community_data": "false",
+                "developer_data": "false"
+            }
+
+            async with session.get(url, params=params) as response:
+                if response.status == 404:
+                    raise ValueError(ERROR_INVALID_TOKEN)
+
+                data = await response.json()
+
+                # Get 24h volume data from different exchanges
+                exchanges_volume = {}
+                for ticker in data['tickers'][:5]:  # Top 5 exchanges
+                    exchanges_volume[ticker['market']['name']] = ticker['volume']
+
+                return {
+                    "total_volume": data["market_data"]["total_volume"]["usd"],
+                    "volume_24h_change": data["market_data"].get("volume_change_24h_in_currency", {}).get("usd", 0),
+                    "exchanges": exchanges_volume
+                }
+        except aiohttp.ClientError as e:
+            raise Exception(f"Failed to fetch volume data: {str(e)}")
