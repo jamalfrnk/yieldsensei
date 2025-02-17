@@ -6,117 +6,131 @@ from config import COINGECKO_BASE_URL
 async def get_historical_prices(token_id: str):
     """Fetch historical price data from CoinGecko."""
     async with aiohttp.ClientSession() as session:
-        url = f"{COINGECKO_BASE_URL}/coins/{token_id}/market_chart"
-        params = {
-            "vs_currency": "usd",
-            "days": "30",  # Extended to 30 days for better support/resistance
-            "interval": "daily"
-        }
+        try:
+            url = f"{COINGECKO_BASE_URL}/coins/{token_id}/market_chart"
+            params = {
+                "vs_currency": "usd",
+                "days": "30",  # Extended to 30 days for better analysis
+                "interval": "daily"
+            }
 
-        async with session.get(url, params=params) as response:
-            data = await response.json()
-            prices = [price[1] for price in data["prices"]]
-            return np.array(prices)
+            async with session.get(url, params=params) as response:
+                if response.status == 404:
+                    raise ValueError(f"Token '{token_id}' not found")
+                if response.status != 200:
+                    raise Exception(f"API error: {response.status}")
+
+                data = await response.json()
+                if not data or "prices" not in data:
+                    raise Exception("Invalid response format from API")
+
+                prices = [price[1] for price in data["prices"]]
+                if not prices:
+                    raise Exception("No price data available")
+
+                return np.array(prices)
+        except aiohttp.ClientError as e:
+            raise Exception(f"Network error: {str(e)}")
+        except Exception as e:
+            raise Exception(f"Error fetching historical prices: {str(e)}")
 
 def calculate_rsi(prices, periods=14):
     """Calculate RSI using pandas."""
-    returns = pd.Series(prices).diff()
-    gains = returns.where(returns > 0, 0)
-    losses = -returns.where(returns < 0, 0)
+    try:
+        returns = pd.Series(prices).diff()
+        gains = returns.where(returns > 0, 0)
+        losses = -returns.where(returns < 0, 0)
 
-    avg_gain = gains.rolling(window=periods).mean()
-    avg_loss = losses.rolling(window=periods).mean()
+        avg_gain = gains.rolling(window=periods).mean()
+        avg_loss = losses.rolling(window=periods).mean()
 
-    rs = avg_gain / avg_loss
-    rsi = 100 - (100 / (1 + rs))
-    return rsi.iloc[-1]
+        rs = avg_gain / avg_loss
+        rsi = 100 - (100 / (1 + rs))
+        return float(rsi.iloc[-1])
+    except Exception as e:
+        raise Exception(f"RSI calculation error: {str(e)}")
 
 def calculate_macd(prices):
     """Calculate MACD using pandas."""
-    price_series = pd.Series(prices)
-    exp1 = price_series.ewm(span=12, adjust=False).mean()
-    exp2 = price_series.ewm(span=26, adjust=False).mean()
-    macd = exp1 - exp2
-    signal = macd.ewm(span=9, adjust=False).mean()
-    macd_value = macd.iloc[-1]
-    signal_value = signal.iloc[-1]
-    return macd_value > signal_value, abs(macd_value - signal_value)
+    try:
+        price_series = pd.Series(prices)
+        exp1 = price_series.ewm(span=12, adjust=False).mean()
+        exp2 = price_series.ewm(span=26, adjust=False).mean()
+        macd = exp1 - exp2
+        signal = macd.ewm(span=9, adjust=False).mean()
+        macd_value = float(macd.iloc[-1])
+        signal_value = float(signal.iloc[-1])
+        return macd_value > signal_value, abs(macd_value - signal_value)
+    except Exception as e:
+        raise Exception(f"MACD calculation error: {str(e)}")
 
 def calculate_support_resistance(prices):
-    """Calculate two levels of support and resistance using improved price clustering."""
-    # Sort prices and remove duplicates
-    sorted_prices = np.sort(prices)
-    price_range = sorted_prices[-1] - sorted_prices[0]
-    current_price = prices[-1]
+    """Calculate support and resistance levels using price clustering."""
+    try:
+        sorted_prices = np.sort(prices)
+        price_range = sorted_prices[-1] - sorted_prices[0]
+        current_price = prices[-1]
 
-    # Define price clusters with adaptive threshold
-    clusters = []
-    cluster_threshold = price_range * 0.015  # Reduced to 1.5% for more precise levels
-    current_cluster = [sorted_prices[0]]
+        # Define price clusters
+        clusters = []
+        cluster_threshold = price_range * 0.015  # 1.5% for precise levels
+        current_cluster = [sorted_prices[0]]
 
-    for price in sorted_prices[1:]:
-        if price - current_cluster[-1] <= cluster_threshold:
-            current_cluster.append(price)
+        for price in sorted_prices[1:]:
+            if price - current_cluster[-1] <= cluster_threshold:
+                current_cluster.append(price)
+            else:
+                if len(current_cluster) > 3:  # Minimum points for strong level
+                    clusters.append(np.mean(current_cluster))
+                current_cluster = [price]
+
+        if len(current_cluster) > 3:
+            clusters.append(np.mean(current_cluster))
+
+        clusters = np.array(clusters)
+
+        # Find support levels (below current price)
+        supports = clusters[clusters < current_price]
+        supports = np.sort(supports)[::-1]  # Sort descending
+
+        # Find resistance levels (above current price)
+        resistances = clusters[clusters > current_price]
+        resistances = np.sort(resistances)  # Sort ascending
+
+        # Handle cases with insufficient levels
+        if len(supports) < 2:
+            support_levels = [
+                current_price * 0.95,
+                current_price * 0.90
+            ] if len(supports) == 0 else [
+                supports[0],
+                supports[0] * 0.95
+            ]
         else:
-            if len(current_cluster) > 3:  # Increased minimum points for stronger levels
-                clusters.append(np.mean(current_cluster))
-            current_cluster = [price]
+            support_levels = supports[:2]
 
-    if len(current_cluster) > 3:
-        clusters.append(np.mean(current_cluster))
+        if len(resistances) < 2:
+            resistance_levels = [
+                current_price * 1.05,
+                current_price * 1.10
+            ] if len(resistances) == 0 else [
+                resistances[0],
+                resistances[0] * 1.05
+            ]
+        else:
+            resistance_levels = resistances[:2]
 
-    clusters = np.array(clusters)
-
-    # Find support levels (below current price)
-    supports = clusters[clusters < current_price]
-    supports = np.sort(supports)[::-1]  # Sort descending
-
-    # Ensure proper spacing between support levels
-    min_level_spacing = price_range * 0.01  # 1% minimum spacing
-    filtered_supports = []
-    for s in supports:
-        if not filtered_supports or abs(s - filtered_supports[-1]) >= min_level_spacing:
-            filtered_supports.append(s)
-        if len(filtered_supports) == 2:
-            break
-
-    # Handle case when no support levels are found
-    if not filtered_supports:
-        support_levels = [current_price * 0.95, current_price * 0.90]
-    elif len(filtered_supports) == 1:
-        support_levels = [filtered_supports[0], filtered_supports[0] * 0.95]
-    else:
-        support_levels = filtered_supports[:2]
-
-    # Find resistance levels (above current price)
-    resistances = clusters[clusters > current_price]
-    resistances = np.sort(resistances)  # Sort ascending
-
-    # Ensure proper spacing between resistance levels
-    filtered_resistances = []
-    for r in resistances:
-        if not filtered_resistances or abs(r - filtered_resistances[-1]) >= min_level_spacing:
-            filtered_resistances.append(r)
-        if len(filtered_resistances) == 2:
-            break
-
-    # Handle case when no resistance levels are found
-    if not filtered_resistances:
-        resistance_levels = [current_price * 1.05, current_price * 1.10]
-    elif len(filtered_resistances) == 1:
-        resistance_levels = [filtered_resistances[0], filtered_resistances[0] * 1.05]
-    else:
-        resistance_levels = filtered_resistances[:2]
-
-    return {
-        "support_1": support_levels[0],
-        "support_2": support_levels[1],
-        "resistance_1": resistance_levels[0],
-        "resistance_2": resistance_levels[1]
-    }
+        return {
+            "support_1": support_levels[0],
+            "support_2": support_levels[1],
+            "resistance_1": resistance_levels[0],
+            "resistance_2": resistance_levels[1]
+        }
+    except Exception as e:
+        raise Exception(f"Support/Resistance calculation error: {str(e)}")
 
 async def get_signal_analysis(token_id: str):
-    """Generate detailed buy/sell signals with DCA recommendations."""
+    """Generate detailed trading signal analysis with DCA recommendations."""
     try:
         prices = await get_historical_prices(token_id)
         current_price = prices[-1]
@@ -126,12 +140,12 @@ async def get_signal_analysis(token_id: str):
 
         # Calculate MACD
         is_macd_bullish, macd_strength = calculate_macd(prices)
-        macd_signal = "Bullish" if is_macd_bullish else "Bearish"
+        macd_signal = "Bullish 📈" if is_macd_bullish else "Bearish 📉"
 
         # Calculate support and resistance levels
         levels = calculate_support_resistance(prices)
 
-        # Generate signal strength (0 to 100)
+        # Calculate signal strength (0 to 100)
         signal_strength = 0
 
         # RSI contribution (max 40 points)
@@ -142,9 +156,9 @@ async def get_signal_analysis(token_id: str):
 
         # MACD contribution (max 30 points)
         if is_macd_bullish:
-            signal_strength += 30 * (macd_strength/abs(current_price))  # Bullish
+            signal_strength += 30 * (macd_strength/abs(current_price))
         else:
-            signal_strength -= 30 * (macd_strength/abs(current_price))  # Bearish
+            signal_strength -= 30 * (macd_strength/abs(current_price))
 
         # Support/Resistance contribution (max 30 points)
         price_to_support1 = (current_price - levels['support_1']) / current_price
@@ -181,7 +195,7 @@ async def get_signal_analysis(token_id: str):
                 "• Consider selling 40-50% of position now\n"
                 "• Set limit orders near Resistance 1 for remaining exit\n"
                 "• Space out sells over 3-4 days\n"
-                "• Keep small position (10-15%) for potential breakout above Resistance 2"
+                "• Keep small position (10-15%) for potential breakout"
             )
         elif signal_strength < -20:
             signal = "Moderate Sell 🟡"
@@ -205,7 +219,7 @@ async def get_signal_analysis(token_id: str):
         return {
             "signal": signal,
             "signal_strength": abs(signal_strength),
-            "trend_direction": "Bullish" if signal_strength > 0 else "Bearish" if signal_strength < 0 else "Neutral",
+            "trend_direction": "Bullish 📈" if signal_strength > 0 else "Bearish 📉" if signal_strength < 0 else "Neutral ⚖️",
             "current_price": f"${current_price:,.2f}",
             "rsi": current_rsi,
             "macd_signal": macd_signal,

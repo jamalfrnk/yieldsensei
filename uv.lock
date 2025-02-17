@@ -1153,11 +1153,13 @@ version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "aiohttp" },
+    { name = "cachetools" },
     { name = "firebase-admin" },
     { name = "numpy" },
     { name = "openai" },
     { name = "pandas" },
     { name = "python-telegram-bot", extra = ["job-queue"] },
+    { name = "requests" },
     { name = "ta" },
     { name = "telegram" },
     { name = "twilio" },
@@ -1166,11 +1168,13 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "aiohttp", specifier = ">=3.11.12" },
+    { name = "cachetools", specifier = ">=5.5.1" },
     { name = "firebase-admin", specifier = ">=6.6.0" },
     { name = "numpy", specifier = ">=2.2.3" },
     { name = "openai", specifier = ">=1.0.0" },
     { name = "pandas", specifier = ">=2.2.3" },
     { name = "python-telegram-bot", extras = ["job-queue"], specifier = ">=20.0" },
+    { name = "requests", specifier = ">=2.32.3" },
     { name = "ta", specifier = ">=0.11.0" },
     { name = "telegram", specifier = ">=0.0.1" },
     { name = "twilio", specifier = ">=9.4.5" },

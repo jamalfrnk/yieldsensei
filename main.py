@@ -3,7 +3,7 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters
 from bot_handlers import (
     start_command, help_command, price_command, market_command,
-    technical_command, signal_command, dexinfo_command, BOT_USERNAME
+    signal_command, dexinfo_command, handle_message, BOT_USERNAME
 )
 from config import TELEGRAM_TOKEN
 
@@ -32,9 +32,11 @@ def main():
         application.add_handler(CommandHandler("help", help_command))
         application.add_handler(CommandHandler("price", price_command))
         application.add_handler(CommandHandler("market", market_command))
-        application.add_handler(CommandHandler("technical", technical_command))
         application.add_handler(CommandHandler("signal", signal_command))
         application.add_handler(CommandHandler("dexinfo", dexinfo_command))
+
+        # Register message handler for non-command messages
+        application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
         # Register error handler
         application.add_error_handler(error_handler)
