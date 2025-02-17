@@ -2,12 +2,7 @@ from telegram import Update
 from telegram.ext import ContextTypes, CommandHandler, MessageHandler, filters
 from services.coingecko_service import get_token_price, get_token_market_data
 from services.technical_analysis import get_signal_analysis
-from services.openai_service import get_crypto_news, process_nlp_query
-from services.firebase_service import store_user_query
-from services.dexscreener_service import (
-    get_token_pairs, get_token_search, get_trending_tokens,
-    add_price_alert, check_price_alerts, remove_price_alert
-)
+from services.dexscreener_service import get_token_pairs
 from utils.rate_limiter import rate_limit
 from utils.cache import cache
 
@@ -15,7 +10,7 @@ BOT_USERNAME = "yieldsensei_bot"
 HELP_TEXT = """
 Welcome to Yield Sensei! 🎯 Here are the available commands:
 
-📊 Market Data Commands (via CoinGecko):
+📊 Market Data Commands:
 @yieldsensei_bot /price <token> - Get current price and 24h change
 @yieldsensei_bot /market <token> - Get market cap, volume, and 24h high/low
 
@@ -23,34 +18,24 @@ Welcome to Yield Sensei! 🎯 Here are the available commands:
 @yieldsensei_bot /signal <token> - Get smart buy/sell signals with DCA strategy
 @yieldsensei_bot /technical <token> - Get detailed technical analysis
 
-🤖 AI-Powered Features (via OpenAI):
-@yieldsensei_bot /news - Get latest crypto market insights
-@yieldsensei_bot <question> - Ask anything about crypto/DeFi!
+🔍 DEX Information:
+@yieldsensei_bot /dexinfo <token_address> - Get detailed DEX pair info
 
 ℹ️ General Commands:
 @yieldsensei_bot /help - Show this help message
 @yieldsensei_bot /start - Get started with Yield Sensei
-
-🔍 DEXScreener Commands:
-@yieldsensei_bot /dexinfo <token_address> - Get detailed DEX pair info
-@yieldsensei_bot /dexsearch <query> - Search for tokens on DEX
-@yieldsensei_bot /trend - Get trending Solana tokens
-@yieldsensei_bot /setalert <address> <price> <above/below> - Set price alert
-@yieldsensei_bot /removealert <address> <price> - Remove price alert
 """
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Send a message when the command /start is issued."""
     await update.message.reply_text(
         "Welcome to Yield Sensei! 🚀\n\n"
-        "I'm your AI-powered DeFi assistant, ready to help you with:\n"
+        "I'm your DeFi assistant, ready to help you with:\n"
         "• Real-time crypto prices 💰\n"
         "• Market data and analysis 📊\n"
         "• Technical analysis 📈\n"
-        "• AI-powered insights 🤖\n"
-        "• Any questions about crypto and DeFi! 💬\n\n"
-        f"Just start your message with @{BOT_USERNAME}\n"
-        "Use /help to see all available commands."
+        "• DEX pair information 🔍\n\n"
+        f"Use /help to see all available commands."
     )
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -150,7 +135,6 @@ async def market_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text(error_message)
         except Exception:
             await context.bot.send_message(chat_id=update.effective_chat.id, text=error_message)
-
 
 
 @rate_limit

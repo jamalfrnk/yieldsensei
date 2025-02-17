@@ -3,9 +3,7 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters
 from bot_handlers import (
     start_command, help_command, price_command, market_command,
-    technical_command, signal_command, news_command, handle_message,
-    dexinfo_command, dexsearch_command, trending_command,
-    setalert_command, removealert_command, BOT_USERNAME
+    technical_command, signal_command, dexinfo_command, BOT_USERNAME
 )
 from config import TELEGRAM_TOKEN
 
@@ -36,18 +34,7 @@ def main():
         application.add_handler(CommandHandler("market", market_command))
         application.add_handler(CommandHandler("technical", technical_command))
         application.add_handler(CommandHandler("signal", signal_command))
-        application.add_handler(CommandHandler("news", news_command))
         application.add_handler(CommandHandler("dexinfo", dexinfo_command))
-        application.add_handler(CommandHandler("dexsearch", dexsearch_command))
-        application.add_handler(CommandHandler("trend", trending_command))
-        application.add_handler(CommandHandler("setalert", setalert_command))
-        application.add_handler(CommandHandler("removealert", removealert_command))
-
-        # Add message handler for NLP
-        application.add_handler(MessageHandler(
-            filters.TEXT & ~filters.COMMAND & filters.Regex(f"^@{BOT_USERNAME}"),
-            handle_message
-        ))
 
         # Register error handler
         application.add_error_handler(error_handler)
