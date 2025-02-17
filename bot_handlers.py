@@ -1,7 +1,7 @@
 from telegram import Update
 from telegram.ext import ContextTypes, CommandHandler, MessageHandler, filters
 from services.coingecko_service import get_token_price, get_token_market_data
-from services.technical_analysis import get_technical_analysis
+from services.technical_analysis import get_signal_analysis
 from services.openai_service import get_crypto_news, process_nlp_query
 from services.firebase_service import store_user_query
 from utils.rate_limiter import rate_limit
@@ -14,7 +14,10 @@ Welcome to Yield Sensei! 🎯 Here are the available commands:
 📊 Market Data Commands (via CoinGecko):
 @yieldsensei_bot /price <token> - Get current price and 24h change
 @yieldsensei_bot /market <token> - Get market cap, volume, and 24h high/low
-@yieldsensei_bot /technical <token> - Get technical analysis with indicators
+
+📈 Trading Analysis Commands:
+@yieldsensei_bot /signal <token> - Get smart buy/sell signals with DCA strategy
+@yieldsensei_bot /technical <token> - Get detailed technical analysis
 
 🤖 AI-Powered Features (via OpenAI):
 @yieldsensei_bot /news - Get latest crypto market insights
@@ -24,13 +27,15 @@ Welcome to Yield Sensei! 🎯 Here are the available commands:
 @yieldsensei_bot /help - Show this help message
 @yieldsensei_bot /start - Get started with Yield Sensei
 
-Examples:
+📝 Examples:
 Market Data: @yieldsensei_bot /price btc
             @yieldsensei_bot /market eth
-            @yieldsensei_bot /technical sol
 
-AI Chat: @yieldsensei_bot what is yield farming?
-        @yieldsensei_bot explain how DEX works
+Analysis:   @yieldsensei_bot /signal btc
+            @yieldsensei_bot /technical btc
+
+AI Chat:    @yieldsensei_bot what is yield farming?
+            @yieldsensei_bot explain how DEX works
 """
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -98,7 +103,41 @@ async def market_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"24h High: ${market_data['high_24h']:,.2f}\n"
             f"24h Low: ${market_data['low_24h']:,.2f}\n"
             f"24h Change: {market_data['price_change_percentage_24h']:.2f}%\n\n"
-            f"Use @{BOT_USERNAME} /technical {token} for analysis"
+            f"Use @{BOT_USERNAME} /signal {token} for analysis"
+        )
+    except Exception as e:
+        await update.message.reply_text(str(e))
+
+
+@rate_limit
+@cache
+async def signal_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Get detailed buy/sell signals with DCA recommendations."""
+    if not context.args:
+        await update.message.reply_text(
+            f"Please provide a token symbol. Example: @{BOT_USERNAME} /signal btc"
+        )
+        return
+
+    token = context.args[0].lower()
+    try:
+        signal_data = await get_signal_analysis(token)
+
+        await update.message.reply_text(
+            f"🎯 Trading Signal Analysis for {token.upper()}\n\n"
+            f"Signal: {signal_data['signal']}\n"
+            f"Strength: {signal_data['signal_strength']:.1f}%\n"
+            f"Trend: {signal_data['trend_direction']}\n\n"
+            f"Technical Indicators:\n"
+            f"• RSI: {signal_data['rsi']:.1f}\n"
+            f"• MACD: {signal_data['macd_signal']}\n\n"
+            f"Price Levels:\n"
+            f"• Resistance 2: {signal_data['resistance_2']}\n"
+            f"• Resistance 1: {signal_data['resistance_1']}\n"
+            f"• Support 1: {signal_data['support_1']}\n"
+            f"• Support 2: {signal_data['support_2']}\n\n"
+            f"{signal_data['dca_recommendation']}\n\n"
+            "⚠️ This is not financial advice. Always DYOR and manage risks! 📚"
         )
     except Exception as e:
         await update.message.reply_text(str(e))
@@ -113,18 +152,19 @@ async def technical_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     token = context.args[0].lower()
     try:
-        analysis = await get_technical_analysis(token)
-
-        # Determine RSI conditions
-        rsi = analysis['rsi']
-        rsi_status = "Oversold 📉" if rsi < 30 else "Overbought 📈" if rsi > 70 else "Neutral ⚖️"
+        analysis = await get_signal_analysis(token)
 
         await update.message.reply_text(
             f"📊 Technical Analysis for {token.upper()}\n\n"
-            f"RSI ({rsi:.1f}): {rsi_status}\n"
-            f"MACD Signal: {analysis['macd_signal']} {'🟢' if analysis['macd_signal'] == 'Bullish' else '🔴'}\n"
-            f"Bollinger Bands: {analysis['bb_signal']}\n\n"
-            f"Overall: {analysis['recommendation']} {'🎯' if 'Strong' in analysis['recommendation'] else '⚖️'}\n\n"
+            f"RSI: {analysis['rsi']:.1f}\n"
+            f"MACD Signal: {analysis['macd_signal']}\n"
+            f"Trend Direction: {analysis['trend_direction']}\n\n"
+            f"Price Levels:\n"
+            f"• Resistance 2: {analysis['resistance_2']}\n"
+            f"• Resistance 1: {analysis['resistance_1']}\n"
+            f"• Support 1: {analysis['support_1']}\n"
+            f"• Support 2: {analysis['support_2']}\n\n"
+            f"Overall: {analysis['signal']} (Strength: {analysis['signal_strength']:.1f}%)\n\n"
             f"Remember: This is not financial advice. Always DYOR 📚"
         )
     except Exception as e:
@@ -141,7 +181,7 @@ async def news_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "💡 Want to learn more?\n" +
             f"- Ask me anything with @{BOT_USERNAME} <your question>\n" +
             f"- Check market data with @{BOT_USERNAME} /market <token>\n" +
-            f"- Get technical analysis with @{BOT_USERNAME} /technical <token>"
+            f"- Get signal analysis with @{BOT_USERNAME} /signal <token>"
         )
     except Exception as e:
         await update.message.reply_text(
