@@ -125,6 +125,7 @@ async def signal_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         await update.message.reply_text(
             f"🎯 Trading Signal Analysis for {token.upper()}\n\n"
+            f"Current Price: {signal_data['current_price']}\n\n"
             f"Signal: {signal_data['signal']}\n"
             f"Strength: {signal_data['signal_strength']:.1f}%\n"
             f"Trend: {signal_data['trend_direction']}\n\n"

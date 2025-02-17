@@ -47,6 +47,7 @@ def calculate_support_resistance(prices):
     # Sort prices and remove duplicates
     sorted_prices = np.sort(prices)
     price_range = sorted_prices[-1] - sorted_prices[0]
+    current_price = prices[-1]
 
     # Define price clusters with adaptive threshold
     clusters = []
@@ -65,7 +66,6 @@ def calculate_support_resistance(prices):
         clusters.append(np.mean(current_cluster))
 
     clusters = np.array(clusters)
-    current_price = prices[-1]
 
     # Find support levels (below current price)
     supports = clusters[clusters < current_price]
@@ -80,8 +80,13 @@ def calculate_support_resistance(prices):
         if len(filtered_supports) == 2:
             break
 
-    support_levels = filtered_supports if len(filtered_supports) >= 2 else \
-                    np.append(filtered_supports, [filtered_supports[-1] * 0.95] * (2 - len(filtered_supports)))
+    # Handle case when no support levels are found
+    if not filtered_supports:
+        support_levels = [current_price * 0.95, current_price * 0.90]
+    elif len(filtered_supports) == 1:
+        support_levels = [filtered_supports[0], filtered_supports[0] * 0.95]
+    else:
+        support_levels = filtered_supports[:2]
 
     # Find resistance levels (above current price)
     resistances = clusters[clusters > current_price]
@@ -95,8 +100,13 @@ def calculate_support_resistance(prices):
         if len(filtered_resistances) == 2:
             break
 
-    resistance_levels = filtered_resistances if len(filtered_resistances) >= 2 else \
-                       np.append(filtered_resistances, [filtered_resistances[-1] * 1.05] * (2 - len(filtered_resistances)))
+    # Handle case when no resistance levels are found
+    if not filtered_resistances:
+        resistance_levels = [current_price * 1.05, current_price * 1.10]
+    elif len(filtered_resistances) == 1:
+        resistance_levels = [filtered_resistances[0], filtered_resistances[0] * 1.05]
+    else:
+        resistance_levels = filtered_resistances[:2]
 
     return {
         "support_1": support_levels[0],
@@ -196,6 +206,7 @@ async def get_signal_analysis(token_id: str):
             "signal": signal,
             "signal_strength": abs(signal_strength),
             "trend_direction": "Bullish" if signal_strength > 0 else "Bearish" if signal_strength < 0 else "Neutral",
+            "current_price": f"${current_price:,.2f}",
             "rsi": current_rsi,
             "macd_signal": macd_signal,
             "support_1": f"${levels['support_1']:,.2f}",
