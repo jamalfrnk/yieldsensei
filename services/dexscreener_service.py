@@ -24,18 +24,33 @@ async def get_token_pairs(token_address: str) -> Optional[Dict[str, Any]]:
             url = f"{DEXSCREENER_BASE_URL}/dex/tokens/{token_address}"
             async with session.get(url) as response:
                 if response.status != 200:
-                    return None
+                    return {"pairs": [], "error": "Failed to fetch token data"}
+
                 data = await response.json()
+                if not data or "pairs" not in data:
+                    return {"pairs": [], "error": "Invalid response format"}
 
                 # Filter for Solana pairs only
-                if "pairs" in data:
-                    solana_pairs = [pair for pair in data["pairs"] 
-                                  if pair.get("chainId") == SOLANA_CHAIN_ID]
-                    data["pairs"] = solana_pairs
-                return data
-        except Exception as e:
+                solana_pairs = [pair for pair in data.get("pairs", []) 
+                              if pair.get("chainId") == SOLANA_CHAIN_ID]
+
+                # Format price changes
+                for pair in solana_pairs:
+                    if "priceChange" in pair and "h24" in pair["priceChange"]:
+                        try:
+                            change = float(pair["priceChange"]["h24"])
+                            pair["priceChange"]["h24"] = f"{change:+.2f}"  # Add plus sign for positive changes
+                        except (ValueError, TypeError):
+                            pair["priceChange"]["h24"] = "N/A"
+
+                return {"pairs": solana_pairs}
+
+        except aiohttp.ClientError as e:
             print(f"DEXScreener API error: {str(e)}")
-            return None
+            return {"pairs": [], "error": f"API error: {str(e)}"}
+        except Exception as e:
+            print(f"Unexpected error: {str(e)}")
+            return {"pairs": [], "error": "Unexpected error occurred"}
 
 async def get_token_search(query: str) -> Optional[Dict[str, Any]]:
     """Search for Solana tokens on DEXScreener."""
@@ -45,18 +60,30 @@ async def get_token_search(query: str) -> Optional[Dict[str, Any]]:
             params = {"q": query}
             async with session.get(url, params=params) as response:
                 if response.status != 200:
-                    return None
+                    return {"pairs": [], "error": "Failed to fetch search results"}
+
                 data = await response.json()
+                if not data or "pairs" not in data:
+                    return {"pairs": [], "error": "Invalid response format"}
 
                 # Filter for Solana pairs only
-                if "pairs" in data:
-                    solana_pairs = [pair for pair in data["pairs"] 
-                                  if pair.get("chainId") == SOLANA_CHAIN_ID]
-                    data["pairs"] = solana_pairs
-                return data
+                solana_pairs = [pair for pair in data.get("pairs", []) 
+                              if pair.get("chainId") == SOLANA_CHAIN_ID]
+
+                # Format price changes
+                for pair in solana_pairs:
+                    if "priceChange" in pair and "h24" in pair["priceChange"]:
+                        try:
+                            change = float(pair["priceChange"]["h24"])
+                            pair["priceChange"]["h24"] = f"{change:+.2f}"
+                        except (ValueError, TypeError):
+                            pair["priceChange"]["h24"] = "N/A"
+
+                return {"pairs": solana_pairs}
+
         except Exception as e:
             print(f"DEXScreener API error: {str(e)}")
-            return None
+            return {"pairs": [], "error": str(e)}
 
 async def get_trending_tokens() -> Optional[Dict[str, Any]]:
     """Get trending Solana tokens from DEXScreener."""
@@ -65,18 +92,30 @@ async def get_trending_tokens() -> Optional[Dict[str, Any]]:
             url = f"{DEXSCREENER_BASE_URL}/dex/trending"
             async with session.get(url) as response:
                 if response.status != 200:
-                    return None
+                    return {"pairs": [], "error": "Failed to fetch trending tokens"}
+
                 data = await response.json()
+                if not data or "pairs" not in data:
+                    return {"pairs": [], "error": "Invalid response format"}
 
                 # Filter for Solana pairs only
-                if "pairs" in data:
-                    solana_pairs = [pair for pair in data["pairs"] 
-                                  if pair.get("chainId") == SOLANA_CHAIN_ID]
-                    data["pairs"] = solana_pairs
-                return data
+                solana_pairs = [pair for pair in data.get("pairs", []) 
+                              if pair.get("chainId") == SOLANA_CHAIN_ID]
+
+                # Format price changes
+                for pair in solana_pairs:
+                    if "priceChange" in pair and "h24" in pair["priceChange"]:
+                        try:
+                            change = float(pair["priceChange"]["h24"])
+                            pair["priceChange"]["h24"] = f"{change:+.2f}"
+                        except (ValueError, TypeError):
+                            pair["priceChange"]["h24"] = "N/A"
+
+                return {"pairs": solana_pairs}
+
         except Exception as e:
             print(f"DEXScreener API error: {str(e)}")
-            return None
+            return {"pairs": [], "error": str(e)}
 
 async def add_price_alert(token_address: str, target_price: float, is_above: bool = True) -> bool:
     """Add a new price alert for a token."""
