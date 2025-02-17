@@ -22,8 +22,8 @@ logger = logging.getLogger(__name__)
 # Store active chat IDs for alerts
 active_chats = set()
 
-async def check_alerts_loop(context):
-    """Background task to check price alerts."""
+async def check_alerts_job(context):
+    """Background job to check price alerts."""
     try:
         triggered_alerts = await check_price_alerts()
         for alert in triggered_alerts:
@@ -44,64 +44,65 @@ async def check_alerts_loop(context):
                     logger.error(f"Failed to send alert to chat {chat_id}: {e}")
                     active_chats.discard(chat_id)  # Remove inactive chat
     except Exception as e:
-        logger.error(f"Error checking alerts: {e}")
-
+        logger.error(f"Error in check_alerts_job: {e}")
 
 def error_handler(update, context):
     """Log Errors caused by Updates."""
     logger.error(f'Update "{update}" caused error "{context.error}"')
 
-async def setup_application():
-    """Initialize and configure the application."""
-    if not TELEGRAM_TOKEN:
-        raise ValueError("No TELEGRAM_TOKEN provided")
+async def main():
+    """Start the bot."""
+    try:
+        if not TELEGRAM_TOKEN:
+            raise ValueError("No TELEGRAM_TOKEN provided")
 
-    # Create the Application
-    application = Application.builder().token(TELEGRAM_TOKEN).build()
+        # Create the Application with persistence
+        application = Application.builder().token(TELEGRAM_TOKEN).build()
 
-    # Track active chats
-    async def track_chat(update: Update, context):
-        if update.effective_chat:
-            active_chats.add(update.effective_chat.id)
-        await start_command(update, context)
+        # Track active chats
+        async def track_chat(update: Update, context):
+            if update.effective_chat:
+                active_chats.add(update.effective_chat.id)
+            await start_command(update, context)
 
-    # Add command handlers
-    application.add_handler(CommandHandler("start", track_chat))
-    application.add_handler(CommandHandler("help", help_command))
-    application.add_handler(CommandHandler("price", price_command))
-    application.add_handler(CommandHandler("market", market_command))
-    application.add_handler(CommandHandler("technical", technical_command))
-    application.add_handler(CommandHandler("signal", signal_command))
-    application.add_handler(CommandHandler("news", news_command))
-    application.add_handler(CommandHandler("dexinfo", dexinfo_command))
-    application.add_handler(CommandHandler("dexsearch", dexsearch_command))
-    application.add_handler(CommandHandler("trending", trending_command))
-    application.add_handler(CommandHandler("setalert", setalert_command))
-    application.add_handler(CommandHandler("removealert", removealert_command))
+        # Add command handlers
+        application.add_handler(CommandHandler("start", track_chat))
+        application.add_handler(CommandHandler("help", help_command))
+        application.add_handler(CommandHandler("price", price_command))
+        application.add_handler(CommandHandler("market", market_command))
+        application.add_handler(CommandHandler("technical", technical_command))
+        application.add_handler(CommandHandler("signal", signal_command))
+        application.add_handler(CommandHandler("news", news_command))
+        application.add_handler(CommandHandler("dexinfo", dexinfo_command))
+        application.add_handler(CommandHandler("dexsearch", dexsearch_command))
+        application.add_handler(CommandHandler("trending", trending_command))
+        application.add_handler(CommandHandler("setalert", setalert_command))
+        application.add_handler(CommandHandler("removealert", removealert_command))
 
-    # Add message handler for NLP
-    application.add_handler(MessageHandler(
-        filters.TEXT & ~filters.COMMAND & filters.Regex(f"^@{BOT_USERNAME}"),
-        handle_message
-    ))
+        # Add message handler for NLP
+        application.add_handler(MessageHandler(
+            filters.TEXT & ~filters.COMMAND & filters.Regex(f"^@{BOT_USERNAME}"),
+            handle_message
+        ))
 
-    # Register error handler
-    application.add_error_handler(error_handler)
+        # Register error handler
+        application.add_error_handler(error_handler)
 
-    return application
+        # Add the price alert checker job (runs every minute)
+        job_queue = application.job_queue
+        job_queue.run_repeating(check_alerts_job, interval=60, first=10)
+
+        logger.info("Starting bot...")
+        # Start the bot and wait for it to stop
+        await application.run_polling(allowed_updates=Update.ALL_TYPES)
+
+    except Exception as e:
+        logger.error(f"Critical error: {e}")
+        raise
 
 if __name__ == '__main__':
     try:
-        # Create and configure the application
-        app = asyncio.run(setup_application())
-
-        # Start background alert checker
-        app.job_queue.run_repeating(check_alerts_loop, interval=60)
-
-        # Start the bot
-        logger.info("Starting bot...")
-        app.run_polling(allowed_updates=Update.ALL_TYPES)
-
+        asyncio.run(main())
     except KeyboardInterrupt:
         logger.info("Bot stopped by user")
     except Exception as e:
