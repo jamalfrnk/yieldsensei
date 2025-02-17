@@ -18,16 +18,23 @@ async def get_crypto_news():
             messages=[
                 {
                     "role": "system",
-                    "content": "You are a DeFi expert. Provide a brief summary of the "
-                    "current crypto market conditions and notable events. Keep it "
-                    "factual and avoid speculation or financial advice."
+                    "content": (
+                        "You are a DeFi expert providing concise crypto market updates. "
+                        "Focus on these key areas:\n"
+                        "1. Market Overview (major cryptocurrencies)\n"
+                        "2. Notable DeFi Protocol Updates\n"
+                        "3. Important Market Events\n\n"
+                        "Keep it factual, avoid speculation or financial advice. "
+                        "Format the response as a JSON object with a 'summary' key "
+                        "containing markdown-formatted text with emojis."
+                    )
                 },
                 {
                     "role": "user",
                     "content": "What are the latest important developments in the crypto market?"
                 }
             ],
-            max_tokens=300,
+            max_tokens=400,
             response_format={"type": "json_object"}
         )
         content = json.loads(response.choices[0].message.content)

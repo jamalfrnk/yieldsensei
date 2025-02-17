@@ -6,9 +6,11 @@ from bot_handlers import (
     start_command,
     help_command,
     price_command,
+    market_command,
     technical_command,
     news_command,
-    handle_message
+    handle_message,
+    BOT_USERNAME
 )
 from config import TELEGRAM_TOKEN
 
@@ -32,15 +34,19 @@ def main():
     # Create the Application with the builder pattern
     application = Application.builder().token(TELEGRAM_TOKEN).build()
 
-    # Add command handlers
+    # Add command handlers with username prefix requirement
     application.add_handler(CommandHandler("start", start_command))
     application.add_handler(CommandHandler("help", help_command))
     application.add_handler(CommandHandler("price", price_command))
+    application.add_handler(CommandHandler("market", market_command))
     application.add_handler(CommandHandler("technical", technical_command))
     application.add_handler(CommandHandler("news", news_command))
 
-    # Add message handler for NLP
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    # Add message handler for NLP with username prefix requirement
+    application.add_handler(MessageHandler(
+        filters.TEXT & ~filters.COMMAND & filters.Regex(f"^@{BOT_USERNAME}"),
+        handle_message
+    ))
 
     # Register error handler
     application.add_error_handler(error_handler)
