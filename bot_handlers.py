@@ -1,3 +1,4 @@
+import logging
 from telegram import Update
 from telegram.ext import ContextTypes, CommandHandler, MessageHandler, filters
 from services.coingecko_service import get_token_price, get_token_market_data
@@ -5,6 +6,13 @@ from services.dexscreener_service import get_token_pairs
 from utils.rate_limiter import rate_limit
 from utils.cache import cache
 from services.technical_analysis import get_signal_analysis
+
+# Configure logging
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO
+)
+logger = logging.getLogger(__name__)
 
 BOT_USERNAME = "yieldsensei_bot"
 HELP_TEXT = """
@@ -246,6 +254,7 @@ async def signal_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Get detailed trading signal analysis."""
     if not context.args:
         error_message = f"Please provide a token symbol. Example: @{BOT_USERNAME} /signal btc"
+        logger.info(f"Signal command called without token symbol")
         try:
             await update.message.reply_text(error_message)
         except Exception:
@@ -253,8 +262,12 @@ async def signal_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     token = context.args[0].lower()
+    logger.info(f"Processing signal analysis for token: {token}")
+
     try:
+        logger.info(f"Fetching signal analysis data for {token}")
         signal_data = await get_signal_analysis(token)
+        logger.info(f"Successfully retrieved signal analysis for {token}")
 
         message = (
             f"🎯 Trading Signal Analysis for {token.upper()}\n\n"
@@ -274,12 +287,17 @@ async def signal_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"⚠️ This is not financial advice. Always DYOR and manage risks! 📚"
         )
 
+        logger.info(f"Sending signal analysis response for {token}")
         try:
             await update.message.reply_text(message)
-        except Exception:
+            logger.info(f"Successfully sent signal analysis for {token}")
+        except Exception as e:
+            logger.error(f"Failed to send message via update.message: {str(e)}")
             await context.bot.send_message(chat_id=update.effective_chat.id, text=message)
+            logger.info(f"Successfully sent signal analysis via context.bot for {token}")
     except Exception as e:
         error_message = f"Error getting signal analysis: {str(e)}"
+        logger.error(f"Signal analysis failed for {token}: {str(e)}")
         try:
             await update.message.reply_text(error_message)
         except Exception:

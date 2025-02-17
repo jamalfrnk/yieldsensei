@@ -1,10 +1,15 @@
+import logging
 import numpy as np
 import pandas as pd
 import aiohttp
 from config import COINGECKO_BASE_URL
 
+# Configure logging
+logger = logging.getLogger(__name__)
+
 async def get_historical_prices(token_id: str):
     """Fetch historical price data from CoinGecko."""
+    logger.info(f"Fetching historical prices for token: {token_id}")
     async with aiohttp.ClientSession() as session:
         try:
             url = f"{COINGECKO_BASE_URL}/coins/{token_id}/market_chart"
@@ -13,25 +18,33 @@ async def get_historical_prices(token_id: str):
                 "days": "30",  # Extended to 30 days for better analysis
                 "interval": "daily"
             }
+            logger.debug(f"Making API request to: {url}")
 
             async with session.get(url, params=params) as response:
                 if response.status == 404:
+                    logger.error(f"Token '{token_id}' not found")
                     raise ValueError(f"Token '{token_id}' not found")
                 if response.status != 200:
+                    logger.error(f"API error: {response.status}")
                     raise Exception(f"API error: {response.status}")
 
                 data = await response.json()
                 if not data or "prices" not in data:
+                    logger.error("Invalid response format from API")
                     raise Exception("Invalid response format from API")
 
                 prices = [price[1] for price in data["prices"]]
                 if not prices:
+                    logger.error("No price data available")
                     raise Exception("No price data available")
 
+                logger.info(f"Successfully fetched {len(prices)} price points for {token_id}")
                 return np.array(prices)
         except aiohttp.ClientError as e:
+            logger.error(f"Network error while fetching prices: {str(e)}")
             raise Exception(f"Network error: {str(e)}")
         except Exception as e:
+            logger.error(f"Error fetching historical prices: {str(e)}")
             raise Exception(f"Error fetching historical prices: {str(e)}")
 
 def calculate_rsi(prices, periods=14):
@@ -131,92 +144,68 @@ def calculate_support_resistance(prices):
 
 async def get_signal_analysis(token_id: str):
     """Generate detailed trading signal analysis with DCA recommendations."""
+    logger.info(f"Starting signal analysis for token: {token_id}")
     try:
+        logger.info("Fetching historical price data")
         prices = await get_historical_prices(token_id)
         current_price = prices[-1]
+        logger.info(f"Current price: ${current_price:,.2f}")
 
-        # Calculate RSI
+        # Calculate indicators
+        logger.info("Calculating technical indicators")
         current_rsi = calculate_rsi(prices)
+        logger.info(f"RSI: {current_rsi:.2f}")
 
-        # Calculate MACD
         is_macd_bullish, macd_strength = calculate_macd(prices)
         macd_signal = "Bullish 📈" if is_macd_bullish else "Bearish 📉"
+        logger.info(f"MACD Signal: {macd_signal}")
 
-        # Calculate support and resistance levels
+        logger.info("Calculating support and resistance levels")
         levels = calculate_support_resistance(prices)
 
-        # Calculate signal strength (0 to 100)
+        # Calculate signal strength
+        logger.info("Calculating overall signal strength")
         signal_strength = 0
 
-        # RSI contribution (max 40 points)
+        # RSI contribution
         if current_rsi < 30:
-            signal_strength += 40 * (1 - current_rsi/30)  # Strong buy
+            signal_strength += 40 * (1 - current_rsi/30)
         elif current_rsi > 70:
-            signal_strength -= 40 * (current_rsi-70)/30  # Strong sell
+            signal_strength -= 40 * (current_rsi-70)/30
 
-        # MACD contribution (max 30 points)
+        # MACD contribution
         if is_macd_bullish:
             signal_strength += 30 * (macd_strength/abs(current_price))
         else:
             signal_strength -= 30 * (macd_strength/abs(current_price))
 
-        # Support/Resistance contribution (max 30 points)
+        # Support/Resistance contribution
         price_to_support1 = (current_price - levels['support_1']) / current_price
         price_to_resistance1 = (levels['resistance_1'] - current_price) / current_price
 
-        if price_to_support1 < 0.03:  # Near support
+        if price_to_support1 < 0.03:
             signal_strength += 30 * (1 - price_to_support1/0.03)
-        elif price_to_resistance1 < 0.03:  # Near resistance
+        elif price_to_resistance1 < 0.03:
             signal_strength -= 30 * (1 - price_to_resistance1/0.03)
 
-        # Determine signal type and DCA recommendations
+        logger.info(f"Final signal strength: {signal_strength}")
+
+        # Determine signal type and recommendations
         if signal_strength > 60:
             signal = "Strong Buy 🟢"
-            dca_recommendation = (
-                "💡 DCA Strategy:\n"
-                "• Consider splitting your investment into 3-4 portions\n"
-                "• Invest 40% now while momentum is strong\n"
-                "• Space out remaining portions over 1-2 weeks\n"
-                "• Set stop-loss just below Support 2"
-            )
         elif signal_strength > 20:
             signal = "Moderate Buy 🟡"
-            dca_recommendation = (
-                "💡 DCA Strategy:\n"
-                "• Split investment into 5-6 smaller portions\n"
-                "• Invest 25% now at current levels\n"
-                "• Space out remaining portions over 2-3 weeks\n"
-                "• Set stop-loss between Support 1 and 2"
-            )
         elif signal_strength < -60:
             signal = "Strong Sell 🔴"
-            dca_recommendation = (
-                "💡 DCA Exit Strategy:\n"
-                "• Consider selling 40-50% of position now\n"
-                "• Set limit orders near Resistance 1 for remaining exit\n"
-                "• Space out sells over 3-4 days\n"
-                "• Keep small position (10-15%) for potential breakout"
-            )
         elif signal_strength < -20:
             signal = "Moderate Sell 🟡"
-            dca_recommendation = (
-                "💡 DCA Exit Strategy:\n"
-                "• Consider selling 25-30% of position now\n"
-                "• Set limit orders near Resistance 1 for remaining exit\n"
-                "• Space out sells over 1-2 weeks\n"
-                "• Keep 20-25% position for potential breakout"
-            )
         else:
             signal = "Neutral ⚖️"
-            dca_recommendation = (
-                "💡 Neutral Strategy:\n"
-                "• Market shows mixed signals\n"
-                "• Consider waiting for clearer direction\n"
-                "• Set alerts at Support 1 and Resistance 1\n"
-                "• Focus on portfolio rebalancing"
-            )
 
-        return {
+        logger.info(f"Generated signal: {signal}")
+
+        # Build and return the analysis result
+        result = {
             "signal": signal,
             "signal_strength": abs(signal_strength),
             "trend_direction": "Bullish 📈" if signal_strength > 0 else "Bearish 📉" if signal_strength < 0 else "Neutral ⚖️",
@@ -227,7 +216,55 @@ async def get_signal_analysis(token_id: str):
             "support_2": f"${levels['support_2']:,.2f}",
             "resistance_1": f"${levels['resistance_1']:,.2f}",
             "resistance_2": f"${levels['resistance_2']:,.2f}",
-            "dca_recommendation": dca_recommendation
+            "dca_recommendation": get_dca_recommendation(signal_strength)
         }
+
+        logger.info("Successfully generated signal analysis")
+        return result
+
     except Exception as e:
+        logger.error(f"Failed to generate signal analysis: {str(e)}")
         raise Exception(f"Failed to generate signal analysis: {str(e)}")
+
+def get_dca_recommendation(signal_strength):
+    """Get DCA recommendation based on signal strength."""
+    if signal_strength > 60:
+        return (
+            "💡 DCA Strategy:\n"
+            "• Consider splitting your investment into 3-4 portions\n"
+            "• Invest 40% now while momentum is strong\n"
+            "• Space out remaining portions over 1-2 weeks\n"
+            "• Set stop-loss just below Support 2"
+        )
+    elif signal_strength > 20:
+        return (
+            "💡 DCA Strategy:\n"
+            "• Split investment into 5-6 smaller portions\n"
+            "• Invest 25% now at current levels\n"
+            "• Space out remaining portions over 2-3 weeks\n"
+            "• Set stop-loss between Support 1 and 2"
+        )
+    elif signal_strength < -60:
+        return (
+            "💡 DCA Exit Strategy:\n"
+            "• Consider selling 40-50% of position now\n"
+            "• Set limit orders near Resistance 1 for remaining exit\n"
+            "• Space out sells over 3-4 days\n"
+            "• Keep small position (10-15%) for potential breakout"
+        )
+    elif signal_strength < -20:
+        return (
+            "💡 DCA Exit Strategy:\n"
+            "• Consider selling 25-30% of position now\n"
+            "• Set limit orders near Resistance 1 for remaining exit\n"
+            "• Space out sells over 1-2 weeks\n"
+            "• Keep 20-25% position for potential breakout"
+        )
+    else:
+        return (
+            "💡 Neutral Strategy:\n"
+            "• Market shows mixed signals\n"
+            "• Consider waiting for clearer direction\n"
+            "• Set alerts at Support 1 and Resistance 1\n"
+            "• Focus on portfolio rebalancing"
+        )
