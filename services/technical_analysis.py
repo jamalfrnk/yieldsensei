@@ -15,37 +15,37 @@ async def get_historical_prices(token_id: str):
             url = f"{COINGECKO_BASE_URL}/coins/{token_id}/market_chart"
             params = {
                 "vs_currency": "usd",
-                "days": "30",  # Extended to 30 days for better analysis
+                "days": "30",
                 "interval": "daily"
             }
             logger.debug(f"Making API request to: {url}")
 
             async with session.get(url, params=params) as response:
                 if response.status == 404:
-                    logger.error(f"Token '{token_id}' not found")
-                    raise ValueError(f"Token '{token_id}' not found")
+                    logger.error(f"Token '{token_id}' not found in CoinGecko database")
+                    raise ValueError(f"'{token_id}' not found in our database. Please check the token symbol or try using a contract address.")
                 if response.status != 200:
                     logger.error(f"API error: {response.status}")
-                    raise Exception(f"API error: {response.status}")
+                    raise Exception("Unable to fetch market data at the moment. Please try again in a few minutes.")
 
                 data = await response.json()
                 if not data or "prices" not in data:
                     logger.error("Invalid response format from API")
-                    raise Exception("Invalid response format from API")
+                    raise Exception("Unable to process market data. Please try again later.")
 
                 prices = [price[1] for price in data["prices"]]
                 if not prices:
                     logger.error("No price data available")
-                    raise Exception("No price data available")
+                    raise Exception("No price data available for this token. Try a different token or check back later.")
 
                 logger.info(f"Successfully fetched {len(prices)} price points for {token_id}")
                 return np.array(prices)
         except aiohttp.ClientError as e:
             logger.error(f"Network error while fetching prices: {str(e)}")
-            raise Exception(f"Network error: {str(e)}")
+            raise Exception("Network connectivity issue. Please check your connection and try again.")
         except Exception as e:
             logger.error(f"Error fetching historical prices: {str(e)}")
-            raise Exception(f"Error fetching historical prices: {str(e)}")
+            raise
 
 def calculate_rsi(prices, periods=14):
     """Calculate RSI using pandas."""
@@ -84,16 +84,15 @@ def calculate_support_resistance(prices):
         price_range = sorted_prices[-1] - sorted_prices[0]
         current_price = prices[-1]
 
-        # Define price clusters
         clusters = []
-        cluster_threshold = price_range * 0.015  # 1.5% for precise levels
+        cluster_threshold = price_range * 0.015
         current_cluster = [sorted_prices[0]]
 
         for price in sorted_prices[1:]:
             if price - current_cluster[-1] <= cluster_threshold:
                 current_cluster.append(price)
             else:
-                if len(current_cluster) > 3:  # Minimum points for strong level
+                if len(current_cluster) > 3:
                     clusters.append(np.mean(current_cluster))
                 current_cluster = [price]
 
@@ -101,16 +100,11 @@ def calculate_support_resistance(prices):
             clusters.append(np.mean(current_cluster))
 
         clusters = np.array(clusters)
-
-        # Find support levels (below current price)
         supports = clusters[clusters < current_price]
-        supports = np.sort(supports)[::-1]  # Sort descending
-
-        # Find resistance levels (above current price)
+        supports = np.sort(supports)[::-1]
         resistances = clusters[clusters > current_price]
-        resistances = np.sort(resistances)  # Sort ascending
+        resistances = np.sort(resistances)
 
-        # Handle cases with insufficient levels
         if len(supports) < 2:
             support_levels = [
                 current_price * 0.95,
@@ -190,7 +184,7 @@ async def get_signal_analysis(token_id: str):
 
         logger.info(f"Final signal strength: {signal_strength}")
 
-        # Determine signal type and recommendations
+        # Determine signal type
         if signal_strength > 60:
             signal = "Strong Buy 🟢"
         elif signal_strength > 20:

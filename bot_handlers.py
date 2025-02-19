@@ -1,4 +1,5 @@
 import logging
+import re
 from telegram import Update
 from telegram.ext import ContextTypes, CommandHandler, MessageHandler, filters
 from services.coingecko_service import get_token_price, get_token_market_data
@@ -26,12 +27,37 @@ Welcome to Yield Sensei! 🎯 Here are the available commands:
 @yieldsensei_bot /dexinfo <token_address> - Get detailed DEX pair info
 
 📈 Trading Signals:
-@yieldsensei_bot /signal <token> - Get detailed trading signal analysis
+@yieldsensei_bot /signal <token_or_address> - Get detailed trading signal analysis
+Examples:
+• /signal btc - Analysis for Bitcoin
+• /signal 7GCihgDB8fe6KNjn2MYtkzZcRjQy3t9GHdC8uHYmW2hr - Analysis by contract address
 
 ℹ️ General Commands:
 @yieldsensei_bot /help - Show this help message
 @yieldsensei_bot /start - Get started with Yield Sensei
 """
+
+def is_contract_address(input_str: str) -> bool:
+    """Check if the input looks like a contract address."""
+    # Basic validation for common address formats (ETH, SOL, etc.)
+    return len(input_str) >= 32 and not input_str.isdigit()
+
+def get_command_suggestion(error_message: str) -> str:
+    """Get a helpful command suggestion based on the error."""
+    suggestions = {
+        "not found in our database": "Try using a valid token symbol (e.g., '/signal btc') or contract address (e.g., '/signal 7GCihgDB8fe6KNjn2MYtkzZcRjQy3t9GHdC8uHYmW2hr')",
+        "Unable to fetch market data": "The API is temporarily unavailable. Please try again in a few minutes",
+        "Unable to process market data": "There might be an issue with the token data. Try using a different token or wait a few minutes",
+        "No price data available": "This token might be too new or not actively traded. Try using a more established token",
+        "Network connectivity issue": "Connection issues detected. Please try again in a few moments",
+        "Invalid or unsupported contract": "Make sure you're using a valid contract address or try using the token symbol instead"
+    }
+
+    for error_pattern, suggestion in suggestions.items():
+        if error_pattern.lower() in error_message.lower():
+            return f"💡 Suggestion: {suggestion}"
+
+    return "💡 Suggestion: Make sure you're using the correct command format. Type /help to see examples"
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Send a message when the command /start is issued."""
@@ -218,59 +244,44 @@ async def dexinfo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await context.bot.send_message(chat_id=update.effective_chat.id, text=error_message)
 
 @rate_limit
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle messages that are not commands."""
-    message = update.message.text
-
-    # Check if message starts with @yieldsensei_bot
-    if not message.startswith(f"@{BOT_USERNAME}"):
-        return
-
-    # Remove the bot username from the message
-    query = message[len(f"@{BOT_USERNAME}"):].strip()
-
-    if not query:
-        try:
-            await update.message.reply_text("Please provide a command after mentioning me!")
-        except Exception:
-            await context.bot.send_message(
-                chat_id=update.effective_chat.id,
-                text="Please provide a command after mentioning me!"
-            )
-        return
-
-    try:
-        await update.message.reply_text(f"Please use one of the available commands. Type /help to see the list of commands.")
-    except Exception:
-        await context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text=f"Please use one of the available commands. Type /help to see the list of commands."
-        )
-
-
-@rate_limit
 @cache
 async def signal_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Get detailed trading signal analysis."""
+    """Get detailed trading signal analysis for token symbol or contract address."""
     if not context.args:
-        error_message = f"Please provide a token symbol. Example: @{BOT_USERNAME} /signal btc"
-        logger.info(f"Signal command called without token symbol")
+        help_message = (
+            "Please provide a token symbol or contract address.\n"
+            "Examples:\n"
+            "• /signal btc - Analysis for Bitcoin\n"
+            "• /signal 7GCihgDB8fe6KNjn2MYtkzZcRjQy3t9GHdC8uHYmW2hr - Analysis by contract address"
+        )
+        logger.info("Signal command called without arguments")
         try:
-            await update.message.reply_text(error_message)
+            await update.message.reply_text(help_message)
         except Exception:
-            await context.bot.send_message(chat_id=update.effective_chat.id, text=error_message)
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=help_message)
         return
 
-    token = context.args[0].lower()
-    logger.info(f"Processing signal analysis for token: {token}")
+    token_input = context.args[0].lower()
+    logger.info(f"Processing signal analysis for input: {token_input}")
 
     try:
-        logger.info(f"Fetching signal analysis data for {token}")
-        signal_data = await get_signal_analysis(token)
-        logger.info(f"Successfully retrieved signal analysis for {token}")
+        logger.info(f"Fetching signal analysis data")
+
+        # If it looks like a contract address, try to get token info first
+        if is_contract_address(token_input):
+            logger.info("Input appears to be a contract address, fetching token data first")
+            token_data = await get_token_pairs(token_input)
+            if not token_data or "pairs" not in token_data or not token_data["pairs"]:
+                raise ValueError("Invalid or unsupported contract address")
+            # Use the token symbol from DEX data for analysis
+            token_input = token_data["pairs"][0].get("baseToken", {}).get("symbol", "").lower()
+            logger.info(f"Resolved contract address to token symbol: {token_input}")
+
+        signal_data = await get_signal_analysis(token_input)
+        logger.info(f"Successfully retrieved signal analysis")
 
         message = (
-            f"🎯 Trading Signal Analysis for {token.upper()}\n\n"
+            f"🎯 Trading Signal Analysis for {token_input.upper()}\n\n"
             f"Current Price: {signal_data['current_price']}\n\n"
             f"Signal: {signal_data['signal']}\n"
             f"Strength: {signal_data['signal_strength']:.1f}%\n"
@@ -287,18 +298,61 @@ async def signal_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"⚠️ This is not financial advice. Always DYOR and manage risks! 📚"
         )
 
-        logger.info(f"Sending signal analysis response for {token}")
+        logger.info(f"Sending signal analysis response")
         try:
             await update.message.reply_text(message)
-            logger.info(f"Successfully sent signal analysis for {token}")
+            logger.info(f"Successfully sent signal analysis")
         except Exception as e:
             logger.error(f"Failed to send message via update.message: {str(e)}")
             await context.bot.send_message(chat_id=update.effective_chat.id, text=message)
-            logger.info(f"Successfully sent signal analysis via context.bot for {token}")
+            logger.info(f"Successfully sent signal analysis via context.bot")
+
     except Exception as e:
         error_message = f"Error getting signal analysis: {str(e)}"
-        logger.error(f"Signal analysis failed for {token}: {str(e)}")
+        suggestion = get_command_suggestion(str(e))
+        full_message = f"{error_message}\n\n{suggestion}"
+
+        logger.error(f"Signal analysis failed: {str(e)}")
         try:
-            await update.message.reply_text(error_message)
+            await update.message.reply_text(full_message)
         except Exception:
-            await context.bot.send_message(chat_id=update.effective_chat.id, text=error_message)
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=full_message)
+
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle messages that are not commands."""
+    message = update.message.text
+
+    # Check if message starts with @yieldsensei_bot
+    if not message.startswith(f"@{BOT_USERNAME}"):
+        return
+
+    # Remove the bot username from the message
+    query = message[len(f"@{BOT_USERNAME}"):].strip()
+
+    if not query:
+        suggestion = (
+            "Please provide a command after mentioning me!\n\n"
+            "💡 Try these commands:\n"
+            "• /help - See all available commands\n"
+            "• /signal btc - Get Bitcoin analysis\n"
+            "• /price eth - Get Ethereum price"
+        )
+        try:
+            await update.message.reply_text(suggestion)
+        except Exception:
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=suggestion)
+        return
+
+    suggestion = (
+        "Command not recognized.\n\n"
+        "💡 Available commands:\n"
+        "• /help - See all commands\n"
+        "• /signal <token/address> - Get trading signals\n"
+        "• /price <token> - Get token price\n"
+        "• /market <token> - Get market data\n"
+        "• /dexinfo <address> - Get DEX information"
+    )
+    try:
+        await update.message.reply_text(suggestion)
+    except Exception:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=suggestion)
