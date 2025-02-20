@@ -36,7 +36,7 @@
         </div>
         <div class="bg-gray-900 rounded-lg p-4 border border-orange-500 hover:bg-gray-800 transition-colors duration-200">
             <h3 class="text-lg font-semibold text-orange-500">Trend Score</h3>
-            <p class="text-2xl mt-2">{{ trend_score }}/100</p>
+            <p class="text-2xl mt-2">{{ "%.2f"|format(trend_score|float) }}/100</p>
             <p class="text-sm text-gray-400">{{ trend_direction }}</p>
         </div>
         <div class="bg-gray-900 rounded-lg p-4 border border-orange-500 hover:bg-gray-800 transition-colors duration-200">
