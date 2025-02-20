@@ -2,7 +2,9 @@ import logging
 import numpy as np
 import pandas as pd
 import aiohttp
+import os
 from config import COINGECKO_BASE_URL
+from services.ml_prediction_service import ml_service
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -137,7 +139,7 @@ def calculate_support_resistance(prices):
         raise Exception(f"Support/Resistance calculation error: {str(e)}")
 
 async def get_signal_analysis(token_id: str):
-    """Generate detailed trading signal analysis with DCA recommendations."""
+    """Generate detailed trading signal analysis with ML-enhanced predictions."""
     logger.info(f"Starting signal analysis for token: {token_id}")
     try:
         logger.info("Fetching historical price data")
@@ -145,7 +147,16 @@ async def get_signal_analysis(token_id: str):
         current_price = prices[-1]
         logger.info(f"Current price: ${current_price:,.2f}")
 
-        # Calculate indicators
+        # Train ML models if needed
+        if not os.path.exists('models/rf_model.joblib'):
+            logger.info("Training ML models with historical data")
+            ml_service.train_models(prices)
+
+        # Get ML predictions
+        logger.info("Generating ML predictions")
+        ml_predictions = await ml_service.predict_price(prices)
+
+        # Calculate traditional indicators
         logger.info("Calculating technical indicators")
         current_rsi = calculate_rsi(prices)
         logger.info(f"RSI: {current_rsi:.2f}")
@@ -157,45 +168,20 @@ async def get_signal_analysis(token_id: str):
         logger.info("Calculating support and resistance levels")
         levels = calculate_support_resistance(prices)
 
-        # Calculate signal strength
+        # Calculate enhanced signal strength incorporating ML predictions
         logger.info("Calculating overall signal strength")
-        signal_strength = 0
+        signal_strength = calculate_enhanced_signal_strength(
+            current_price=current_price,
+            current_rsi=current_rsi,
+            is_macd_bullish=is_macd_bullish,
+            macd_strength=macd_strength,
+            levels=levels,
+            ml_predictions=ml_predictions
+        )
 
-        # RSI contribution
-        if current_rsi < 30:
-            signal_strength += 40 * (1 - current_rsi/30)
-        elif current_rsi > 70:
-            signal_strength -= 40 * (current_rsi-70)/30
-
-        # MACD contribution
-        if is_macd_bullish:
-            signal_strength += 30 * (macd_strength/abs(current_price))
-        else:
-            signal_strength -= 30 * (macd_strength/abs(current_price))
-
-        # Support/Resistance contribution
-        price_to_support1 = (current_price - levels['support_1']) / current_price
-        price_to_resistance1 = (levels['resistance_1'] - current_price) / current_price
-
-        if price_to_support1 < 0.03:
-            signal_strength += 30 * (1 - price_to_support1/0.03)
-        elif price_to_resistance1 < 0.03:
-            signal_strength -= 30 * (1 - price_to_resistance1/0.03)
-
-        logger.info(f"Final signal strength: {signal_strength}")
 
         # Determine signal type
-        if signal_strength > 60:
-            signal = "Strong Buy 🟢"
-        elif signal_strength > 20:
-            signal = "Moderate Buy 🟡"
-        elif signal_strength < -60:
-            signal = "Strong Sell 🔴"
-        elif signal_strength < -20:
-            signal = "Moderate Sell 🟡"
-        else:
-            signal = "Neutral ⚖️"
-
+        signal = get_signal_type(signal_strength)
         logger.info(f"Generated signal: {signal}")
 
         # Build and return the analysis result
@@ -210,15 +196,94 @@ async def get_signal_analysis(token_id: str):
             "support_2": f"${levels['support_2']:,.2f}",
             "resistance_1": f"${levels['resistance_1']:,.2f}",
             "resistance_2": f"${levels['resistance_2']:,.2f}",
-            "dca_recommendation": get_dca_recommendation(signal_strength)
+            "ml_predictions": ml_predictions if ml_predictions else {},
+            "dca_recommendation": get_enhanced_dca_recommendation(signal_strength, ml_predictions)
         }
 
-        logger.info("Successfully generated signal analysis")
+        logger.info("Successfully generated signal analysis with ML predictions")
         return result
 
     except Exception as e:
         logger.error(f"Failed to generate signal analysis: {str(e)}")
         raise Exception(f"Failed to generate signal analysis: {str(e)}")
+
+def calculate_enhanced_signal_strength(current_price, current_rsi, is_macd_bullish, macd_strength, levels, ml_predictions):
+    """Calculate signal strength incorporating ML predictions."""
+    signal_strength = 0
+
+    # Traditional indicators contribution (60% weight)
+    # RSI contribution (25%)
+    if current_rsi < 30:
+        signal_strength += 25 * (1 - current_rsi/30)
+    elif current_rsi > 70:
+        signal_strength -= 25 * (current_rsi-70)/30
+
+    # MACD contribution (20%)
+    if is_macd_bullish:
+        signal_strength += 20 * (macd_strength/abs(current_price))
+    else:
+        signal_strength -= 20 * (macd_strength/abs(current_price))
+
+    # Support/Resistance contribution (15%)
+    price_to_support1 = (current_price - levels['support_1']) / current_price
+    price_to_resistance1 = (levels['resistance_1'] - current_price) / current_price
+
+    if price_to_support1 < 0.03:
+        signal_strength += 15 * (1 - price_to_support1/0.03)
+    elif price_to_resistance1 < 0.03:
+        signal_strength -= 15 * (1 - price_to_resistance1/0.03)
+
+    # ML predictions contribution (40% weight)
+    if ml_predictions and 'next_day' in ml_predictions:
+        pred_price = ml_predictions['next_day']['prophet_prediction']
+        price_change = (pred_price - current_price) / current_price
+        confidence = ml_predictions['confidence_score'] / 100
+
+        # Add ML signal (-40 to +40 range)
+        ml_signal = 40 * price_change * confidence
+        signal_strength += ml_signal
+
+    return signal_strength
+
+def get_enhanced_dca_recommendation(signal_strength, ml_predictions):
+    """Get enhanced DCA recommendation incorporating ML predictions."""
+    base_recommendation = get_dca_recommendation(signal_strength)
+
+    if not ml_predictions or 'next_day' not in ml_predictions:
+        return base_recommendation
+
+    confidence_score = ml_predictions['confidence_score']
+    pred_change = (ml_predictions['next_day']['prophet_prediction'] - 
+                  float(ml_predictions['next_day']['rf_prediction'])) / \
+                 float(ml_predictions['next_day']['rf_prediction'])
+
+    # Add ML-specific insights
+    ml_insights = (
+        f"\n\n💡 ML Analysis:\n"
+        f"• Prediction Confidence: {confidence_score:.1f}%\n"
+        f"• Expected Price Range: ${ml_predictions['next_day']['lower_bound']:,.2f} "
+        f"to ${ml_predictions['next_day']['upper_bound']:,.2f}\n"
+    )
+
+    if confidence_score > 70:
+        ml_insights += "• High confidence in predictions - consider following signals more aggressively\n"
+    elif confidence_score < 30:
+        ml_insights += "• Low confidence in predictions - maintain conservative position sizing\n"
+
+    return base_recommendation + ml_insights
+
+def get_signal_type(signal_strength):
+    """Determine signal type based on signal strength."""
+    if signal_strength > 60:
+        return "Strong Buy 🟢"
+    elif signal_strength > 20:
+        return "Moderate Buy 🟡"
+    elif signal_strength < -60:
+        return "Strong Sell 🔴"
+    elif signal_strength < -20:
+        return "Moderate Sell 🟡"
+    else:
+        return "Neutral ⚖️"
 
 def get_dca_recommendation(signal_strength):
     """Get DCA recommendation based on signal strength."""
