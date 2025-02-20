@@ -34,9 +34,9 @@ DEFAULT_DATA = {
     'support_2': 0.0,
     'resistance_1': 0.0,
     'resistance_2': 0.0,
-    'optimal_entry': 0.0,
-    'optimal_exit': 0.0,
-    'stop_loss': 0.0,
+    'optimal_entry': 0.0,  # Added default
+    'optimal_exit': 0.0,   # Added default
+    'stop_loss': 0.0,      # Added default
     'dca_recommendation': 'Enter a token to get DCA recommendations',
     'historical_data': [],
     'predictions': None,
@@ -137,6 +137,9 @@ def create_app():
                         'support_2': float(signal_data['support_2'].replace('$', '').replace(',', '')),
                         'resistance_1': float(signal_data['resistance_1'].replace('$', '').replace(',', '')),
                         'resistance_2': float(signal_data['resistance_2'].replace('$', '').replace(',', '')),
+                        'optimal_entry': float(signal_data['optimal_entry']),  # Added from signal_data
+                        'optimal_exit': float(signal_data['optimal_exit']),    # Added from signal_data
+                        'stop_loss': float(signal_data['stop_loss']),         # Added from signal_data
                         'dca_recommendation': signal_data['dca_recommendation'],
                         'historical_data': historical_prices,
                         'predictions': predictions,
