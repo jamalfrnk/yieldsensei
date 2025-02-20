@@ -129,6 +129,10 @@ document.addEventListener('DOMContentLoaded', function() {
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            animation: {
+                duration: 750,
+                easing: 'easeInOutQuart'
+            },
             scales: {
                 y: {
                     beginAtZero: false,
@@ -136,7 +140,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         color: 'rgba(255, 255, 255, 0.1)'
                     },
                     ticks: {
-                        color: '#ffffff'
+                        color: '#ffffff',
+                        callback: function(value) {
+                            return '$' + value.toLocaleString();
+                        }
                     }
                 },
                 x: {
@@ -151,7 +158,24 @@ document.addEventListener('DOMContentLoaded', function() {
             plugins: {
                 legend: {
                     display: false
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    titleColor: '#F97316',
+                    bodyColor: '#ffffff',
+                    padding: 12,
+                    displayColors: false,
+                    callbacks: {
+                        label: function(context) {
+                            return '$' + context.raw.toLocaleString();
+                        }
+                    }
                 }
+            },
+            hover: {
+                mode: 'nearest',
+                intersect: false,
+                animationDuration: 200
             }
         }
     });
