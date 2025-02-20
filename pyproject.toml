@@ -23,6 +23,7 @@ dependencies = [
     "oauthlib>=3.2.2",
     "openai>=1.0.0",
     "pandas>=2.2.3",
+    "plotly>=6.0.0",
     "prophet>=1.1.6",
     "psycopg2-binary>=2.9.10",
     "python-telegram-bot[job-queue]>=20.0",
