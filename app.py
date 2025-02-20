@@ -99,6 +99,9 @@ async def search():
         signal_data = await get_signal_analysis(token)
         market_data = await get_token_market_data(token)
 
+        if not market_data or not price_data or not signal_data:
+            raise ValueError("Unable to fetch complete market data for the token")
+
         logger.info(f"Retrieved data for {token}: Price=${price_data['usd']}, Signal strength={signal_data['signal_strength']}")
 
         # Calculate trend score and keep signal strength in 0-100 range
@@ -116,6 +119,11 @@ async def search():
         optimal_entry = (current_price + support_1) / 2
         optimal_exit = (current_price + resistance_1) / 2
         stop_loss = support_2
+
+        # Extract historical price data
+        historical_prices = []
+        if 'prices' in market_data and market_data['prices']:
+            historical_prices = market_data['prices'][-30:]  # Last 30 days
 
         template_data = {
             'token_symbol': token.upper(),
@@ -135,10 +143,10 @@ async def search():
             'optimal_exit': optimal_exit,
             'stop_loss': stop_loss,
             'dca_recommendation': signal_data['dca_recommendation'],
-            'historical_data': market_data['prices'][-30:],  # Last 30 days of price data
+            'historical_data': historical_prices,
             'chart_data': {
-                'labels': [price[0] for price in market_data['prices'][-30:]],  # Timestamps
-                'prices': [price[1] for price in market_data['prices'][-30:]],  # Price values
+                'labels': [price[0] for price in historical_prices] if historical_prices else [],
+                'prices': [price[1] for price in historical_prices] if historical_prices else [],
                 'support_levels': [support_1, support_2],
                 'resistance_levels': [resistance_1, resistance_2]
             }
@@ -148,7 +156,8 @@ async def search():
         return render_template('dashboard.html', **template_data)
     except Exception as e:
         logger.error(f"Error processing search request: {str(e)}")
-        return render_template('dashboard.html', error=str(e), **DEFAULT_DATA)
+        error_message = f"Error analyzing token: {str(e)}"
+        return render_template('dashboard.html', error=error_message, **DEFAULT_DATA)
 
 def get_market_status(rsi):
     """Determine market status based on RSI."""
