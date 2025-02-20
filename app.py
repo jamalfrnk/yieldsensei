@@ -1,7 +1,9 @@
 from flask import Flask, render_template, request, jsonify
+import asyncio
 from services.technical_analysis import get_signal_analysis
 from services.coingecko_service import get_token_price, get_token_market_data
 import logging
+from datetime import datetime, timedelta
 
 # Configure logging
 logging.basicConfig(
@@ -47,41 +49,61 @@ def index():
     }
     return render_template('dashboard.html', **default_data)
 
+@app.route('/chart-data')
+async def chart_data():
+    """Handle chart data requests for different timeframes."""
+    token = request.args.get('token', 'bitcoin').lower()
+    days = int(request.args.get('days', 30))
+
+    try:
+        chart_data = await generate_chart_data(token, days)
+        return jsonify(chart_data)
+    except Exception as e:
+        logger.error(f"Error generating chart data: {str(e)}")
+        return jsonify({'error': str(e)}), 400
+
 @app.route('/search')
-def search():
+async def search():
     """Handle token search and analysis."""
     token = request.args.get('token', 'bitcoin').lower()
     try:
+        # Create event loop for async operations
+        loop = asyncio.get_event_loop()
+
         # Get market data
-        price_data = get_token_price(token)
-        market_data = get_token_market_data(token)
-        signal_data = get_signal_analysis(token)
+        price_data = await loop.run_in_executor(None, get_token_price, token)
+        market_data = await loop.run_in_executor(None, get_token_market_data, token)
+        signal_data = await loop.run_in_executor(None, get_signal_analysis, token)
 
         # Calculate trend score (0-100)
-        trend_score = min(100, max(0, signal_data['signal_strength']))
+        trend_score = min(100, max(0, float(signal_data['signal_strength'])))
 
-        return render_template('dashboard.html',
-            token=token.upper(),
-            price=price_data['usd'],
-            price_change=price_data['usd_24h_change'],
-            signal_strength=signal_data['signal_strength'],
-            signal_description=signal_data['signal'],
-            trend_score=trend_score,
-            trend_direction=signal_data['trend_direction'],
-            market_status=get_market_status(signal_data['rsi']),
-            rsi=signal_data['rsi'],
-            support_1=signal_data['support_1'],
-            support_2=signal_data['support_2'],
-            resistance_1=signal_data['resistance_1'],
-            resistance_2=signal_data['resistance_2'],
-            dca_recommendation=signal_data['dca_recommendation'],
-            chart_data=generate_chart_data(token)
-        )
+        # Format the data for template
+        template_data = {
+            'token': token.upper(),
+            'price': float(price_data['usd']),
+            'price_change': float(price_data['usd_24h_change']),
+            'signal_strength': float(signal_data['signal_strength']),
+            'signal_description': signal_data['signal'],
+            'trend_score': trend_score,
+            'trend_direction': signal_data['trend_direction'],
+            'market_status': get_market_status(float(signal_data['rsi'])),
+            'rsi': float(signal_data['rsi']),
+            'support_1': float(signal_data['support_1'].replace('$', '').replace(',', '')),
+            'support_2': float(signal_data['support_2'].replace('$', '').replace(',', '')),
+            'resistance_1': float(signal_data['resistance_1'].replace('$', '').replace(',', '')),
+            'resistance_2': float(signal_data['resistance_2'].replace('$', '').replace(',', '')),
+            'dca_recommendation': signal_data['dca_recommendation'],
+            'chart_data': await generate_chart_data(token)
+        }
+
+        return render_template('dashboard.html', **template_data)
+
     except Exception as e:
         logger.error(f"Error processing search request: {str(e)}")
         error_data = {
             'token': token.upper(),
-            'error': str(e),
+            'error': f"Error analyzing {token.upper()}: {str(e)}",
             'price': 0.0,
             'price_change': 0.0,
             'signal_strength': 0,
@@ -108,37 +130,51 @@ def get_market_status(rsi):
     else:
         return "Neutral ⚖️"
 
-def generate_chart_data(token):
+async def generate_chart_data(token, days=30):
     """Generate chart data for Chart.js."""
     try:
         # Get historical prices from technical analysis service
-        signal_data = get_signal_analysis(token)
-        prices = signal_data.get('historical_prices', [])
-        levels = {
-            'support_1': signal_data['support_1'],
-            'resistance_1': signal_data['resistance_1']
-        }
+        signal_data = await get_signal_analysis(token)
+
+        # Extract prices and format for charting
+        prices = [float(price) for price in signal_data.get('historical_prices', [])]
+
+        # Limit data points based on requested days
+        prices = prices[-days:]
+
+        # Generate dates for x-axis
+        end_date = datetime.now()
+        dates = [(end_date - timedelta(days=i)).strftime('%Y-%m-%d') for i in range(days)]
+        dates.reverse()
+
+        # Get support and resistance levels
+        support_1 = float(signal_data['support_1'].replace('$', '').replace(',', ''))
+        resistance_1 = float(signal_data['resistance_1'].replace('$', '').replace(',', ''))
 
         return {
-            'labels': [f"Day {i+1}" for i in range(len(prices))],
+            'labels': dates[:len(prices)],
             'datasets': [
                 {
                     'label': 'Price',
                     'data': prices,
                     'borderColor': '#F97316',
-                    'fill': False
+                    'backgroundColor': 'rgba(249, 115, 22, 0.1)',
+                    'fill': true,
+                    'tension': 0.4
                 },
                 {
                     'label': 'Support 1',
-                    'data': [levels['support_1']] * len(prices),
+                    'data': [support_1] * len(prices),
                     'borderColor': '#10B981',
-                    'borderDash': [5, 5]
+                    'borderDash': [5, 5],
+                    'fill': false
                 },
                 {
                     'label': 'Resistance 1',
-                    'data': [levels['resistance_1']] * len(prices),
+                    'data': [resistance_1] * len(prices),
                     'borderColor': '#EF4444',
-                    'borderDash': [5, 5]
+                    'borderDash': [5, 5],
+                    'fill': false
                 }
             ]
         }

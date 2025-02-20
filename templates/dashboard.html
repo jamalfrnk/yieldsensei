@@ -20,7 +20,8 @@
 
     <!-- Market Overview -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="bg-gray-900 rounded-lg p-4 border border-orange-500">
+        <div class="bg-gray-900 rounded-lg p-4 border border-orange-500 hover:bg-gray-800 transition-colors duration-200"
+             title="Current market price and 24-hour price change">
             <h3 class="text-lg font-semibold text-orange-500">Current Price</h3>
             <p class="text-2xl mt-2">${{ "%.2f"|format(price|float) }}</p>
             <p class="text-sm text-gray-400">24h Change: 
@@ -29,17 +30,20 @@
                 </span>
             </p>
         </div>
-        <div class="bg-gray-900 rounded-lg p-4 border border-orange-500">
+        <div class="bg-gray-900 rounded-lg p-4 border border-orange-500 hover:bg-gray-800 transition-colors duration-200"
+             title="Signal strength indicates the conviction level of the current trading signal">
             <h3 class="text-lg font-semibold text-orange-500">Signal Strength</h3>
             <p class="text-2xl mt-2">{{ "%.1f"|format(signal_strength|float) }}%</p>
             <p class="text-sm text-gray-400">{{ signal_description }}</p>
         </div>
-        <div class="bg-gray-900 rounded-lg p-4 border border-orange-500">
+        <div class="bg-gray-900 rounded-lg p-4 border border-orange-500 hover:bg-gray-800 transition-colors duration-200"
+             title="Trend score combines multiple technical indicators to measure market trend strength">
             <h3 class="text-lg font-semibold text-orange-500">Trend Score</h3>
             <p class="text-2xl mt-2">{{ trend_score }}/100</p>
             <p class="text-sm text-gray-400">{{ trend_direction }}</p>
         </div>
-        <div class="bg-gray-900 rounded-lg p-4 border border-orange-500">
+        <div class="bg-gray-900 rounded-lg p-4 border border-orange-500 hover:bg-gray-800 transition-colors duration-200"
+             title="Market status based on RSI (Relative Strength Index) indicator">
             <h3 class="text-lg font-semibold text-orange-500">Market Status</h3>
             <p class="text-2xl mt-2">{{ market_status }}</p>
             <p class="text-sm text-gray-400">RSI: {{ "%.1f"|format(rsi|float) }}</p>
@@ -48,8 +52,20 @@
 
     <!-- Price Chart -->
     <div class="bg-gray-900 rounded-lg p-4">
-        <h2 class="text-xl font-bold text-orange-500 mb-4">Price Analysis</h2>
-        <canvas id="priceChart" class="w-full h-64"></canvas>
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold text-orange-500">Price Analysis</h2>
+            <div class="flex space-x-2">
+                <button class="chart-timeframe-btn active" data-days="7">7D</button>
+                <button class="chart-timeframe-btn" data-days="14">14D</button>
+                <button class="chart-timeframe-btn" data-days="30">30D</button>
+            </div>
+        </div>
+        <div class="relative h-64">
+            <canvas id="priceChart"></canvas>
+            <div id="chartLoading" class="absolute inset-0 flex items-center justify-center bg-gray-900 bg-opacity-75 hidden">
+                <div class="loading-spinner"></div>
+            </div>
+        </div>
     </div>
 
     <!-- Support/Resistance Levels -->
@@ -57,23 +73,28 @@
         <div class="bg-gray-900 rounded-lg p-4">
             <h2 class="text-xl font-bold text-orange-500 mb-4">Key Levels</h2>
             <div class="space-y-2">
-                <div class="flex justify-between">
+                <div class="flex justify-between items-center p-2 hover:bg-gray-800 rounded transition-colors duration-200"
+                     title="Strong resistance level - significant selling pressure expected">
                     <span>Resistance 2:</span>
                     <span class="text-red-500">${{ "%.2f"|format(resistance_2|float) }}</span>
                 </div>
-                <div class="flex justify-between">
+                <div class="flex justify-between items-center p-2 hover:bg-gray-800 rounded transition-colors duration-200"
+                     title="Initial resistance level - moderate selling pressure expected">
                     <span>Resistance 1:</span>
                     <span class="text-red-400">${{ "%.2f"|format(resistance_1|float) }}</span>
                 </div>
-                <div class="flex justify-between">
+                <div class="flex justify-between items-center p-2 hover:bg-gray-800 rounded transition-colors duration-200"
+                     title="Current market price">
                     <span>Current Price:</span>
                     <span class="text-white">${{ "%.2f"|format(price|float) }}</span>
                 </div>
-                <div class="flex justify-between">
+                <div class="flex justify-between items-center p-2 hover:bg-gray-800 rounded transition-colors duration-200"
+                     title="Initial support level - moderate buying pressure expected">
                     <span>Support 1:</span>
                     <span class="text-green-400">${{ "%.2f"|format(support_1|float) }}</span>
                 </div>
-                <div class="flex justify-between">
+                <div class="flex justify-between items-center p-2 hover:bg-gray-800 rounded transition-colors duration-200"
+                     title="Strong support level - significant buying pressure expected">
                     <span>Support 2:</span>
                     <span class="text-green-500">${{ "%.2f"|format(support_2|float) }}</span>
                 </div>
@@ -98,17 +119,55 @@ const priceChart = new Chart(ctx, {
     data: {{ chart_data|tojson }},
     options: {
         responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+            intersect: false,
+            mode: 'index',
+        },
         plugins: {
             legend: {
                 position: 'top',
                 labels: {
-                    color: '#FFFFFF'
+                    color: '#FFFFFF',
+                    usePointStyle: true,
+                    padding: 20
                 }
             },
             title: {
                 display: true,
                 text: 'Price History with Support/Resistance',
-                color: '#FFFFFF'
+                color: '#FFFFFF',
+                padding: {
+                    top: 10,
+                    bottom: 20
+                }
+            },
+            tooltip: {
+                enabled: true,
+                mode: 'index',
+                intersect: false,
+                backgroundColor: 'rgba(17, 24, 39, 0.8)',
+                titleColor: '#F97316',
+                bodyColor: '#FFFFFF',
+                borderColor: '#F97316',
+                borderWidth: 1,
+                padding: 12,
+                displayColors: true,
+                callbacks: {
+                    label: function(context) {
+                        let label = context.dataset.label || '';
+                        if (label) {
+                            label += ': ';
+                        }
+                        if (context.parsed.y !== null) {
+                            label += new Intl.NumberFormat('en-US', {
+                                style: 'currency',
+                                currency: 'USD'
+                            }).format(context.parsed.y);
+                        }
+                        return label;
+                    }
+                }
             }
         },
         scales: {
@@ -118,7 +177,14 @@ const priceChart = new Chart(ctx, {
                     color: '#374151'
                 },
                 ticks: {
-                    color: '#FFFFFF'
+                    color: '#FFFFFF',
+                    callback: function(value, index, values) {
+                        return new Intl.NumberFormat('en-US', {
+                            style: 'currency',
+                            currency: 'USD',
+                            minimumFractionDigits: 2
+                        }).format(value);
+                    }
                 }
             },
             x: {
@@ -131,6 +197,47 @@ const priceChart = new Chart(ctx, {
             }
         }
     }
+});
+
+// Add timeframe switching functionality
+document.querySelectorAll('.chart-timeframe-btn').forEach(button => {
+    button.classList.add('px-3', 'py-1', 'rounded', 'text-sm', 'transition-colors', 'duration-200');
+    button.classList.add('hover:bg-orange-600', 'focus:outline-none', 'focus:ring-2', 'focus:ring-orange-500');
+
+    if (button.classList.contains('active')) {
+        button.classList.add('bg-orange-500', 'text-white');
+    } else {
+        button.classList.add('bg-gray-800', 'text-gray-300');
+    }
+
+    button.addEventListener('click', async function() {
+        const days = this.dataset.days;
+        const loading = document.getElementById('chartLoading');
+
+        // Update button states
+        document.querySelectorAll('.chart-timeframe-btn').forEach(btn => {
+            btn.classList.remove('active', 'bg-orange-500');
+            btn.classList.add('bg-gray-800');
+        });
+        this.classList.add('active', 'bg-orange-500');
+        this.classList.remove('bg-gray-800');
+
+        // Show loading state
+        loading.classList.remove('hidden');
+
+        try {
+            const response = await fetch(`/chart-data?days=${days}`);
+            const newData = await response.json();
+
+            // Update chart data
+            priceChart.data = newData;
+            priceChart.update();
+        } catch (error) {
+            console.error('Error updating chart:', error);
+        } finally {
+            loading.classList.add('hidden');
+        }
+    });
 });
 </script>
 {% endblock %}
