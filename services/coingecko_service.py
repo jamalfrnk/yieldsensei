@@ -19,32 +19,11 @@ async def retry_with_backoff(func, *args, max_retries=3):
                 continue
             raise
 
-async def get_token_price(token_id: str):
+async def get_token_price(input_token: str):
     """Fetch token price data from CoinGecko API."""
-    async def _fetch_price():
+    async def _fetch_price(token_id: str):
         async with aiohttp.ClientSession() as session:
             try:
-                # Normalize token ID
-                token_id = token_id.lower().strip()
-
-                # Map common token symbols to their CoinGecko IDs
-                token_map = {
-                    'btc': 'bitcoin',
-                    'eth': 'ethereum',
-                    'sol': 'solana',
-                    'bnb': 'binancecoin',
-                    'ada': 'cardano',
-                    'dot': 'polkadot',
-                    'doge': 'dogecoin',
-                    'xrp': 'ripple',
-                    'avax': 'avalanche-2',
-                    'matic': 'matic-network',
-                }
-
-                # Convert common symbols to CoinGecko IDs
-                if token_id in token_map:
-                    token_id = token_map[token_id]
-
                 logger.info(f"Fetching price data for token: {token_id}")
                 url = f"{COINGECKO_BASE_URL}/simple/price"
                 params = {
@@ -82,31 +61,32 @@ async def get_token_price(token_id: str):
                 logger.error(f"API request failed: {str(e)}")
                 raise Exception(f"Failed to fetch price data: {str(e)}")
 
-    return await retry_with_backoff(_fetch_price)
+    # Normalize token ID and apply mapping
+    token_id = input_token.lower().strip()
+    token_map = {
+        'btc': 'bitcoin',
+        'eth': 'ethereum',
+        'sol': 'solana',
+        'bnb': 'binancecoin',
+        'ada': 'cardano',
+        'dot': 'polkadot',
+        'doge': 'dogecoin',
+        'xrp': 'ripple',
+        'avax': 'avalanche-2',
+        'matic': 'matic-network',
+    }
 
-async def get_token_market_data(token_id: str):
+    # Convert common symbols to CoinGecko IDs
+    if token_id in token_map:
+        token_id = token_map[token_id]
+
+    return await retry_with_backoff(_fetch_price, token_id)
+
+async def get_token_market_data(input_token: str):
     """Fetch detailed market data including historical prices from CoinGecko API."""
-    async def _fetch_market_data():
+    async def _fetch_market_data(token_id: str):
         async with aiohttp.ClientSession() as session:
             try:
-                # Normalize token ID and apply mapping
-                token_id = token_id.lower().strip()
-                token_map = {
-                    'btc': 'bitcoin',
-                    'eth': 'ethereum',
-                    'sol': 'solana',
-                    'bnb': 'binancecoin',
-                    'ada': 'cardano',
-                    'dot': 'polkadot',
-                    'doge': 'dogecoin',
-                    'xrp': 'ripple',
-                    'avax': 'avalanche-2',
-                    'matic': 'matic-network',
-                }
-
-                if token_id in token_map:
-                    token_id = token_map[token_id]
-
                 logger.info(f"Fetching market data for token: {token_id}")
 
                 # Get current market data
@@ -182,4 +162,22 @@ async def get_token_market_data(token_id: str):
                 logger.error(f"Invalid market data format: {str(e)}")
                 raise Exception(f"Invalid market data format: {str(e)}")
 
-    return await retry_with_backoff(_fetch_market_data)
+    # Normalize token ID and apply mapping
+    token_id = input_token.lower().strip()
+    token_map = {
+        'btc': 'bitcoin',
+        'eth': 'ethereum',
+        'sol': 'solana',
+        'bnb': 'binancecoin',
+        'ada': 'cardano',
+        'dot': 'polkadot',
+        'doge': 'dogecoin',
+        'xrp': 'ripple',
+        'avax': 'avalanche-2',
+        'matic': 'matic-network',
+    }
+
+    if token_id in token_map:
+        token_id = token_map[token_id]
+
+    return await retry_with_backoff(_fetch_market_data, token_id)
