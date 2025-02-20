@@ -4,11 +4,11 @@
         <div class="ml-2 group relative">
             <span class="cursor-help text-orange-500">ⓘ</span>
             <div class="opacity-0 bg-black text-white text-sm rounded-lg py-2 px-3 absolute z-10 bottom-full mb-2 -left-1/2 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 w-64">
-                Visual representation of market sentiment across top 20 cryptocurrencies by market cap. Darker green indicates stronger bullish sentiment, while darker red indicates stronger bearish sentiment.
+                Visual representation of market sentiment across different cryptocurrencies. Darker green indicates stronger bullish sentiment, while darker red indicates stronger bearish sentiment.
             </div>
         </div>
     </div>
-    <div id="market-heatmap" class="w-full h-[600px] relative">
+    <div id="market-heatmap" class="w-full h-64 relative">
         <div id="heatmap-loading" class="hidden absolute inset-0 flex items-center justify-center bg-gray-900 bg-opacity-75">
             <div class="text-orange-500">Loading market data...</div>
         </div>
@@ -26,7 +26,7 @@
     }
 
     function updateHeatmap(data) {
-        const margin = { top: 10, right: 120, bottom: 30, left: 100 };
+        const margin = { top: 10, right: 10, bottom: 30, left: 100 };
         const width = document.getElementById('market-heatmap').clientWidth - margin.left - margin.right;
         const height = document.getElementById('market-heatmap').clientHeight - margin.top - margin.bottom;
 
@@ -45,63 +45,29 @@
             .domain([0, 50, 100])
             .range(["#ef4444", "#d1d5db", "#22c55e"]);
 
-        // Calculate row height based on number of tokens
-        const rowHeight = Math.min(40, height / data.length);
-
         // Create rectangles
         svg.selectAll("rect")
             .data(data)
             .enter()
             .append("rect")
             .attr("x", 0)
-            .attr("y", (d, i) => i * rowHeight)
+            .attr("y", (d, i) => i * (height / data.length))
             .attr("width", width)
-            .attr("height", rowHeight - 1)
+            .attr("height", height / data.length)
             .attr("fill", d => colorScale(d.sentiment_score))
             .attr("rx", 4)
-            .attr("ry", 4)
-            .on("mouseover", function(event, d) {
-                // Show tooltip on hover
-                const tooltip = d3.select("#market-heatmap")
-                    .append("div")
-                    .attr("class", "tooltip")
-                    .style("position", "absolute")
-                    .style("background-color", "rgba(0, 0, 0, 0.9)")
-                    .style("color", "white")
-                    .style("padding", "8px")
-                    .style("border-radius", "4px")
-                    .style("font-size", "12px")
-                    .style("pointer-events", "none")
-                    .style("z-index", "100")
-                    .html(`
-                        ${d.symbol.toUpperCase()}<br>
-                        Sentiment: ${d.sentiment_score.toFixed(1)}/100<br>
-                        24h Change: ${d.price_change.toFixed(2)}%<br>
-                        Status: ${d.description}
-                    `);
-
-                const mouseX = event.pageX;
-                const mouseY = event.pageY;
-
-                tooltip.style("left", (mouseX + 10) + "px")
-                       .style("top", (mouseY - 10) + "px");
-            })
-            .on("mouseout", function() {
-                d3.selectAll(".tooltip").remove();
-            });
+            .attr("ry", 4);
 
         // Add token symbols
-        svg.selectAll(".symbol")
+        svg.selectAll("text")
             .data(data)
             .enter()
             .append("text")
-            .attr("class", "symbol")
             .attr("x", -10)
-            .attr("y", (d, i) => i * rowHeight + rowHeight / 2)
+            .attr("y", (d, i) => i * (height / data.length) + (height / data.length) / 2)
             .attr("text-anchor", "end")
             .attr("dominant-baseline", "middle")
             .attr("fill", "#e5e7eb")
-            .style("font-size", "12px")
             .text(d => d.symbol.toUpperCase());
 
         // Add sentiment scores and emojis
@@ -110,11 +76,11 @@
             .enter()
             .append("text")
             .attr("class", "score")
-            .attr("x", width + 10)
-            .attr("y", (d, i) => i * rowHeight + rowHeight / 2)
+            .attr("x", width / 2)
+            .attr("y", (d, i) => i * (height / data.length) + (height / data.length) / 2)
+            .attr("text-anchor", "middle")
             .attr("dominant-baseline", "middle")
             .attr("fill", "#e5e7eb")
-            .style("font-size", "12px")
             .text(d => `${d.sentiment_score.toFixed(1)} ${d.emoji}`);
     }
 
