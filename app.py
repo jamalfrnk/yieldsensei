@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template, request, jsonify, redirect, url_for
+from flask import Flask, render_template, request, jsonify
 import asyncio
 from services.technical_analysis import get_signal_analysis
 from services.coingecko_service import get_token_price, get_token_market_data
@@ -11,7 +11,6 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
-import pandas as pd
 from models import db, Quiz, Question, UserProgress, User
 
 # Configure logging with more detailed format
@@ -28,7 +27,6 @@ DEFAULT_DATA = {
     'price_change': 0.0,
     'signal_strength': 0,
     'signal_description': 'Enter a token to analyze',
-    'trend_score': 50,
     'trend_direction': 'Neutral ⚖️',
     'rsi': 50,
     'support_1': 0.0,
@@ -120,8 +118,7 @@ async def search():
 
         logger.info(f"Retrieved data for {token}: Price=${price_data['usd']}, Signal strength={signal_data['signal_strength']}")
 
-        # Calculate trend score and keep signal strength in 0-100 range
-        trend_score = min(100, max(0, float(signal_data['signal_strength'])))
+        # Calculate signal strength in 0-100 range
         signal_strength = min(100, max(0, float(signal_data['signal_strength'])))
 
         # Calculate entry and exit prices based on support and resistance levels
@@ -159,7 +156,6 @@ async def search():
                     'price_change': float(price_data['usd_24h_change']),
                     'signal_strength': signal_strength,
                     'signal_description': signal_data['signal'],
-                    'trend_score': trend_score,
                     'trend_direction': signal_data['trend_direction'],
                     'rsi': float(signal_data['rsi']),
                     'support_1': support_1,

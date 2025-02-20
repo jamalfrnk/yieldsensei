@@ -117,14 +117,8 @@
     .market-card {
         margin-bottom: 1rem;
     }
-
-    .grid-cols-4 {
-        grid-template-columns: repeat(2, 1fr);
-    }
 }
 
 @media (max-width: 480px) {
-    .grid-cols-4 {
-        grid-template-columns: 1fr;
-    }
+   
 }
