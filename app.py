@@ -136,50 +136,62 @@ async def search():
             historical_prices = market_data['prices']
             logger.info(f"Found {len(historical_prices)} historical price points")
 
-            # Calculate historical highs and lows
-            prices_365d = [price[1] for price in historical_prices[-365:]] if len(historical_prices) >= 365 else []
-            prices_90d = [price[1] for price in historical_prices[-90:]] if len(historical_prices) >= 90 else []
-            prices_30d = [price[1] for price in historical_prices[-30:]] if len(historical_prices) >= 30 else []
-            prices_7d = [price[1] for price in historical_prices[-7:]] if len(historical_prices) >= 7 else []
+            # Extract price values for different time periods
+            try:
+                # Convert prices to a list of values only (excluding timestamps)
+                price_values = [price[1] for price in historical_prices]
 
-            # Prepare template data
-            template_data = {
-                'token_symbol': token.upper(),
-                'price': float(price_data['usd']),
-                'price_change': float(price_data['usd_24h_change']),
-                'signal_strength': signal_strength,
-                'signal_description': signal_data['signal'],
-                'trend_score': trend_score,
-                'trend_direction': signal_data['trend_direction'],
-                'market_status': get_market_status(float(signal_data['rsi'])),
-                'rsi': float(signal_data['rsi']),
-                'support_1': support_1,
-                'support_2': support_2,
-                'resistance_1': resistance_1,
-                'resistance_2': resistance_2,
-                'optimal_entry': optimal_entry,
-                'optimal_exit': optimal_exit,
-                'stop_loss': stop_loss,
-                'dca_recommendation': signal_data['dca_recommendation'],
-                'historical_data': historical_prices,
-                'yearly_high': max(prices_365d) if prices_365d else current_price,
-                'yearly_low': min(prices_365d) if prices_365d else current_price,
-                'ninety_day_high': max(prices_90d) if prices_90d else current_price,
-                'ninety_day_low': min(prices_90d) if prices_90d else current_price,
-                'thirty_day_high': max(prices_30d) if prices_30d else current_price,
-                'thirty_day_low': min(prices_30d) if prices_30d else current_price,
-                'seven_day_high': max(prices_7d) if prices_7d else current_price,
-                'seven_day_low': min(prices_7d) if prices_7d else current_price,
-                'chart_data': {
-                    'labels': [price[0] for price in historical_prices],
-                    'prices': [price[1] for price in historical_prices],
-                    'support_levels': [float(support_1), float(support_2)],
-                    'resistance_levels': [float(resistance_1), float(resistance_2)]
+                # Calculate indices for different time periods
+                # 365 days = full data, 90 days ≈ 90 points, 30 days ≈ 30 points, 7 days ≈ 7 points
+                prices_365d = price_values[-365:] if len(price_values) >= 365 else price_values
+                prices_90d = price_values[-90:] if len(price_values) >= 90 else price_values
+                prices_30d = price_values[-30:] if len(price_values) >= 30 else price_values
+                prices_7d = price_values[-7:] if len(price_values) >= 7 else price_values
+
+                logger.info(f"Historical data points - 7d: {len(prices_7d)}, 30d: {len(prices_30d)}, " 
+                          f"90d: {len(prices_90d)}, 365d: {len(prices_365d)}")
+
+                # Prepare template data
+                template_data = {
+                    'token_symbol': token.upper(),
+                    'price': current_price,
+                    'price_change': float(price_data['usd_24h_change']),
+                    'signal_strength': signal_strength,
+                    'signal_description': signal_data['signal'],
+                    'trend_score': trend_score,
+                    'trend_direction': signal_data['trend_direction'],
+                    'market_status': get_market_status(float(signal_data['rsi'])),
+                    'rsi': float(signal_data['rsi']),
+                    'support_1': support_1,
+                    'support_2': support_2,
+                    'resistance_1': resistance_1,
+                    'resistance_2': resistance_2,
+                    'optimal_entry': optimal_entry,
+                    'optimal_exit': optimal_exit,
+                    'stop_loss': stop_loss,
+                    'dca_recommendation': signal_data['dca_recommendation'],
+                    'historical_data': historical_prices,
+                    'yearly_high': max(prices_365d),
+                    'yearly_low': min(prices_365d),
+                    'ninety_day_high': max(prices_90d),
+                    'ninety_day_low': min(prices_90d),
+                    'thirty_day_high': max(prices_30d),
+                    'thirty_day_low': min(prices_30d),
+                    'seven_day_high': max(prices_7d),
+                    'seven_day_low': min(prices_7d),
+                    'chart_data': {
+                        'labels': [price[0] for price in historical_prices],
+                        'prices': [price[1] for price in historical_prices],
+                        'support_levels': [float(support_1), float(support_2)],
+                        'resistance_levels': [float(resistance_1), float(resistance_2)]
+                    }
                 }
-            }
 
-            logger.info("Successfully processed data for {token}")
-            return render_template('dashboard.html', **template_data)
+                logger.info(f"Successfully processed historical data for {token}")
+                return render_template('dashboard.html', **template_data)
+            except Exception as e:
+                logger.error(f"Error processing historical data: {str(e)}")
+                raise ValueError(f"Error processing historical data: {str(e)}")
         else:
             logger.warning("No historical prices found in market data")
             raise ValueError("No historical price data available")
