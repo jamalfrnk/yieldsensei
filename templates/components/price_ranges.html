@@ -1,6 +1,49 @@
 <!-- ML Predictions and Price Analysis -->
 <div class="bg-gray-900 rounded-lg p-6">
-    <h2 class="text-xl font-bold text-orange-500 mb-4">Price Predictions & Analysis</h2>
+    <h2 class="text-xl font-bold text-orange-500 mb-4">Price Analysis & Predictions</h2>
+
+    <!-- Historical Price Ranges -->
+    <div class="mb-6">
+        <h3 class="text-orange-500 font-semibold mb-3">Historical Price Ranges</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <!-- 24h Range -->
+            <div class="bg-black bg-opacity-50 p-4 rounded">
+                <h4 class="text-orange-500 font-semibold mb-2">24h Range</h4>
+                <p class="text-sm">High: ${{ "%.2f"|format(price_ranges.day.high|float) }}</p>
+                <p class="text-sm">Low: ${{ "%.2f"|format(price_ranges.day.low|float) }}</p>
+            </div>
+
+            <!-- 7d Range -->
+            <div class="bg-black bg-opacity-50 p-4 rounded">
+                <h4 class="text-orange-500 font-semibold mb-2">7 Day Range</h4>
+                <p class="text-sm">High: ${{ "%.2f"|format(price_ranges.week.high|float) }}</p>
+                <p class="text-sm">Low: ${{ "%.2f"|format(price_ranges.week.low|float) }}</p>
+            </div>
+
+            <!-- 30d Range -->
+            <div class="bg-black bg-opacity-50 p-4 rounded">
+                <h4 class="text-orange-500 font-semibold mb-2">30 Day Range</h4>
+                <p class="text-sm">High: ${{ "%.2f"|format(price_ranges.month.high|float) }}</p>
+                <p class="text-sm">Low: ${{ "%.2f"|format(price_ranges.month.low|float) }}</p>
+            </div>
+
+            <!-- 90d Range -->
+            <div class="bg-black bg-opacity-50 p-4 rounded">
+                <h4 class="text-orange-500 font-semibold mb-2">90 Day Range</h4>
+                <p class="text-sm">High: ${{ "%.2f"|format(price_ranges.quarter.high|float) }}</p>
+                <p class="text-sm">Low: ${{ "%.2f"|format(price_ranges.quarter.low|float) }}</p>
+            </div>
+
+            <!-- 365d Range -->
+            <div class="bg-black bg-opacity-50 p-4 rounded">
+                <h4 class="text-orange-500 font-semibold mb-2">365 Day Range</h4>
+                <p class="text-sm">High: ${{ "%.2f"|format(price_ranges.year.high|float) }}</p>
+                <p class="text-sm">Low: ${{ "%.2f"|format(price_ranges.year.low|float) }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ML Predictions Section -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {% if predictions and predictions.next_day %}
         <div class="bg-black bg-opacity-50 p-4 rounded">

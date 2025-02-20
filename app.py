@@ -34,13 +34,20 @@ DEFAULT_DATA = {
     'support_2': 0.0,
     'resistance_1': 0.0,
     'resistance_2': 0.0,
-    'optimal_entry': 0.0,  # Added default
-    'optimal_exit': 0.0,   # Added default
-    'stop_loss': 0.0,      # Added default
+    'optimal_entry': 0.0,
+    'optimal_exit': 0.0,
+    'stop_loss': 0.0,
     'dca_recommendation': 'Enter a token to get DCA recommendations',
     'historical_data': [],
     'predictions': None,
-    'confidence_score': 0
+    'confidence_score': 0,
+    'price_ranges': {
+        'day': {'high': 0.0, 'low': 0.0},
+        'week': {'high': 0.0, 'low': 0.0},
+        'month': {'high': 0.0, 'low': 0.0},
+        'quarter': {'high': 0.0, 'low': 0.0},
+        'year': {'high': 0.0, 'low': 0.0}
+    }
 }
 
 def create_app():
@@ -108,11 +115,52 @@ def create_app():
 
             logger.info(f"Retrieved data for {token}: Price=${price_data['usd']}, Signal strength={signal_data['signal_strength']}")
 
-            # Extract historical price data
+            # Extract historical price data and calculate price ranges
             historical_prices = []
+            price_ranges = {
+                'day': {'high': 0.0, 'low': float('inf')},
+                'week': {'high': 0.0, 'low': float('inf')},
+                'month': {'high': 0.0, 'low': float('inf')},
+                'quarter': {'high': 0.0, 'low': float('inf')},
+                'year': {'high': 0.0, 'low': float('inf')}
+            }
+
             if 'prices' in market_data and market_data['prices']:
                 historical_prices = market_data['prices']
                 logger.info(f"Found {len(historical_prices)} historical price points")
+
+                # Calculate price ranges for different periods
+                now = datetime.utcnow()
+                for timestamp, price in historical_prices:
+                    price_date = datetime.fromtimestamp(timestamp/1000)
+                    time_diff = now - price_date
+
+                    # Update ranges based on time period
+                    if time_diff <= timedelta(days=1):
+                        price_ranges['day']['high'] = max(price_ranges['day']['high'], price)
+                        price_ranges['day']['low'] = min(price_ranges['day']['low'], price)
+
+                    if time_diff <= timedelta(days=7):
+                        price_ranges['week']['high'] = max(price_ranges['week']['high'], price)
+                        price_ranges['week']['low'] = min(price_ranges['week']['low'], price)
+
+                    if time_diff <= timedelta(days=30):
+                        price_ranges['month']['high'] = max(price_ranges['month']['high'], price)
+                        price_ranges['month']['low'] = min(price_ranges['month']['low'], price)
+
+                    if time_diff <= timedelta(days=90):
+                        price_ranges['quarter']['high'] = max(price_ranges['quarter']['high'], price)
+                        price_ranges['quarter']['low'] = min(price_ranges['quarter']['low'], price)
+
+                    if time_diff <= timedelta(days=365):
+                        price_ranges['year']['high'] = max(price_ranges['year']['high'], price)
+                        price_ranges['year']['low'] = min(price_ranges['year']['low'], price)
+
+                # Replace infinity with current price for periods with no data
+                for period in price_ranges:
+                    if price_ranges[period]['low'] == float('inf'):
+                        price_ranges[period]['low'] = float(price_data['usd'])
+                        price_ranges[period]['high'] = float(price_data['usd'])
 
                 try:
                     # Train ML models with historical data if not already trained
@@ -137,13 +185,14 @@ def create_app():
                         'support_2': float(signal_data['support_2'].replace('$', '').replace(',', '')),
                         'resistance_1': float(signal_data['resistance_1'].replace('$', '').replace(',', '')),
                         'resistance_2': float(signal_data['resistance_2'].replace('$', '').replace(',', '')),
-                        'optimal_entry': float(signal_data['optimal_entry']),  # Added from signal_data
-                        'optimal_exit': float(signal_data['optimal_exit']),    # Added from signal_data
-                        'stop_loss': float(signal_data['stop_loss']),         # Added from signal_data
+                        'optimal_entry': float(signal_data['optimal_entry']),
+                        'optimal_exit': float(signal_data['optimal_exit']),
+                        'stop_loss': float(signal_data['stop_loss']),
                         'dca_recommendation': signal_data['dca_recommendation'],
                         'historical_data': historical_prices,
                         'predictions': predictions,
-                        'confidence_score': predictions.get('confidence_score', 0) if predictions else 0
+                        'confidence_score': predictions.get('confidence_score', 0) if predictions else 0,
+                        'price_ranges': price_ranges
                     }
 
                     logger.info(f"Successfully processed data for {token}")
