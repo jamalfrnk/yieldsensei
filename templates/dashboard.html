@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="space-y-6">
+    <!-- Search Bar -->
+    <div class="bg-gray-900 rounded-lg p-4">
+        <form action="/search" method="GET" class="flex space-x-4">
+            <input type="text" name="token" placeholder="Enter token symbol or contract address" 
+                   class="flex-1 bg-black border border-orange-500 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+            <button type="submit" class="bg-orange-500 text-white px-6 py-2 rounded hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                Analyze
+            </button>
+        </form>
+    </div>
+
+    {% if error %}
+    <div class="bg-red-900 text-white rounded-lg p-4">
+        {{ error }}
+    </div>
+    {% endif %}
+
+    <!-- Market Overview -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-gray-900 rounded-lg p-4 border border-orange-500">
+            <h3 class="text-lg font-semibold text-orange-500">Current Price</h3>
+            <p class="text-2xl mt-2">${{ "%.2f"|format(price|float) }}</p>
+            <p class="text-sm text-gray-400">24h Change: 
+                <span class="{{ price_change|price_color }}">
+                    {{ "%.2f"|format(price_change|float) }}%
+                </span>
+            </p>
+        </div>
+        <div class="bg-gray-900 rounded-lg p-4 border border-orange-500">
+            <h3 class="text-lg font-semibold text-orange-500">Signal Strength</h3>
+            <p class="text-2xl mt-2">{{ "%.1f"|format(signal_strength|float) }}%</p>
+            <p class="text-sm text-gray-400">{{ signal_description }}</p>
+        </div>
+        <div class="bg-gray-900 rounded-lg p-4 border border-orange-500">
+            <h3 class="text-lg font-semibold text-orange-500">Trend Score</h3>
+            <p class="text-2xl mt-2">{{ trend_score }}/100</p>
+            <p class="text-sm text-gray-400">{{ trend_direction }}</p>
+        </div>
+        <div class="bg-gray-900 rounded-lg p-4 border border-orange-500">
+            <h3 class="text-lg font-semibold text-orange-500">Market Status</h3>
+            <p class="text-2xl mt-2">{{ market_status }}</p>
+            <p class="text-sm text-gray-400">RSI: {{ "%.1f"|format(rsi|float) }}</p>
+        </div>
+    </div>
+
+    <!-- Price Chart -->
+    <div class="bg-gray-900 rounded-lg p-4">
+        <h2 class="text-xl font-bold text-orange-500 mb-4">Price Analysis</h2>
+        <canvas id="priceChart" class="w-full h-64"></canvas>
+    </div>
+
+    <!-- Support/Resistance Levels -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="bg-gray-900 rounded-lg p-4">
+            <h2 class="text-xl font-bold text-orange-500 mb-4">Key Levels</h2>
+            <div class="space-y-2">
+                <div class="flex justify-between">
+                    <span>Resistance 2:</span>
+                    <span class="text-red-500">${{ "%.2f"|format(resistance_2|float) }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>Resistance 1:</span>
+                    <span class="text-red-400">${{ "%.2f"|format(resistance_1|float) }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>Current Price:</span>
+                    <span class="text-white">${{ "%.2f"|format(price|float) }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>Support 1:</span>
+                    <span class="text-green-400">${{ "%.2f"|format(support_1|float) }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>Support 2:</span>
+                    <span class="text-green-500">${{ "%.2f"|format(support_2|float) }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- DCA Recommendations -->
+        <div class="bg-gray-900 rounded-lg p-4">
+            <h2 class="text-xl font-bold text-orange-500 mb-4">Trading Strategy</h2>
+            <div class="space-y-2">
+                <p class="text-sm whitespace-pre-line">{{ dca_recommendation }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Initialize Chart.js with the data
+const ctx = document.getElementById('priceChart').getContext('2d');
+const priceChart = new Chart(ctx, {
+    type: 'line',
+    data: {{ chart_data|tojson }},
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: 'top',
+                labels: {
+                    color: '#FFFFFF'
+                }
+            },
+            title: {
+                display: true,
+                text: 'Price History with Support/Resistance',
+                color: '#FFFFFF'
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: false,
+                grid: {
+                    color: '#374151'
+                },
+                ticks: {
+                    color: '#FFFFFF'
+                }
+            },
+            x: {
+                grid: {
+                    color: '#374151'
+                },
+                ticks: {
+                    color: '#FFFFFF'
+                }
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YieldSensei - DeFi Intelligence Platform</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-black text-white">
+    <!-- Navigation -->
+    <nav class="bg-black border-b border-orange-500">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex">
+                    <div class="flex-shrink-0 flex items-center">
+                        <img class="h-8 w-auto" src="{{ url_for('static', filename='images/logo.svg') }}" alt="YieldSensei">
+                        <span class="ml-2 text-xl font-bold text-orange-500">YieldSensei</span>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="/" class="text-white hover:text-orange-500">Dashboard</a>
+                    <a href="/signals" class="text-white hover:text-orange-500">Signals</a>
+                    <a href="/dex" class="text-white hover:text-orange-500">DEX Analytics</a>
+                    <a href="https://t.me/yieldsensei_bot" target="_blank" class="text-white hover:text-orange-500">Telegram Bot</a>
+                    <a href="https://yieldsensei.gitbook.io/yieldsensei-docs" target="_blank" class="text-white hover:text-orange-500">Docs</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-black border-t border-orange-500 mt-8">
+        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center">
+                <div class="text-gray-400">
+                    © 2025 YieldSensei. All rights reserved.
+                </div>
+                <div class="flex space-x-6">
+                    <a href="https://twitter.com/YieldSensei" target="_blank" class="text-gray-400 hover:text-orange-500">
+                        Twitter
+                    </a>
+                    <a href="https://t.me/yieldsensei" target="_blank" class="text-gray-400 hover:text-orange-500">
+                        Telegram
+                    </a>
+                    <a href="https://discord.gg/yieldsensei" target="_blank" class="text-gray-400 hover:text-orange-500">
+                        Discord
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
