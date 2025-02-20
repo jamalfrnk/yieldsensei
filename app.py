@@ -1,5 +1,6 @@
 import os
 from flask import Flask, render_template, request, jsonify
+from asgiref.wsgi import WsgiToAsgi
 import asyncio
 from services.technical_analysis import get_signal_analysis
 from services.coingecko_service import get_token_price, get_token_market_data
@@ -13,7 +14,6 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 import pandas as pd
 from services.sentiment_service import calculate_sentiment_score
-from services.sentiment_service import get_market_sentiment_data
 from models import db, Quiz, Question, UserProgress, User
 import sys
 
@@ -64,38 +64,40 @@ limiter = Limiter(
 
 @app.route('/')
 @limiter.exempt
-def index():
+async def index():
     """Render the main dashboard."""
     try:
         logger.info("Rendering index page")
-        return render_template('dashboard.html', error=None)
+        return render_template('dashboard.html', **DEFAULT_DATA)
     except Exception as e:
         logger.exception("Error rendering index page")
-        return render_template('dashboard.html', error=str(e))
+        return render_template('dashboard.html', error=str(e), **DEFAULT_DATA)
 
 @app.route('/search')
 @limiter.limit("20 per minute")
-def search():
+async def search():
     """Handle token search and analysis."""
     token = request.args.get('token', 'bitcoin').lower()
     try:
         logger.info(f"Processing search request for token: {token}")
 
-        # Get market data and signal analysis using asyncio.run()
-        price_data = asyncio.run(get_token_price(token))
-        signal_data = asyncio.run(get_signal_analysis(token))
-        market_data = asyncio.run(get_token_market_data(token))
+        # Create tasks for concurrent execution
+        tasks = [
+            get_token_price(token),
+            get_signal_analysis(token),
+            get_token_market_data(token)
+        ]
 
-        if not market_data or not price_data or not signal_data:
+        # Wait for all tasks to complete
+        results = await asyncio.gather(*tasks)
+        price_data, signal_data, market_data = results
+
+        if not all([market_data, price_data, signal_data]):
             raise ValueError("Unable to fetch complete market data for the token")
 
         logger.info(f"Retrieved data for {token}: Price=${price_data['usd']}, Signal strength={signal_data['signal_strength']}")
 
-        # Calculate trend score and signal strength
-        trend_score = min(100, max(0, float(signal_data['signal_strength'])))
-        signal_strength = min(100, max(0, float(signal_data['signal_strength'])))
-
-        # Calculate entry and exit prices
+        # Process prices and calculate ranges
         current_price = float(price_data['usd'])
         support_1 = float(signal_data['support_1'].replace('$', '').replace(',', ''))
         support_2 = float(signal_data['support_2'].replace('$', '').replace(',', ''))
@@ -108,78 +110,75 @@ def search():
 
         # Process historical data
         historical_prices = market_data.get('prices', [])
-        if historical_prices:
-            logger.info(f"Found {len(historical_prices)} historical price points")
-
-            price_values = [price[1] for price in historical_prices]
-
-            # Calculate price ranges for different periods
-            prices_365d = price_values[-365:] if len(price_values) >= 365 else price_values
-            prices_90d = price_values[-90:] if len(price_values) >= 90 else price_values
-            prices_30d = price_values[-30:] if len(price_values) >= 30 else price_values
-            prices_7d = price_values[-7:] if len(price_values) >= 7 else price_values
-
-            # Prepare template data
-            template_data = {
-                'token_symbol': token.upper(),
-                'price': current_price,
-                'price_change': float(price_data['usd_24h_change']),
-                'signal_strength': signal_strength,
-                'signal_description': signal_data['signal'],
-                'trend_score': trend_score,
-                'trend_direction': signal_data['trend_direction'],
-                'market_status': get_market_status(float(signal_data['rsi'])),
-                'rsi': float(signal_data['rsi']),
-                'support_1': support_1,
-                'support_2': support_2,
-                'resistance_1': resistance_1,
-                'resistance_2': resistance_2,
-                'optimal_entry': optimal_entry,
-                'optimal_exit': optimal_exit,
-                'stop_loss': stop_loss,
-                'dca_recommendation': signal_data['dca_recommendation'],
-                'historical_data': historical_prices,
-                'yearly_high': max(prices_365d),
-                'yearly_low': min(prices_365d),
-                'ninety_day_high': max(prices_90d),
-                'ninety_day_low': min(prices_90d),
-                'thirty_day_high': max(prices_30d),
-                'thirty_day_low': min(prices_30d),
-                'seven_day_high': max(prices_7d),
-                'seven_day_low': min(prices_7d),
-                'chart_data': {
-                    'labels': [price[0] for price in historical_prices],
-                    'prices': [price[1] for price in historical_prices],
-                    'support_levels': [float(support_1), float(support_2)],
-                    'resistance_levels': [float(resistance_1), float(resistance_2)]
-                }
-            }
-
-            # Calculate sentiment
-            try:
-                volume_change = market_data.get('total_volume_change_24h', 0)
-                sentiment_score, sentiment_emoji, sentiment_description = calculate_sentiment_score(
-                    price_change=float(price_data['usd_24h_change']),
-                    volume_change=volume_change,
-                    rsi=float(signal_data['rsi']),
-                    current_price=current_price,
-                    support_1=support_1,
-                    resistance_1=resistance_1
-                )
-                logger.info(f"Sentiment analysis: Score={sentiment_score}, Emoji={sentiment_emoji}")
-            except Exception as e:
-                logger.error(f"Error calculating sentiment: {str(e)}")
-                sentiment_score, sentiment_emoji, sentiment_description = 50.0, "⚖️", "Neutral"
-
-            template_data.update({
-                'sentiment_score': sentiment_score,
-                'sentiment_emoji': sentiment_emoji,
-                'sentiment_description': sentiment_description,
-            })
-
-            return render_template('dashboard.html', **template_data)
-        else:
+        if not historical_prices:
             raise ValueError("No historical price data available")
+
+        logger.info(f"Found {len(historical_prices)} historical price points")
+        price_values = [price[1] for price in historical_prices]
+
+        # Calculate price ranges for different periods
+        prices_365d = price_values[-365:] if len(price_values) >= 365 else price_values
+        prices_90d = price_values[-90:] if len(price_values) >= 90 else price_values
+        prices_30d = price_values[-30:] if len(price_values) >= 30 else price_values
+        prices_7d = price_values[-7:] if len(price_values) >= 7 else price_values
+
+        template_data = {
+            'token_symbol': token.upper(),
+            'price': current_price,
+            'price_change': float(price_data['usd_24h_change']),
+            'signal_strength': min(100, max(0, float(signal_data['signal_strength']))),
+            'signal_description': signal_data['signal'],
+            'trend_score': min(100, max(0, float(signal_data['signal_strength']))),
+            'trend_direction': signal_data['trend_direction'],
+            'market_status': get_market_status(float(signal_data['rsi'])),
+            'rsi': float(signal_data['rsi']),
+            'support_1': support_1,
+            'support_2': support_2,
+            'resistance_1': resistance_1,
+            'resistance_2': resistance_2,
+            'optimal_entry': optimal_entry,
+            'optimal_exit': optimal_exit,
+            'stop_loss': stop_loss,
+            'dca_recommendation': signal_data['dca_recommendation'],
+            'historical_data': historical_prices,
+            'yearly_high': max(prices_365d),
+            'yearly_low': min(prices_365d),
+            'ninety_day_high': max(prices_90d),
+            'ninety_day_low': min(prices_90d),
+            'thirty_day_high': max(prices_30d),
+            'thirty_day_low': min(prices_30d),
+            'seven_day_high': max(prices_7d),
+            'seven_day_low': min(prices_7d),
+            'chart_data': {
+                'labels': [price[0] for price in historical_prices],
+                'prices': [price[1] for price in historical_prices],
+                'support_levels': [float(support_1), float(support_2)],
+                'resistance_levels': [float(resistance_1), float(resistance_2)]
+            }
+        }
+
+        try:
+            volume_change = market_data.get('total_volume_change_24h', 0)
+            sentiment_score, sentiment_emoji, sentiment_description = calculate_sentiment_score(
+                price_change=float(price_data['usd_24h_change']),
+                volume_change=volume_change,
+                rsi=float(signal_data['rsi']),
+                current_price=current_price,
+                support_1=support_1,
+                resistance_1=resistance_1
+            )
+            logger.info(f"Sentiment analysis: Score={sentiment_score}, Emoji={sentiment_emoji}")
+        except Exception as e:
+            logger.error(f"Error calculating sentiment: {str(e)}")
+            sentiment_score, sentiment_emoji, sentiment_description = 50.0, "⚖️", "Neutral"
+
+        template_data.update({
+            'sentiment_score': sentiment_score,
+            'sentiment_emoji': sentiment_emoji,
+            'sentiment_description': sentiment_description,
+        })
+
+        return render_template('dashboard.html', **template_data)
 
     except Exception as e:
         logger.error(f"Error processing search request: {str(e)}")
@@ -202,41 +201,6 @@ def get_market_status(rsi):
         return "Oversold 🟢"
     else:
         return "Neutral ⚖️"
-
-@app.route('/api/market_sentiment')
-@limiter.limit("30 per minute")
-def market_sentiment():
-    """Get market sentiment data for top cryptocurrencies."""
-    try:
-        logger.info("Fetching market sentiment data")
-        sentiment_data = asyncio.run(get_market_sentiment_data())
-        logger.info(f"Successfully fetched sentiment data for {len(sentiment_data)} tokens")
-        return jsonify(sentiment_data)
-    except Exception as e:
-        logger.exception(f"Error fetching market sentiment: {str(e)}")
-        return jsonify({'error': str(e)}), 500
-
-# Initialize database
-with app.app_context():
-    try:
-        db.create_all()
-        logger.info("Database tables created successfully")
-    except Exception as e:
-        logger.exception("Error creating database tables")
-        sys.exit(1)
-
-if __name__ == '__main__':
-    try:
-        logger.info("Starting Flask server...")
-        app.run(
-            host='0.0.0.0',
-            port=5000,
-            debug=True,
-            use_reloader=False
-        )
-    except Exception as e:
-        logger.exception(f"Failed to start server: {str(e)}")
-        sys.exit(1)
 
 # Default template data
 DEFAULT_DATA = {
@@ -276,3 +240,46 @@ DEFAULT_DATA = {
     'sentiment_emoji': "⚖️",
     'sentiment_description': "Neutral",
 }
+
+# Initialize database
+with app.app_context():
+    try:
+        db.create_all()
+        logger.info("Database tables created successfully")
+    except Exception as e:
+        logger.exception("Error creating database tables")
+        sys.exit(1)
+
+# Create ASGI application with proper lifecycle handling
+async def lifespan(scope, receive, send):
+    """Handle ASGI lifespan events."""
+    while True:
+        message = await receive()
+        if message["type"] == "lifespan.startup":
+            await send({"type": "lifespan.startup.complete"})
+        elif message["type"] == "lifespan.shutdown":
+            await send({"type": "lifespan.shutdown.complete"})
+            break
+
+async def application(scope, receive, send):
+    """ASGI application with lifespan support."""
+    if scope["type"] == "lifespan":
+        await lifespan(scope, receive, send)
+        return
+    await WsgiToAsgi(app)(scope, receive, send)
+
+if __name__ == '__main__':
+    try:
+        logger.info("Starting Hypercorn server...")
+        import hypercorn.asyncio
+        import hypercorn.config
+
+        config = hypercorn.config.Config()
+        config.bind = ["0.0.0.0:5000"]
+        config.use_reloader = False
+        config.workers = 1
+        config.access_log_format = '%(h)s %(r)s %(s)s %(b)s %(D)s'
+        asyncio.run(hypercorn.asyncio.serve(application, config))
+    except Exception as e:
+        logger.exception(f"Failed to start server: {str(e)}")
+        sys.exit(1)
