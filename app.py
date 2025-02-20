@@ -2,7 +2,7 @@ import os
 from flask import Flask, render_template, request, jsonify, redirect, url_for
 import asyncio
 from services.technical_analysis import get_signal_analysis
-from services.coingecko_service import get_token_price, get_token_market_data # Added import
+from services.coingecko_service import get_token_price, get_token_market_data
 import logging
 from datetime import datetime, timedelta
 from flask_talisman import Talisman
@@ -12,7 +12,8 @@ from flask_limiter.util import get_remote_address
 from flask_sqlalchemy import SQLAlchemy
 from models import db, Quiz, Question, UserProgress, User
 from flask_cors import CORS
-import pandas as pd # Added import for pandas
+import pandas as pd
+from services.sentiment_service import calculate_sentiment_score
 
 # Configure logging
 logging.basicConfig(
@@ -40,8 +41,7 @@ DEFAULT_DATA = {
     'optimal_exit': 0.0,
     'stop_loss': 0.0,
     'dca_recommendation': 'Enter a token to get DCA recommendations',
-    'historical_data': [],  # Empty list for historical data
-    # Add default values for historical price ranges
+    'historical_data': [],
     'seven_day_high': 0.0,
     'seven_day_low': 0.0,
     'thirty_day_high': 0.0,
@@ -51,11 +51,14 @@ DEFAULT_DATA = {
     'yearly_high': 0.0,
     'yearly_low': 0.0,
     'chart_data': {
-        'labels': [],  # Empty list for timestamps
-        'prices': [],  # Empty list for price values
+        'labels': [],
+        'prices': [],
         'support_levels': [0, 0],
         'resistance_levels': [0, 0]
-    }
+    },
+    'sentiment_score': 50.0,
+    'sentiment_emoji': "⚖️",
+    'sentiment_description': "Neutral",
 }
 
 app = Flask(__name__)
@@ -67,7 +70,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 
 # Security headers with relaxed CSP for Chart.js and external resources
-Talisman(app, 
+Talisman(app,
     content_security_policy={
         'default-src': ["'self'", "'unsafe-inline'", "'unsafe-eval'", 'cdn.jsdelivr.net'],
         'script-src': ["'self'", "'unsafe-inline'", "'unsafe-eval'", 'cdn.jsdelivr.net'],
@@ -148,7 +151,7 @@ async def search():
                 prices_30d = price_values[-30:] if len(price_values) >= 30 else price_values
                 prices_7d = price_values[-7:] if len(price_values) >= 7 else price_values
 
-                logger.info(f"Historical data points - 7d: {len(prices_7d)}, 30d: {len(prices_30d)}, " 
+                logger.info(f"Historical data points - 7d: {len(prices_7d)}, 30d: {len(prices_30d)}, "
                           f"90d: {len(prices_90d)}, 365d: {len(prices_365d)}")
 
                 # Prepare template data
@@ -186,6 +189,29 @@ async def search():
                         'resistance_levels': [float(resistance_1), float(resistance_2)]
                     }
                 }
+
+                # Calculate sentiment score
+                try:
+                    volume_change = market_data.get('total_volume_change_24h', 0)
+                    sentiment_score, sentiment_emoji, sentiment_description = calculate_sentiment_score(
+                        price_change=float(price_data['usd_24h_change']),
+                        volume_change=volume_change,
+                        rsi=float(signal_data['rsi']),
+                        current_price=current_price,
+                        support_1=support_1,
+                        resistance_1=resistance_1
+                    )
+                    logger.info(f"Sentiment analysis: Score={sentiment_score}, Emoji={sentiment_emoji}")
+                except Exception as e:
+                    logger.error(f"Error calculating sentiment: {str(e)}")
+                    sentiment_score, sentiment_emoji, sentiment_description = 50.0, "⚖️", "Neutral"
+
+                # Update template_data dictionary to include sentiment information
+                template_data.update({
+                    'sentiment_score': sentiment_score,
+                    'sentiment_emoji': sentiment_emoji,
+                    'sentiment_description': sentiment_description,
+                })
 
                 logger.info(f"Successfully processed historical data for {token}")
                 return render_template('dashboard.html', **template_data)
@@ -267,7 +293,7 @@ def submit_quiz(quiz_id):
 
     db.session.commit()
 
-    return render_template('quiz_results.html', 
+    return render_template('quiz_results.html',
                          score=score,
                          total=total_questions,
                          percentage=percentage_score,
