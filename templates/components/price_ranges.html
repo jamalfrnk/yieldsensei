@@ -1,10 +1,26 @@
 <!-- ML Predictions and Price Analysis -->
 <div class="bg-gray-900 rounded-lg p-6">
-    <h2 class="text-xl font-bold text-orange-500 mb-4">Price Analysis & Predictions</h2>
+    <div class="flex items-center mb-4">
+        <h2 class="text-xl font-bold text-orange-500">Price Analysis & Predictions</h2>
+        <div class="ml-2 group relative">
+            <span class="cursor-help text-orange-500">ⓘ</span>
+            <div class="opacity-0 bg-black text-white text-sm rounded-lg py-2 px-3 absolute z-10 bottom-full mb-2 -left-1/2 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 w-64">
+                Comprehensive price analysis combining historical data, technical indicators, and AI-powered predictions to help inform trading decisions.
+            </div>
+        </div>
+    </div>
 
     <!-- Historical Price Ranges -->
     <div class="mb-6">
-        <h3 class="text-orange-500 font-semibold mb-3">Historical Price Ranges</h3>
+        <div class="flex items-center mb-3">
+            <h3 class="text-orange-500 font-semibold">Historical Price Ranges</h3>
+            <div class="ml-2 group relative">
+                <span class="cursor-help text-orange-500">ⓘ</span>
+                <div class="opacity-0 bg-black text-white text-sm rounded-lg py-2 px-3 absolute z-10 bottom-full mb-2 -left-1/2 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 w-64">
+                    Shows the highest and lowest prices reached during different time periods. Useful for understanding price volatility and identifying potential support/resistance levels.
+                </div>
+            </div>
+        </div>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <!-- 24h Range -->
             <div class="bg-black bg-opacity-50 p-4 rounded">
@@ -47,22 +63,54 @@
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {% if predictions and predictions.next_day %}
         <div class="bg-black bg-opacity-50 p-4 rounded">
-            <h3 class="text-orange-500 font-semibold mb-2">Next Day Prediction</h3>
+            <div class="flex items-center mb-2">
+                <h3 class="text-orange-500 font-semibold">Next Day Prediction</h3>
+                <div class="ml-2 group relative">
+                    <span class="cursor-help text-orange-500">ⓘ</span>
+                    <div class="opacity-0 bg-black text-white text-sm rounded-lg py-2 px-3 absolute z-10 bottom-full mb-2 -left-1/2 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 w-64">
+                        Price predictions for the next 24 hours using both machine learning models (RF) and Facebook Prophet for time series forecasting.
+                    </div>
+                </div>
+            </div>
             <p class="text-sm">ML Prediction: ${{ "{:,.2f}".format(predictions.next_day.rf_prediction|float) }}</p>
             <p class="text-sm">Prophet Prediction: ${{ "{:,.2f}".format(predictions.next_day.prophet_prediction|float) }}</p>
         </div>
         <div class="bg-black bg-opacity-50 p-4 rounded">
-            <h3 class="text-orange-500 font-semibold mb-2">Confidence Range</h3>
+            <div class="flex items-center mb-2">
+                <h3 class="text-orange-500 font-semibold">Confidence Range</h3>
+                <div class="ml-2 group relative">
+                    <span class="cursor-help text-orange-500">ⓘ</span>
+                    <div class="opacity-0 bg-black text-white text-sm rounded-lg py-2 px-3 absolute z-10 bottom-full mb-2 -left-1/2 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 w-64">
+                        Expected price range for the next 24 hours. The wider the range, the higher the uncertainty in the prediction.
+                    </div>
+                </div>
+            </div>
             <p class="text-sm">Upper: ${{ "{:,.2f}".format(predictions.next_day.upper_bound|float) }}</p>
             <p class="text-sm">Lower: ${{ "{:,.2f}".format(predictions.next_day.lower_bound|float) }}</p>
         </div>
         <div class="bg-black bg-opacity-50 p-4 rounded">
-            <h3 class="text-orange-500 font-semibold mb-2">Prediction Confidence</h3>
+            <div class="flex items-center mb-2">
+                <h3 class="text-orange-500 font-semibold">Prediction Confidence</h3>
+                <div class="ml-2 group relative">
+                    <span class="cursor-help text-orange-500">ⓘ</span>
+                    <div class="opacity-0 bg-black text-white text-sm rounded-lg py-2 px-3 absolute z-10 bottom-full mb-2 -left-1/2 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 w-64">
+                        Confidence score indicates how reliable the predictions are, based on model agreement and historical accuracy. Higher scores suggest more reliable predictions.
+                    </div>
+                </div>
+            </div>
             <p class="text-sm">Score: {{ "%.1f"|format(confidence_score|float) }}%</p>
             <p class="text-sm text-gray-400">Based on model agreement and range</p>
         </div>
         <div class="bg-black bg-opacity-50 p-4 rounded">
-            <h3 class="text-orange-500 font-semibold mb-2">Current Analysis</h3>
+            <div class="flex items-center mb-2">
+                <h3 class="text-orange-500 font-semibold">Current Analysis</h3>
+                <div class="ml-2 group relative">
+                    <span class="cursor-help text-orange-500">ⓘ</span>
+                    <div class="opacity-0 bg-black text-white text-sm rounded-lg py-2 px-3 absolute z-10 bottom-full mb-2 -left-1/2 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 w-64">
+                        Technical indicators showing current market strength. Signal Strength above 60% suggests strong trend, while RSI helps identify overbought/oversold conditions.
+                    </div>
+                </div>
+            </div>
             <p class="text-sm">Signal Strength: {{ "%.1f"|format(signal_strength|float) }}%</p>
             <p class="text-sm">RSI: {{ "%.1f"|format(rsi|float) }}</p>
         </div>
