@@ -12,8 +12,6 @@ from flask_limiter.util import get_remote_address
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 import pandas as pd
-from services.sentiment_service import calculate_sentiment_score
-from services.sentiment_service import get_market_sentiment_data
 from models import db, Quiz, Question, UserProgress, User
 
 # Configure logging with more detailed format
@@ -32,7 +30,6 @@ DEFAULT_DATA = {
     'signal_description': 'Enter a token to analyze',
     'trend_score': 50,
     'trend_direction': 'Neutral ⚖️',
-    'market_status': 'Neutral ⚖️',
     'rsi': 50,
     'support_1': 0.0,
     'support_2': 0.0,
@@ -56,10 +53,7 @@ DEFAULT_DATA = {
         'prices': [],
         'support_levels': [0, 0],
         'resistance_levels': [0, 0]
-    },
-    'sentiment_score': 50.0,
-    'sentiment_emoji': "⚖️",
-    'sentiment_description': "Neutral",
+    }
 }
 
 app = Flask(__name__)
@@ -78,11 +72,11 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 
-# Security headers with relaxed CSP for Chart.js and D3.js
+# Security headers
 Talisman(app,
     content_security_policy={
-        'default-src': ["'self'", "'unsafe-inline'", "'unsafe-eval'", 'cdn.jsdelivr.net', 'd3js.org', '*'],
-        'script-src': ["'self'", "'unsafe-inline'", "'unsafe-eval'", 'cdn.jsdelivr.net', 'd3js.org'],
+        'default-src': ["'self'", "'unsafe-inline'", "'unsafe-eval'", 'cdn.jsdelivr.net', '*'],
+        'script-src': ["'self'", "'unsafe-inline'", "'unsafe-eval'", 'cdn.jsdelivr.net'],
         'style-src': ["'self'", "'unsafe-inline'", 'cdn.jsdelivr.net'],
         'img-src': ["'self'", 'data:', 'cdn.jsdelivr.net', '*'],
         'font-src': ["'self'", 'cdn.jsdelivr.net'],
@@ -105,7 +99,7 @@ limiter = Limiter(
 @limiter.exempt
 async def index():
     """Render the main dashboard."""
-    logger.info("Rendering index page with default data")
+    logger.info("Rendering index page")
     return render_template('dashboard.html', **DEFAULT_DATA)
 
 @app.route('/search')
@@ -148,20 +142,15 @@ async def search():
             historical_prices = market_data['prices']
             logger.info(f"Found {len(historical_prices)} historical price points")
 
-            # Extract price values for different time periods
             try:
                 # Convert prices to a list of values only (excluding timestamps)
                 price_values = [price[1] for price in historical_prices]
 
                 # Calculate indices for different time periods
-                # 365 days = full data, 90 days ≈ 90 points, 30 days ≈ 30 points, 7 days ≈ 7 points
                 prices_365d = price_values[-365:] if len(price_values) >= 365 else price_values
                 prices_90d = price_values[-90:] if len(price_values) >= 90 else price_values
                 prices_30d = price_values[-30:] if len(price_values) >= 30 else price_values
                 prices_7d = price_values[-7:] if len(price_values) >= 7 else price_values
-
-                logger.info(f"Historical data points - 7d: {len(prices_7d)}, 30d: {len(prices_30d)}, "
-                            f"90d: {len(prices_90d)}, 365d: {len(prices_365d)}")
 
                 # Prepare template data
                 template_data = {
@@ -172,7 +161,6 @@ async def search():
                     'signal_description': signal_data['signal'],
                     'trend_score': trend_score,
                     'trend_direction': signal_data['trend_direction'],
-                    'market_status': get_market_status(float(signal_data['rsi'])),
                     'rsi': float(signal_data['rsi']),
                     'support_1': support_1,
                     'support_2': support_2,
@@ -199,31 +187,9 @@ async def search():
                     }
                 }
 
-                # Calculate sentiment score
-                try:
-                    volume_change = market_data.get('total_volume_change_24h', 0)
-                    sentiment_score, sentiment_emoji, sentiment_description = calculate_sentiment_score(
-                        price_change=float(price_data['usd_24h_change']),
-                        volume_change=volume_change,
-                        rsi=float(signal_data['rsi']),
-                        current_price=current_price,
-                        support_1=support_1,
-                        resistance_1=resistance_1
-                    )
-                    logger.info(f"Sentiment analysis: Score={sentiment_score}, Emoji={sentiment_emoji}")
-                except Exception as e:
-                    logger.error(f"Error calculating sentiment: {str(e)}")
-                    sentiment_score, sentiment_emoji, sentiment_description = 50.0, "⚖️", "Neutral"
-
-                # Update template_data dictionary to include sentiment information
-                template_data.update({
-                    'sentiment_score': sentiment_score,
-                    'sentiment_emoji': sentiment_emoji,
-                    'sentiment_description': sentiment_description,
-                })
-
-                logger.info(f"Successfully processed historical data for {token}")
+                logger.info(f"Successfully processed data for {token}")
                 return render_template('dashboard.html', **template_data)
+
             except Exception as e:
                 logger.error(f"Error processing historical data: {str(e)}")
                 raise ValueError(f"Error processing historical data: {str(e)}")
@@ -236,15 +202,6 @@ async def search():
         error_message = f"Error analyzing token: {str(e)}"
         return render_template('dashboard.html', error=error_message, **DEFAULT_DATA)
 
-def get_market_status(rsi):
-    """Determine market status based on RSI."""
-    if rsi >= 70:
-        return "Overbought 🔴"
-    elif rsi <= 30:
-        return "Oversold 🟢"
-    else:
-        return "Neutral ⚖️"
-
 @app.template_filter('price_color')
 def price_color_filter(value):
     """Return CSS class based on price change value."""
@@ -253,19 +210,6 @@ def price_color_filter(value):
         return 'text-green-500' if value >= 0 else 'text-red-500'
     except (ValueError, TypeError):
         return 'text-gray-500'
-
-@app.route('/api/market_sentiment')
-@limiter.limit("30 per minute")
-async def market_sentiment():
-    """Get market sentiment data for top cryptocurrencies."""
-    try:
-        logger.info("Fetching market sentiment data")
-        sentiment_data = await get_market_sentiment_data()
-        logger.info(f"Successfully fetched sentiment data for {len(sentiment_data)} tokens")
-        return jsonify(sentiment_data)
-    except Exception as e:
-        logger.error(f"Error fetching market sentiment: {str(e)}")
-        return jsonify({'error': str(e)}), 500
 
 # Initialize database
 with app.app_context():

@@ -1,26 +1,3 @@
-
-# Market Sentiment Heatmap Documentation
-
-## Overview
-The market sentiment heatmap provides real-time visualization of market sentiment across multiple cryptocurrencies using D3.js.
-
-## Components
-
-### Backend Services
-- `sentiment_service.py`: Aggregates sentiment data
-- API endpoint: `/api/market_sentiment`
-- Configurable time ranges: 1h, 24h, 7d, 30d
-
-### Frontend Visualization
-- D3.js heatmap implementation
-- Real-time WebSocket updates
-- Customizable color scales
-- Interactive tooltips
-
-## Implementation Details
-
-### Sentiment Calculation
-```python
 sentiment_score = weighted_average([
     (price_momentum, 0.4),
     (volume_change, 0.3),
@@ -33,11 +10,10 @@ sentiment_score = weighted_average([
 - Available ranges: 1h, 24h, 7d, 30d
 - Endpoint: `/api/market_sentiment?timerange=24h`
 
-### Multi-Token Comparison
-- Supports up to 20 tokens simultaneously
-- Normalized sentiment scores (0-100)
-- Color-coded visualization
-- Comparative analysis features
+### Market Cap Limitation
+- Displays only top 20 cryptocurrencies by market capitalization
+- Automatically updates rankings based on current market data
+- Provides focused view of major market movements
 
 ## API Endpoints
 
@@ -46,7 +22,7 @@ sentiment_score = weighted_average([
 GET /api/market_sentiment
 Query params:
 - timerange: (1h|24h|7d|30d)
-- tokens: comma-separated list of token symbols
+Response: Array of top 20 cryptocurrencies with sentiment data
 ```
 
 ### WebSocket Updates
@@ -70,4 +46,3 @@ const heatmap = new SentimentHeatmap('#heatmap-container', {
 
 // Update time range
 heatmap.updateTimeRange('7d');
-```
