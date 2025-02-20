@@ -10,13 +10,13 @@ from flask_compress import Compress
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_sqlalchemy import SQLAlchemy
-from models import db, Quiz, Question, UserProgress, User
 from flask_cors import CORS
 import pandas as pd
 from services.sentiment_service import calculate_sentiment_score
 from services.sentiment_service import get_market_sentiment_data
+from models import db, Quiz, Question, UserProgress, User
 
-# Configure logging
+# Configure logging with more detailed format
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
@@ -63,18 +63,26 @@ DEFAULT_DATA = {
 }
 
 app = Flask(__name__)
-# Enable CORS
-CORS(app)
 
+# Enable CORS with proper configuration
+CORS(app, resources={
+    r"/api/*": {
+        "origins": "*",
+        "methods": ["GET", "POST"],
+        "allow_headers": ["Content-Type"]
+    }
+})
+
+# Configure SQLAlchemy
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 
-# Security headers with relaxed CSP for Chart.js and external resources
+# Security headers with relaxed CSP for Chart.js and D3.js
 Talisman(app,
     content_security_policy={
-        'default-src': ["'self'", "'unsafe-inline'", "'unsafe-eval'", 'cdn.jsdelivr.net'],
-        'script-src': ["'self'", "'unsafe-inline'", "'unsafe-eval'", 'cdn.jsdelivr.net'],
+        'default-src': ["'self'", "'unsafe-inline'", "'unsafe-eval'", 'cdn.jsdelivr.net', 'd3js.org', '*'],
+        'script-src': ["'self'", "'unsafe-inline'", "'unsafe-eval'", 'cdn.jsdelivr.net', 'd3js.org'],
         'style-src': ["'self'", "'unsafe-inline'", 'cdn.jsdelivr.net'],
         'img-src': ["'self'", 'data:', 'cdn.jsdelivr.net', '*'],
         'font-src': ["'self'", 'cdn.jsdelivr.net'],
@@ -153,7 +161,7 @@ async def search():
                 prices_7d = price_values[-7:] if len(price_values) >= 7 else price_values
 
                 logger.info(f"Historical data points - 7d: {len(prices_7d)}, 30d: {len(prices_30d)}, "
-                          f"90d: {len(prices_90d)}, 365d: {len(prices_365d)}")
+                            f"90d: {len(prices_90d)}, 365d: {len(prices_365d)}")
 
                 # Prepare template data
                 template_data = {
@@ -246,78 +254,18 @@ def price_color_filter(value):
     except (ValueError, TypeError):
         return 'text-gray-500'
 
-@app.route('/quizzes')
-def quizzes():
-    """Display available quizzes and leaderboard."""
-    available_quizzes = Quiz.query.all()
-    leaderboard = UserProgress.get_leaderboard(limit=10)
-    return render_template('quiz.html', quizzes=available_quizzes, leaderboard=leaderboard)
-
-@app.route('/quiz/<int:quiz_id>')
-def start_quiz(quiz_id):
-    """Start or continue a quiz."""
-    quiz = Quiz.query.get_or_404(quiz_id)
-    questions = Question.query.filter_by(quiz_id=quiz_id).all()
-    return render_template('quiz_questions.html', quiz=quiz, questions=questions)
-
-@app.route('/quiz/<int:quiz_id>/submit', methods=['POST'])
-def submit_quiz(quiz_id):
-    """Handle quiz submission and scoring."""
-    quiz = Quiz.query.get_or_404(quiz_id)
-    questions = Question.query.filter_by(quiz_id=quiz_id).all()
-
-    score = 0
-    total_questions = len(questions)
-
-    for question in questions:
-        user_answer = request.form.get(f'q{question.id}')
-        if user_answer == question.correct_answer:
-            score += 1
-
-    # Calculate percentage score
-    percentage_score = (score / total_questions) * 100
-
-    # Update user progress
-    progress = UserProgress(
-        user_id=1,  # Hardcoded for now, replace with current_user.id when auth is added
-        quiz_id=quiz_id,
-        score=percentage_score,
-        completed=True,
-        attempts=1
-    )
-    db.session.add(progress)
-
-    # Update user points
-    points_earned = int((quiz.points_reward * percentage_score) / 100)
-    user = User.query.get(1)  # Hardcoded for now
-    user.points += points_earned
-
-    db.session.commit()
-
-    return render_template('quiz_results.html',
-                         score=score,
-                         total=total_questions,
-                         percentage=percentage_score,
-                         points_earned=points_earned)
-
-@app.route('/glossary')
-@limiter.exempt
-def glossary():
-    """Render the metrics glossary page."""
-    return render_template('glossary.html')
-
-# Add new API endpoint after existing routes
 @app.route('/api/market_sentiment')
 @limiter.limit("30 per minute")
 async def market_sentiment():
     """Get market sentiment data for top cryptocurrencies."""
     try:
+        logger.info("Fetching market sentiment data")
         sentiment_data = await get_market_sentiment_data()
+        logger.info(f"Successfully fetched sentiment data for {len(sentiment_data)} tokens")
         return jsonify(sentiment_data)
     except Exception as e:
         logger.error(f"Error fetching market sentiment: {str(e)}")
-        return jsonify([])
-
+        return jsonify({'error': str(e)}), 500
 
 # Initialize database
 with app.app_context():
@@ -333,54 +281,9 @@ with app.app_context():
         db.session.add(default_user)
         db.session.commit()
 
-    # Add sample quiz data if none exists
-    if not Quiz.query.first():
-        sample_quiz = Quiz(
-            title="Crypto Basics 101",
-            description="Learn the fundamentals of cryptocurrency and blockchain technology",
-            difficulty="beginner",
-            points_reward=10
-        )
-        db.session.add(sample_quiz)
-        db.session.commit()
-
-        # Add sample questions
-        questions = [
-            {
-                'question_text': "What is Bitcoin?",
-                'options': {
-                    'a': "A digital currency",
-                    'b': "A type of credit card",
-                    'c': "A computer game",
-                    'd': "A social media platform"
-                },
-                'correct_answer': "a",
-                'explanation': "Bitcoin is the first and most well-known cryptocurrency, a type of digital currency."
-            },
-            {
-                'question_text': "What is blockchain?",
-                'options': {
-                    'a': "A type of cryptocurrency",
-                    'b': "A distributed ledger technology",
-                    'c': "A computer virus",
-                    'd': "A programming language"
-                },
-                'correct_answer': "b",
-                'explanation': "Blockchain is a distributed ledger technology that records transactions across many computers."
-            }
-        ]
-
-        for q in questions:
-            question = Question(
-                quiz_id=sample_quiz.id,
-                question_text=q['question_text'],
-                options=q['options'],
-                correct_answer=q['correct_answer'],
-                explanation=q['explanation']
-            )
-            db.session.add(question)
-
-        db.session.commit()
-
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=3000, debug=True)
+    try:
+        logger.info("Starting Flask server...")
+        app.run(host='0.0.0.0', port=5000, debug=True)
+    except Exception as e:
+        logger.error(f"Failed to start server: {str(e)}")
