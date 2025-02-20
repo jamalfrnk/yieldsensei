@@ -89,7 +89,8 @@ async def search():
     """Handle token search and analysis."""
     token = request.args.get('token', 'bitcoin').lower()
     try:
-        # Get market data
+        # Get market data and signal analysis
+        logger.info(f"Analyzing token: {token}")
         price_data = await get_token_price(token)
         signal_data = await get_signal_analysis(token)
 
@@ -111,11 +112,36 @@ async def search():
             'resistance_2': float(signal_data['resistance_2'].replace('$', '').replace(',', '')),
             'dca_recommendation': signal_data['dca_recommendation'],
             'chart_data': {
-                'labels': [],
-                'datasets': []
+                'labels': ['Support 2', 'Support 1', 'Current', 'Resistance 1', 'Resistance 2'],
+                'datasets': [{
+                    'label': 'Price Levels',
+                    'data': [
+                        float(signal_data['support_2'].replace('$', '').replace(',', '')),
+                        float(signal_data['support_1'].replace('$', '').replace(',', '')),
+                        float(price_data['usd']),
+                        float(signal_data['resistance_1'].replace('$', '').replace(',', '')),
+                        float(signal_data['resistance_2'].replace('$', '').replace(',', ''))
+                    ],
+                    'backgroundColor': [
+                        'rgba(34, 197, 94, 0.2)',  # Support 2 - green
+                        'rgba(34, 197, 94, 0.4)',  # Support 1 - lighter green
+                        'rgba(249, 115, 22, 0.6)', # Current - orange
+                        'rgba(239, 68, 68, 0.4)',  # Resistance 1 - lighter red
+                        'rgba(239, 68, 68, 0.2)'   # Resistance 2 - red
+                    ],
+                    'borderColor': [
+                        'rgb(34, 197, 94)',
+                        'rgb(34, 197, 94)',
+                        'rgb(249, 115, 22)',
+                        'rgb(239, 68, 68)',
+                        'rgb(239, 68, 68)'
+                    ],
+                    'borderWidth': 1
+                }]
             }
         }
 
+        logger.info(f"Successfully analyzed token: {token}")
         return render_template('dashboard.html', **template_data)
     except Exception as e:
         logger.error(f"Error processing search request: {str(e)}")

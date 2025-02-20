@@ -46,7 +46,15 @@
         </div>
     </div>
 
-    <!-- Support/Resistance Levels -->
+    <!-- Price Chart -->
+    <div class="bg-gray-900 rounded-lg p-4">
+        <h2 class="text-xl font-bold text-orange-500 mb-4">Price Levels</h2>
+        <div class="relative" style="height: 300px;">
+            <canvas id="priceChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Support/Resistance Levels and DCA Recommendations -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div class="bg-gray-900 rounded-lg p-4">
             <h2 class="text-xl font-bold text-orange-500 mb-4">Key Levels</h2>
@@ -82,5 +90,71 @@
             </div>
         </div>
     </div>
+
+    <!-- Telegram Bot Integration -->
+    <div class="bg-gray-900 rounded-lg p-4 mt-6">
+        <h2 class="text-xl font-bold text-orange-500 mb-4">Get More with YieldSensei Bot</h2>
+        <p class="text-gray-300 mb-4">Access these features and more through our Telegram bot:</p>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div class="p-4 bg-black rounded-lg border border-orange-500">
+                <h3 class="text-lg font-semibold text-orange-500 mb-2">Real-time Signals</h3>
+                <p class="text-sm text-gray-400">Get instant trading signals with /signal command</p>
+            </div>
+            <div class="p-4 bg-black rounded-lg border border-orange-500">
+                <h3 class="text-lg font-semibold text-orange-500 mb-2">Market Data</h3>
+                <p class="text-sm text-gray-400">Check market stats with /market command</p>
+            </div>
+            <div class="p-4 bg-black rounded-lg border border-orange-500">
+                <h3 class="text-lg font-semibold text-orange-500 mb-2">DEX Analytics</h3>
+                <p class="text-sm text-gray-400">Analyze DEX pairs with /dexinfo command</p>
+            </div>
+        </div>
+        <div class="mt-6 text-center">
+            <a href="https://t.me/yieldsensei_bot" target="_blank" 
+               class="inline-block bg-orange-500 text-white px-8 py-3 rounded-lg hover:bg-orange-600 transition-colors duration-200">
+                Open Telegram Bot
+            </a>
+        </div>
+    </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('priceChart').getContext('2d');
+    const chartData = {{ chart_data|tojson }};
+
+    new Chart(ctx, {
+        type: 'bar',
+        data: chartData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    },
+                    ticks: {
+                        color: '#ffffff'
+                    }
+                },
+                x: {
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    },
+                    ticks: {
+                        color: '#ffffff'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+});
+</script>
 {% endblock %}
