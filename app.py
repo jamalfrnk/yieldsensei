@@ -13,11 +13,12 @@ from flask_login import LoginManager, login_required, login_user, logout_user, c
 from flask_wtf.csrf import CSRFProtect
 from models import User
 import os
+import socket
 
-# Configure logging
+# Configure logging with more detail for development
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
+    level=logging.DEBUG  # Changed to DEBUG for more verbose output
 )
 logger = logging.getLogger(__name__)
 
@@ -58,9 +59,11 @@ login_manager.login_view = 'login'
 app.config.update(
     ENV='development',
     DEBUG=True,
+    TESTING=True,  # Enable testing mode for development
     SEND_FILE_MAX_AGE_DEFAULT=0,  # Disable cache for development
     JSON_SORT_KEYS=False,
-    PREFERRED_URL_SCHEME='http'
+    PREFERRED_URL_SCHEME='http',
+    SERVER_NAME=None  # Allow all host headers
 )
 
 @login_manager.user_loader
@@ -267,5 +270,38 @@ async def generate_chart_data(token, days=30):
         logger.error(f"Error generating chart data: {str(e)}")
         return {'labels': [], 'datasets': []}
 
+def is_port_in_use(port):
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        try:
+            s.bind(('', port))
+            return False
+        except socket.error:
+            return True
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=3000, debug=True)
+    port = 3000
+    retries = 3
+
+    while retries > 0:
+        if not is_port_in_use(port):
+            logger.info(f"Starting development server on port {port}")
+            try:
+                app.run(
+                    host='0.0.0.0',  # Allow external access
+                    port=port,
+                    debug=True,
+                    use_reloader=True,  # Enable auto-reload on code changes
+                    threaded=True  # Enable threading
+                )
+                break
+            except Exception as e:
+                logger.error(f"Failed to start server: {e}")
+                retries -= 1
+                port += 1
+        else:
+            logger.warning(f"Port {port} is in use, trying next port")
+            port += 1
+            retries -= 1
+
+    if retries == 0:
+        logger.error("Could not find an available port to run the server")
