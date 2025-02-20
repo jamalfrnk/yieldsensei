@@ -2,7 +2,7 @@ import os
 from flask import Flask, render_template, request, jsonify, redirect, url_for
 import asyncio
 from services.technical_analysis import get_signal_analysis
-from services.coingecko_service import get_token_price, get_token_market_data
+from services.coingecko_service import get_token_price, get_token_market_data # Added import
 import logging
 from datetime import datetime, timedelta
 from flask_talisman import Talisman
@@ -35,28 +35,16 @@ DEFAULT_DATA = {
     'support_2': 0.0,
     'resistance_1': 0.0,
     'resistance_2': 0.0,
+    'optimal_entry': 0.0,
+    'optimal_exit': 0.0,
+    'stop_loss': 0.0,
     'dca_recommendation': 'Enter a token to get DCA recommendations',
+    'historical_data': [],  # Empty list for historical data
     'chart_data': {
-        'labels': ['Support 2', 'Support 1', 'Current', 'Resistance 1', 'Resistance 2'],
-        'datasets': [{
-            'label': 'Price Levels',
-            'data': [0, 0, 0, 0, 0],
-            'backgroundColor': [
-                'rgba(34, 197, 94, 0.2)',
-                'rgba(34, 197, 94, 0.4)',
-                'rgba(249, 115, 22, 0.6)',
-                'rgba(239, 68, 68, 0.4)',
-                'rgba(239, 68, 68, 0.2)'
-            ],
-            'borderColor': [
-                'rgb(34, 197, 94)',
-                'rgb(34, 197, 94)',
-                'rgb(249, 115, 22)',
-                'rgb(239, 68, 68)',
-                'rgb(239, 68, 68)'
-            ],
-            'borderWidth': 1
-        }]
+        'labels': [],  # Empty list for timestamps
+        'prices': [],  # Empty list for price values
+        'support_levels': [0, 0],
+        'resistance_levels': [0, 0]
     }
 }
 
@@ -109,57 +97,50 @@ async def search():
         # Get market data and signal analysis
         price_data = await get_token_price(token)
         signal_data = await get_signal_analysis(token)
+        market_data = await get_token_market_data(token)
 
         logger.info(f"Retrieved data for {token}: Price=${price_data['usd']}, Signal strength={signal_data['signal_strength']}")
 
-        # Calculate trend score
+        # Calculate trend score and keep signal strength in 0-100 range
         trend_score = min(100, max(0, float(signal_data['signal_strength'])))
+        signal_strength = min(100, max(0, float(signal_data['signal_strength'])))
 
-        # Scale signal strength to 0-10 range
-        scaled_signal_strength = min(10, max(0, float(signal_data['signal_strength']) / 10))
+        # Calculate entry and exit prices based on support and resistance levels
+        current_price = float(price_data['usd'])
+        support_1 = float(signal_data['support_1'].replace('$', '').replace(',', ''))
+        support_2 = float(signal_data['support_2'].replace('$', '').replace(',', ''))
+        resistance_1 = float(signal_data['resistance_1'].replace('$', '').replace(',', ''))
+        resistance_2 = float(signal_data['resistance_2'].replace('$', '').replace(',', ''))
+
+        # Calculate optimal entry and exit prices
+        optimal_entry = (current_price + support_1) / 2
+        optimal_exit = (current_price + resistance_1) / 2
+        stop_loss = support_2
 
         template_data = {
             'token_symbol': token.upper(),
             'price': float(price_data['usd']),
             'price_change': float(price_data['usd_24h_change']),
-            'signal_strength': scaled_signal_strength,
+            'signal_strength': signal_strength,
             'signal_description': signal_data['signal'],
             'trend_score': trend_score,
             'trend_direction': signal_data['trend_direction'],
             'market_status': get_market_status(float(signal_data['rsi'])),
             'rsi': float(signal_data['rsi']),
-            'support_1': float(signal_data['support_1'].replace('$', '').replace(',', '')),
-            'support_2': float(signal_data['support_2'].replace('$', '').replace(',', '')),
-            'resistance_1': float(signal_data['resistance_1'].replace('$', '').replace(',', '')),
-            'resistance_2': float(signal_data['resistance_2'].replace('$', '').replace(',', '')),
+            'support_1': support_1,
+            'support_2': support_2,
+            'resistance_1': resistance_1,
+            'resistance_2': resistance_2,
+            'optimal_entry': optimal_entry,
+            'optimal_exit': optimal_exit,
+            'stop_loss': stop_loss,
             'dca_recommendation': signal_data['dca_recommendation'],
+            'historical_data': market_data['prices'][-30:],  # Last 30 days of price data
             'chart_data': {
-                'labels': ['Support 2', 'Support 1', 'Current', 'Resistance 1', 'Resistance 2'],
-                'datasets': [{
-                    'label': 'Price Levels',
-                    'data': [
-                        float(signal_data['support_2'].replace('$', '').replace(',', '')),
-                        float(signal_data['support_1'].replace('$', '').replace(',', '')),
-                        float(price_data['usd']),
-                        float(signal_data['resistance_1'].replace('$', '').replace(',', '')),
-                        float(signal_data['resistance_2'].replace('$', '').replace(',', ''))
-                    ],
-                    'backgroundColor': [
-                        'rgba(34, 197, 94, 0.2)',
-                        'rgba(34, 197, 94, 0.4)',
-                        'rgba(249, 115, 22, 0.6)',
-                        'rgba(239, 68, 68, 0.4)',
-                        'rgba(239, 68, 68, 0.2)'
-                    ],
-                    'borderColor': [
-                        'rgb(34, 197, 94)',
-                        'rgb(34, 197, 94)',
-                        'rgb(249, 115, 22)',
-                        'rgb(239, 68, 68)',
-                        'rgb(239, 68, 68)'
-                    ],
-                    'borderWidth': 1
-                }]
+                'labels': [price[0] for price in market_data['prices'][-30:]],  # Timestamps
+                'prices': [price[1] for price in market_data['prices'][-30:]],  # Price values
+                'support_levels': [support_1, support_2],
+                'resistance_levels': [resistance_1, resistance_2]
             }
         }
 
