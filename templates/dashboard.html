@@ -70,227 +70,32 @@
         </div>
     </div>
 
-    <!-- Price Levels and MACD -->
-    <div class="bg-gray-900 rounded-lg p-4">
-        <h2 class="text-xl font-bold text-orange-500 mb-4">Price Levels</h2>
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div class="relative" style="height: 400px;">
-                <canvas id="priceChart"></canvas>
+    <!-- Historical Price Ranges -->
+    <div class="bg-gray-900 rounded-lg p-6">
+        <h2 class="text-xl font-bold text-orange-500 mb-4">Historical Price Ranges</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="bg-black bg-opacity-50 p-4 rounded">
+                <h3 class="text-orange-500 font-semibold mb-2">7 Day Range</h3>
+                <p class="text-sm">High: ${{ "%.2f"|format(seven_day_high|float) }}</p>
+                <p class="text-sm">Low: ${{ "%.2f"|format(seven_day_low|float) }}</p>
             </div>
-            <div class="relative" style="height: 400px;">
-                <canvas id="macdChart"></canvas>
+            <div class="bg-black bg-opacity-50 p-4 rounded">
+                <h3 class="text-orange-500 font-semibold mb-2">30 Day Range</h3>
+                <p class="text-sm">High: ${{ "%.2f"|format(thirty_day_high|float) }}</p>
+                <p class="text-sm">Low: ${{ "%.2f"|format(thirty_day_low|float) }}</p>
+            </div>
+            <div class="bg-black bg-opacity-50 p-4 rounded">
+                <h3 class="text-orange-500 font-semibold mb-2">90 Day Range</h3>
+                <p class="text-sm">High: ${{ "%.2f"|format(ninety_day_high|float) }}</p>
+                <p class="text-sm">Low: ${{ "%.2f"|format(ninety_day_low|float) }}</p>
+            </div>
+            <div class="bg-black bg-opacity-50 p-4 rounded">
+                <h3 class="text-orange-500 font-semibold mb-2">365 Day Range</h3>
+                <p class="text-sm">High: ${{ "%.2f"|format(yearly_high|float) }}</p>
+                <p class="text-sm">Low: ${{ "%.2f"|format(yearly_low|float) }}</p>
             </div>
         </div>
     </div>
-
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const priceCtx = document.getElementById('priceChart').getContext('2d');
-        const macdCtx = document.getElementById('macdChart').getContext('2d');
-        const chartData = {{ chart_data|tojson }};
-
-        if (!chartData || !chartData.labels || !chartData.prices) {
-            console.error('Invalid chart data:', chartData);
-            return;
-        }
-
-        const support1 = chartData.support_levels[0];
-        const support2 = chartData.support_levels[1];
-        const resistance1 = chartData.resistance_levels[0];
-        const resistance2 = chartData.resistance_levels[1];
-
-        // Create the price levels bar chart
-        window.priceChart = new Chart(priceCtx, {
-            type: 'bar',
-            data: {
-                labels: ['Support 2', 'Support 1', 'Resistance 1', 'Resistance 2'],
-                datasets: [{
-                    data: [support2, support1, resistance1, resistance2],
-                    backgroundColor: [
-                        'rgba(0, 100, 0, 0.7)',    // Dark green for Support 2
-                        'rgba(50, 205, 50, 0.7)',   // Light green for Support 1
-                        'rgba(255, 99, 99, 0.7)',   // Light red for Resistance 1
-                        'rgba(255, 0, 0, 0.7)'      // Dark red for Resistance 2
-                    ],
-                    borderColor: [
-                        'rgb(0, 100, 0)',
-                        'rgb(50, 205, 50)',
-                        'rgb(255, 99, 99)',
-                        'rgb(255, 0, 0)'
-                    ],
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: {
-                    intersect: false,
-                    mode: 'index'
-                },
-                scales: {
-                    y: {
-                        beginAtZero: false,
-                        grid: {
-                            color: 'rgba(255, 255, 255, 0.1)'
-                        },
-                        ticks: {
-                            color: '#FFF',
-                            callback: function(value) {
-                                return '$' + value.toLocaleString();
-                            }
-                        }
-                    },
-                    x: {
-                        grid: {
-                            color: 'rgba(255, 255, 255, 0.1)'
-                        },
-                        ticks: {
-                            color: '#FFF'
-                        }
-                    }
-                },
-                plugins: {
-                    legend: {
-                        display: false
-                    },
-                    tooltip: {
-                        backgroundColor: 'rgba(0, 0, 0, 0.9)',
-                        titleColor: '#F97316',
-                        bodyColor: '#FFFFFF',
-                        padding: 12,
-                        displayColors: true,
-                        callbacks: {
-                            label: function(context) {
-                                return '$' + context.parsed.y.toLocaleString();
-                            }
-                        }
-                    }
-                }
-            }
-        });
-
-        // Create the MACD chart
-        const macdData = chartData.macd_data;
-        const labels = chartData.labels.map(timestamp => new Date(timestamp).toLocaleDateString());
-
-        window.macdChart = new Chart(macdCtx, {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [
-                    {
-                        label: 'MACD Histogram',
-                        data: macdData.histogram,
-                        type: 'bar',
-                        backgroundColor: function(context) {
-                            const value = context.dataset.data[context.dataIndex];
-                            return value >= 0 ? 'rgba(50, 205, 50, 0.7)' : 'rgba(255, 99, 99, 0.7)';
-                        },
-                        borderColor: function(context) {
-                            const value = context.dataset.data[context.dataIndex];
-                            return value >= 0 ? 'rgb(50, 205, 50)' : 'rgb(255, 99, 99)';
-                        },
-                        borderWidth: 1,
-                        order: 1,
-                        yAxisID: 'histogram'
-                    },
-                    {
-                        label: 'MACD Line',
-                        data: macdData.macd,
-                        type: 'line',
-                        borderColor: 'rgb(249, 115, 22)',
-                        borderWidth: 2,
-                        fill: false,
-                        tension: 0.4,
-                        order: 0,
-                        yAxisID: 'lines'
-                    },
-                    {
-                        label: 'Signal Line',
-                        data: macdData.signal,
-                        type: 'line',
-                        borderColor: 'rgb(59, 130, 246)',
-                        borderWidth: 2,
-                        fill: false,
-                        tension: 0.4,
-                        order: 0,
-                        yAxisID: 'lines'
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: {
-                    intersect: false,
-                    mode: 'index'
-                },
-                scales: {
-                    histogram: {
-                        type: 'linear',
-                        position: 'left',
-                        grid: {
-                            color: 'rgba(255, 255, 255, 0.1)'
-                        },
-                        ticks: {
-                            color: '#FFF'
-                        },
-                        // Adjust the scale to make histogram more visible
-                        suggestedMin: function(context) {
-                            const histogramData = context.chart.data.datasets[0].data;
-                            return Math.min(...histogramData) * 1.5;
-                        },
-                        suggestedMax: function(context) {
-                            const histogramData = context.chart.data.datasets[0].data;
-                            return Math.max(...histogramData) * 1.5;
-                        }
-                    },
-                    lines: {
-                        type: 'linear',
-                        position: 'right',
-                        grid: {
-                            drawOnChartArea: false
-                        },
-                        ticks: {
-                            color: '#FFF'
-                        }
-                    },
-                    x: {
-                        grid: {
-                            color: 'rgba(255, 255, 255, 0.1)'
-                        },
-                        ticks: {
-                            color: '#FFF',
-                            maxRotation: 45,
-                            minRotation: 45,
-                            maxTicksLimit: 8
-                        }
-                    }
-                },
-                plugins: {
-                    legend: {
-                        display: true,
-                        position: 'top',
-                        labels: {
-                            color: '#FFF',
-                            font: {
-                                size: 12
-                            }
-                        }
-                    },
-                    tooltip: {
-                        backgroundColor: 'rgba(0, 0, 0, 0.9)',
-                        titleColor: '#F97316',
-                        bodyColor: '#FFFFFF',
-                        padding: 12,
-                        displayColors: true
-                    }
-                }
-            }
-        });
-    });
-    </script>
 
     <!-- Support/Resistance Levels and Trading Strategy -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -349,6 +154,14 @@
         </div>
     </div>
 
+    <!-- Price Chart -->
+    <div class="bg-gray-900 rounded-lg p-4">
+        <h2 class="text-xl font-bold text-orange-500 mb-4">Price Levels</h2>
+        <div class="relative" style="height: 400px;">
+            <canvas id="priceChart"></canvas>
+        </div>
+    </div>
+
     <!-- Telegram Bot Integration -->
     <div class="bg-gray-900 rounded-lg p-4 mt-6">
         <h2 class="text-xl font-bold text-orange-500 mb-4">Get More with YieldSensei Bot</h2>
@@ -375,5 +188,93 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const priceCtx = document.getElementById('priceChart').getContext('2d');
+    const chartData = {{ chart_data|tojson }};
+
+    if (!chartData || !chartData.labels || !chartData.prices) {
+        console.error('Invalid chart data:', chartData);
+        return;
+    }
+
+    const support1 = chartData.support_levels[0];
+    const support2 = chartData.support_levels[1];
+    const resistance1 = chartData.resistance_levels[0];
+    const resistance2 = chartData.resistance_levels[1];
+
+    // Create the price levels bar chart
+    window.priceChart = new Chart(priceCtx, {
+        type: 'bar',
+        data: {
+            labels: ['Support 2', 'Support 1', 'Resistance 1', 'Resistance 2'],
+            datasets: [{
+                data: [support2, support1, resistance1, resistance2],
+                backgroundColor: [
+                    'rgba(0, 100, 0, 0.7)',    // Dark green for Support 2
+                    'rgba(50, 205, 50, 0.7)',   // Light green for Support 1
+                    'rgba(255, 99, 99, 0.7)',   // Light red for Resistance 1
+                    'rgba(255, 0, 0, 0.7)'      // Dark red for Resistance 2
+                ],
+                borderColor: [
+                    'rgb(0, 100, 0)',
+                    'rgb(50, 205, 50)',
+                    'rgb(255, 99, 99)',
+                    'rgb(255, 0, 0)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            },
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    },
+                    ticks: {
+                        color: '#FFF',
+                        callback: function(value) {
+                            return '$' + value.toLocaleString();
+                        }
+                    }
+                },
+                x: {
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    },
+                    ticks: {
+                        color: '#FFF'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                    titleColor: '#F97316',
+                    bodyColor: '#FFFFFF',
+                    padding: 12,
+                    displayColors: true,
+                    callbacks: {
+                        label: function(context) {
+                            return '$' + context.parsed.y.toLocaleString();
+                        }
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
 
 {% endblock %}

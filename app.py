@@ -41,6 +41,15 @@ DEFAULT_DATA = {
     'stop_loss': 0.0,
     'dca_recommendation': 'Enter a token to get DCA recommendations',
     'historical_data': [],  # Empty list for historical data
+    # Add default values for historical price ranges
+    'seven_day_high': 0.0,
+    'seven_day_low': 0.0,
+    'thirty_day_high': 0.0,
+    'thirty_day_low': 0.0,
+    'ninety_day_high': 0.0,
+    'ninety_day_low': 0.0,
+    'yearly_high': 0.0,
+    'yearly_low': 0.0,
     'chart_data': {
         'labels': [],  # Empty list for timestamps
         'prices': [],  # Empty list for price values
@@ -121,64 +130,60 @@ async def search():
         optimal_exit = (current_price + resistance_1) / 2
         stop_loss = support_2
 
-        # Extract historical price data and MACD values
+        # Extract historical price data
         historical_prices = []
         if 'prices' in market_data and market_data['prices']:
-            historical_prices = market_data['prices'][-30:]  # Last 30 days
+            historical_prices = market_data['prices']
             logger.info(f"Found {len(historical_prices)} historical price points")
 
-            # Extract price values for MACD calculation
-            prices = pd.Series([price[1] for price in historical_prices])
-            exp1 = prices.ewm(span=12, adjust=False).mean()
-            exp2 = prices.ewm(span=26, adjust=False).mean()
-            macd = exp1 - exp2
-            signal = macd.ewm(span=9, adjust=False).mean()
+            # Calculate historical highs and lows
+            prices_365d = [price[1] for price in historical_prices[-365:]] if len(historical_prices) >= 365 else []
+            prices_90d = [price[1] for price in historical_prices[-90:]] if len(historical_prices) >= 90 else []
+            prices_30d = [price[1] for price in historical_prices[-30:]] if len(historical_prices) >= 30 else []
+            prices_7d = [price[1] for price in historical_prices[-7:]] if len(historical_prices) >= 7 else []
 
-            # Calculate MACD histogram
-            histogram = macd - signal
-
-            # Convert to lists for JSON serialization
-            macd_data = {
-                'macd': macd.tolist(),
-                'signal': signal.tolist(),
-                'histogram': histogram.tolist()
+            # Prepare template data
+            template_data = {
+                'token_symbol': token.upper(),
+                'price': float(price_data['usd']),
+                'price_change': float(price_data['usd_24h_change']),
+                'signal_strength': signal_strength,
+                'signal_description': signal_data['signal'],
+                'trend_score': trend_score,
+                'trend_direction': signal_data['trend_direction'],
+                'market_status': get_market_status(float(signal_data['rsi'])),
+                'rsi': float(signal_data['rsi']),
+                'support_1': support_1,
+                'support_2': support_2,
+                'resistance_1': resistance_1,
+                'resistance_2': resistance_2,
+                'optimal_entry': optimal_entry,
+                'optimal_exit': optimal_exit,
+                'stop_loss': stop_loss,
+                'dca_recommendation': signal_data['dca_recommendation'],
+                'historical_data': historical_prices,
+                'yearly_high': max(prices_365d) if prices_365d else current_price,
+                'yearly_low': min(prices_365d) if prices_365d else current_price,
+                'ninety_day_high': max(prices_90d) if prices_90d else current_price,
+                'ninety_day_low': min(prices_90d) if prices_90d else current_price,
+                'thirty_day_high': max(prices_30d) if prices_30d else current_price,
+                'thirty_day_low': min(prices_30d) if prices_30d else current_price,
+                'seven_day_high': max(prices_7d) if prices_7d else current_price,
+                'seven_day_low': min(prices_7d) if prices_7d else current_price,
+                'chart_data': {
+                    'labels': [price[0] for price in historical_prices],
+                    'prices': [price[1] for price in historical_prices],
+                    'support_levels': [float(support_1), float(support_2)],
+                    'resistance_levels': [float(resistance_1), float(resistance_2)]
+                }
             }
+
+            logger.info("Successfully processed data for {token}")
+            return render_template('dashboard.html', **template_data)
         else:
             logger.warning("No historical prices found in market data")
-            macd_data = {'macd': [], 'signal': [], 'histogram': []}
+            raise ValueError("No historical price data available")
 
-        # Prepare template data with proper formatting for the chart
-        template_data = {
-            'token_symbol': token.upper(),
-            'price': float(price_data['usd']),
-            'price_change': float(price_data['usd_24h_change']),
-            'signal_strength': signal_strength,
-            'signal_description': signal_data['signal'],
-            'trend_score': trend_score,
-            'trend_direction': signal_data['trend_direction'],
-            'market_status': get_market_status(float(signal_data['rsi'])),
-            'rsi': float(signal_data['rsi']),
-            'support_1': support_1,
-            'support_2': support_2,
-            'resistance_1': resistance_1,
-            'resistance_2': resistance_2,
-            'optimal_entry': optimal_entry,
-            'optimal_exit': optimal_exit,
-            'stop_loss': stop_loss,
-            'dca_recommendation': signal_data['dca_recommendation'],
-            'historical_data': historical_prices,
-            'chart_data': {
-                'labels': [price[0] for price in historical_prices],
-                'prices': [price[1] for price in historical_prices],
-                'support_levels': [float(support_1), float(support_2)],
-                'resistance_levels': [float(resistance_1), float(resistance_2)],
-                'macd_data': macd_data
-            }
-        }
-
-        logger.info(f"Successfully processed data for {token}")
-        logger.debug(f"Chart data prepared: {len(template_data['chart_data']['labels'])} data points")
-        return render_template('dashboard.html', **template_data)
     except Exception as e:
         logger.error(f"Error processing search request: {str(e)}")
         error_message = f"Error analyzing token: {str(e)}"
