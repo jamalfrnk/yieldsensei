@@ -125,6 +125,7 @@ async def search():
         if 'prices' in market_data and market_data['prices']:
             historical_prices = market_data['prices'][-30:]  # Last 30 days
 
+        # Prepare template data with proper formatting for the chart
         template_data = {
             'token_symbol': token.upper(),
             'price': float(price_data['usd']),

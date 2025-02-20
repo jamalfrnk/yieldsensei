@@ -197,34 +197,38 @@ document.addEventListener('DOMContentLoaded', function() {
                 {
                     label: 'Support 1',
                     data: Array(labels.length).fill(chartData.support_levels[0]),
-                    borderColor: 'rgb(50, 205, 50)', // Lime green
+                    borderColor: 'rgb(50, 205, 50)',
                     borderDash: [5, 5],
                     fill: false,
-                    borderWidth: 2
+                    borderWidth: 2,
+                    pointRadius: 0
                 },
                 {
                     label: 'Support 2',
                     data: Array(labels.length).fill(chartData.support_levels[1]),
-                    borderColor: 'rgb(0, 100, 0)', // Dark green
+                    borderColor: 'rgb(0, 100, 0)',
                     borderDash: [5, 5],
                     fill: false,
-                    borderWidth: 2
+                    borderWidth: 2,
+                    pointRadius: 0
                 },
                 {
                     label: 'Resistance 1',
                     data: Array(labels.length).fill(chartData.resistance_levels[0]),
-                    borderColor: 'rgb(128, 128, 128)', // Grey
+                    borderColor: 'rgb(128, 128, 128)',
                     borderDash: [5, 5],
                     fill: false,
-                    borderWidth: 2
+                    borderWidth: 2,
+                    pointRadius: 0
                 },
                 {
                     label: 'Resistance 2',
                     data: Array(labels.length).fill(chartData.resistance_levels[1]),
-                    borderColor: 'rgb(255, 0, 0)', // Red
+                    borderColor: 'rgb(255, 0, 0)',
                     borderDash: [5, 5],
                     fill: false,
-                    borderWidth: 2
+                    borderWidth: 2,
+                    pointRadius: 0
                 }
             ]
         },
@@ -266,7 +270,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     labels: {
                         color: '#FFF',
                         usePointStyle: true,
-                        padding: 20
+                        padding: 20,
+                        font: {
+                            size: 12
+                        }
                     }
                 },
                 tooltip: {
