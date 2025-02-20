@@ -14,6 +14,7 @@ from models import db, Quiz, Question, UserProgress, User
 from flask_cors import CORS
 import pandas as pd
 from services.sentiment_service import calculate_sentiment_score
+from services.sentiment_service import get_market_sentiment_data
 
 # Configure logging
 logging.basicConfig(
@@ -304,6 +305,19 @@ def submit_quiz(quiz_id):
 def glossary():
     """Render the metrics glossary page."""
     return render_template('glossary.html')
+
+# Add new API endpoint after existing routes
+@app.route('/api/market_sentiment')
+@limiter.limit("30 per minute")
+async def market_sentiment():
+    """Get market sentiment data for top cryptocurrencies."""
+    try:
+        sentiment_data = await get_market_sentiment_data()
+        return jsonify(sentiment_data)
+    except Exception as e:
+        logger.error(f"Error fetching market sentiment: {str(e)}")
+        return jsonify([])
+
 
 # Initialize database
 with app.app_context():
