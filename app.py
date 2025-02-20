@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, redirect, url_for
 import asyncio
 from services.technical_analysis import get_signal_analysis
 from services.coingecko_service import get_token_price, get_token_market_data
@@ -9,6 +9,9 @@ from flask_talisman import Talisman
 from flask_compress import Compress
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from flask_login import LoginManager, login_required, login_user, logout_user, current_user
+from flask_wtf.csrf import CSRFProtect
+from models import User
 import os
 
 # Configure logging
@@ -19,8 +22,9 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
+app.secret_key = os.urandom(24)  # Generate a random secret key for development
 
-# Security headers
+# Security headers with development settings
 Talisman(app, 
     content_security_policy={
         'default-src': "'self'",
@@ -29,27 +33,60 @@ Talisman(app,
         'img-src': ["'self'", 'data:', 'cdn.jsdelivr.net'],
         'font-src': ["'self'", 'cdn.jsdelivr.net']
     },
-    force_https=True
+    force_https=False  # Disable HTTPS for local development
 )
 
 # Enable compression
 Compress(app)
 
-# Configure rate limiting
+# Configure rate limiting with development limits
 limiter = Limiter(
     app=app,
     key_func=get_remote_address,
-    default_limits=["200 per day", "50 per hour"]
+    default_limits=["1000 per day", "200 per hour"]  # More lenient limits for development
 )
 
-# Production configuration
+# Initialize CSRF protection
+csrf = CSRFProtect(app)
+
+# Initialize Login manager
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+
+# Development configuration
 app.config.update(
-    ENV='production',
-    DEBUG=False,
-    SEND_FILE_MAX_AGE_DEFAULT=31536000,  # 1 year cache for static files
-    JSON_SORT_KEYS=False,  # Preserve JSON response order
-    PREFERRED_URL_SCHEME='https'
+    ENV='development',
+    DEBUG=True,
+    SEND_FILE_MAX_AGE_DEFAULT=0,  # Disable cache for development
+    JSON_SORT_KEYS=False,
+    PREFERRED_URL_SCHEME='http'
 )
+
+@login_manager.user_loader
+def load_user(user_id):
+    """Load user by ID."""
+    return User.get(int(user_id))
+
+# Authentication routes
+@app.route('/login')
+def login():
+    """Development login route that automatically logs in as dev user."""
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+
+    user = User.get(1)  # Get our mock dev user
+    if user:
+        login_user(user)
+        return redirect(url_for('index'))
+    return "Login failed", 401
+
+@app.route('/logout')
+@login_required
+def logout():
+    """Logout route."""
+    logout_user()
+    return redirect(url_for('index'))
 
 # Register custom template filters
 @app.template_filter('price_color')
@@ -231,4 +268,4 @@ async def generate_chart_data(token, days=30):
         return {'labels': [], 'datasets': []}
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=3000)
+    app.run(host='0.0.0.0', port=3000, debug=True)
