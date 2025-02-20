@@ -25,36 +25,36 @@
             <!-- 24h Range -->
             <div class="bg-black bg-opacity-50 p-4 rounded">
                 <h4 class="text-orange-500 font-semibold mb-2">24h Range</h4>
-                <p class="text-sm">High: ${{ "{:,.2f}".format(price_ranges.day.high|float) }}</p>
-                <p class="text-sm">Low: ${{ "{:,.2f}".format(price_ranges.day.low|float) }}</p>
+                <p class="text-sm">High: ${{ '{:,.2f}'.format(price_ranges.day.high) }}</p>
+                <p class="text-sm">Low: ${{ '{:,.2f}'.format(price_ranges.day.low) }}</p>
             </div>
 
             <!-- 7d Range -->
             <div class="bg-black bg-opacity-50 p-4 rounded">
                 <h4 class="text-orange-500 font-semibold mb-2">7 Day Range</h4>
-                <p class="text-sm">High: ${{ "{:,.2f}".format(price_ranges.week.high|float) }}</p>
-                <p class="text-sm">Low: ${{ "{:,.2f}".format(price_ranges.week.low|float) }}</p>
+                <p class="text-sm">High: ${{ '{:,.2f}'.format(price_ranges.week.high) }}</p>
+                <p class="text-sm">Low: ${{ '{:,.2f}'.format(price_ranges.week.low) }}</p>
             </div>
 
             <!-- 30d Range -->
             <div class="bg-black bg-opacity-50 p-4 rounded">
                 <h4 class="text-orange-500 font-semibold mb-2">30 Day Range</h4>
-                <p class="text-sm">High: ${{ "{:,.2f}".format(price_ranges.month.high|float) }}</p>
-                <p class="text-sm">Low: ${{ "{:,.2f}".format(price_ranges.month.low|float) }}</p>
+                <p class="text-sm">High: ${{ '{:,.2f}'.format(price_ranges.month.high) }}</p>
+                <p class="text-sm">Low: ${{ '{:,.2f}'.format(price_ranges.month.low) }}</p>
             </div>
 
             <!-- 90d Range -->
             <div class="bg-black bg-opacity-50 p-4 rounded">
                 <h4 class="text-orange-500 font-semibold mb-2">90 Day Range</h4>
-                <p class="text-sm">High: ${{ "{:,.2f}".format(price_ranges.quarter.high|float) }}</p>
-                <p class="text-sm">Low: ${{ "{:,.2f}".format(price_ranges.quarter.low|float) }}</p>
+                <p class="text-sm">High: ${{ '{:,.2f}'.format(price_ranges.quarter.high) }}</p>
+                <p class="text-sm">Low: ${{ '{:,.2f}'.format(price_ranges.quarter.low) }}</p>
             </div>
 
             <!-- 365d Range -->
             <div class="bg-black bg-opacity-50 p-4 rounded">
                 <h4 class="text-orange-500 font-semibold mb-2">365 Day Range</h4>
-                <p class="text-sm">High: ${{ "{:,.2f}".format(price_ranges.year.high|float) }}</p>
-                <p class="text-sm">Low: ${{ "{:,.2f}".format(price_ranges.year.low|float) }}</p>
+                <p class="text-sm">High: ${{ '{:,.2f}'.format(price_ranges.year.high) }}</p>
+                <p class="text-sm">Low: ${{ '{:,.2f}'.format(price_ranges.year.low) }}</p>
             </div>
         </div>
     </div>
@@ -72,8 +72,8 @@
                     </div>
                 </div>
             </div>
-            <p class="text-sm">ML Prediction: ${{ "{:,.2f}".format(predictions.next_day.rf_prediction|float) }}</p>
-            <p class="text-sm">Prophet Prediction: ${{ "{:,.2f}".format(predictions.next_day.prophet_prediction|float) }}</p>
+            <p class="text-sm">ML Prediction: ${{ '{:,.2f}'.format(predictions.next_day.rf_prediction) }}</p>
+            <p class="text-sm">Prophet Prediction: ${{ '{:,.2f}'.format(predictions.next_day.prophet_prediction) }}</p>
         </div>
         <div class="bg-black bg-opacity-50 p-4 rounded">
             <div class="flex items-center mb-2">
@@ -85,8 +85,8 @@
                     </div>
                 </div>
             </div>
-            <p class="text-sm">Upper: ${{ "{:,.2f}".format(predictions.next_day.upper_bound|float) }}</p>
-            <p class="text-sm">Lower: ${{ "{:,.2f}".format(predictions.next_day.lower_bound|float) }}</p>
+            <p class="text-sm">Upper: ${{ '{:,.2f}'.format(predictions.next_day.upper_bound) }}</p>
+            <p class="text-sm">Lower: ${{ '{:,.2f}'.format(predictions.next_day.lower_bound) }}</p>
         </div>
         <div class="bg-black bg-opacity-50 p-4 rounded">
             <div class="flex items-center mb-2">
@@ -98,7 +98,7 @@
                     </div>
                 </div>
             </div>
-            <p class="text-sm">Score: {{ "%.1f"|format(confidence_score|float) }}%</p>
+            <p class="text-sm">Score: {{ '{:,.1f}'.format(confidence_score) }}%</p>
             <p class="text-sm text-gray-400">Based on model agreement and range</p>
         </div>
         <div class="bg-black bg-opacity-50 p-4 rounded">
@@ -111,8 +111,8 @@
                     </div>
                 </div>
             </div>
-            <p class="text-sm">Signal Strength: {{ "%.1f"|format(signal_strength|float) }}%</p>
-            <p class="text-sm">RSI: {{ "%.1f"|format(rsi|float) }}</p>
+            <p class="text-sm">Signal Strength: {{ '{:,.1f}'.format(signal_strength) }}%</p>
+            <p class="text-sm">RSI: {{ '{:,.1f}'.format(rsi) }}</p>
         </div>
         {% else %}
         <div class="col-span-4 text-center p-4">

@@ -21,10 +21,10 @@
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div class="bg-gray-900 rounded-lg p-6 border-2 border-orange-500 hover:bg-gray-800 transition-colors duration-200 col-span-1 md:col-span-2">
                 <h3 class="text-2xl font-semibold text-orange-500 mb-4">{{ token_symbol }}</h3>
-                <p class="text-5xl font-bold text-orange-500 mb-3">${{ "%.2f"|format(price|float) }}</p>
+                <p class="text-5xl font-bold text-orange-500 mb-3">${{ '{:,.2f}'.format(price) }}</p>
                 <p class="text-xl text-orange-400">24h Change: 
                     <span class="{% if price_change >= 0 %}text-green-500{% else %}text-red-500{% endif %}">
-                        {{ "%.2f"|format(price_change|float) }}%
+                        {{ '{:,.2f}'.format(price_change) }}%
                     </span>
                 </p>
             </div>
@@ -38,7 +38,7 @@
                         </div>
                     </div>
                 </div>
-                <p class="text-2xl mt-2">{{ "%.1f"|format(signal_strength|float) }}/100</p>
+                <p class="text-2xl mt-2">{{ '{:,.1f}'.format(signal_strength) }}/100</p>
                 <p class="text-sm text-gray-400">{{ signal_description }}</p>
             </div>
             <div class="bg-gray-900 rounded-lg p-4 border border-orange-500 hover:bg-gray-800 transition-colors duration-200">
@@ -51,7 +51,7 @@
                         </div>
                     </div>
                 </div>
-                <p class="text-2xl mt-2">RSI: {{ "%.1f"|format(rsi|float) }}</p>
+                <p class="text-2xl mt-2">RSI: {{ '{:,.1f}'.format(rsi) }}</p>
                 <p class="text-sm text-gray-400">{{ trend_direction }}</p>
             </div>
         </div>
@@ -59,7 +59,6 @@
         {% include "components/price_ranges.html" %}
         {% include "components/trading_strategy.html" %}
         {% include "components/price_chart.html" %}
-        {% include "components/telegram_bot.html" %}
     {% endif %}
 </div>
 {% endblock %}
