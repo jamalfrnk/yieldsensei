@@ -15,7 +15,7 @@ from models import db, Quiz, Question, UserProgress, User
 # Configure logging
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.DEBUG
+    level=logging.INFO
 )
 logger = logging.getLogger(__name__)
 
@@ -35,8 +35,26 @@ DEFAULT_DATA = {
     'resistance_2': 0.0,
     'dca_recommendation': 'Enter a token to get DCA recommendations',
     'chart_data': {
-        'labels': [],
-        'datasets': []
+        'labels': ['Support 2', 'Support 1', 'Current', 'Resistance 1', 'Resistance 2'],
+        'datasets': [{
+            'label': 'Price Levels',
+            'data': [0, 0, 0, 0, 0],
+            'backgroundColor': [
+                'rgba(34, 197, 94, 0.2)',
+                'rgba(34, 197, 94, 0.4)',
+                'rgba(249, 115, 22, 0.6)',
+                'rgba(239, 68, 68, 0.4)',
+                'rgba(239, 68, 68, 0.2)'
+            ],
+            'borderColor': [
+                'rgb(34, 197, 94)',
+                'rgb(34, 197, 94)',
+                'rgb(249, 115, 22)',
+                'rgb(239, 68, 68)',
+                'rgb(239, 68, 68)'
+            ],
+            'borderWidth': 1
+        }]
     }
 }
 
@@ -45,7 +63,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 
-# Security headers
+# Security headers with relaxed CSP for Chart.js
 Talisman(app, 
     content_security_policy={
         'default-src': "'self'",
@@ -54,7 +72,7 @@ Talisman(app,
         'img-src': ["'self'", 'data:', 'cdn.jsdelivr.net'],
         'font-src': ["'self'", 'cdn.jsdelivr.net']
     },
-    force_https=False  # Disable HTTPS for local development
+    force_https=False
 )
 
 # Enable compression
@@ -67,20 +85,11 @@ limiter = Limiter(
     default_limits=["200 per hour"]
 )
 
-# Register template filters
-@app.template_filter('price_color')
-def price_color_filter(value):
-    """Return CSS class based on price change value."""
-    try:
-        value = float(value)
-        return 'text-green-500' if value >= 0 else 'text-red-500'
-    except (ValueError, TypeError):
-        return 'text-gray-500'
-
 @app.route('/')
 @limiter.exempt
 async def index():
     """Render the main dashboard."""
+    logger.info("Rendering index page with default data")
     return render_template('dashboard.html', **DEFAULT_DATA)
 
 @app.route('/search')
@@ -89,12 +98,15 @@ async def search():
     """Handle token search and analysis."""
     token = request.args.get('token', 'bitcoin').lower()
     try:
+        logger.info(f"Processing search request for token: {token}")
+
         # Get market data and signal analysis
-        logger.info(f"Analyzing token: {token}")
         price_data = await get_token_price(token)
         signal_data = await get_signal_analysis(token)
 
-        # Calculate trend score (0-100)
+        logger.info(f"Retrieved data for {token}: Price=${price_data['usd']}, Signal strength={signal_data['signal_strength']}")
+
+        # Calculate trend score
         trend_score = min(100, max(0, float(signal_data['signal_strength'])))
 
         template_data = {
@@ -141,7 +153,7 @@ async def search():
             }
         }
 
-        logger.info(f"Successfully analyzed token: {token}")
+        logger.info(f"Successfully processed data for {token}")
         return render_template('dashboard.html', **template_data)
     except Exception as e:
         logger.error(f"Error processing search request: {str(e)}")
@@ -156,6 +168,14 @@ def get_market_status(rsi):
     else:
         return "Neutral ⚖️"
 
+@app.template_filter('price_color')
+def price_color_filter(value):
+    """Return CSS class based on price change value."""
+    try:
+        value = float(value)
+        return 'text-green-500' if value >= 0 else 'text-red-500'
+    except (ValueError, TypeError):
+        return 'text-gray-500'
 
 @app.route('/quizzes')
 def quizzes():
