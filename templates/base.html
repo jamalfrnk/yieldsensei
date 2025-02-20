@@ -7,11 +7,10 @@
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
-    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
 </head>
-<body class="bg-primary text-primary transition-colors duration-300">
+<body class="bg-black text-white">
     <!-- Navigation -->
-    <nav class="bg-primary border-b border-orange-500">
+    <nav class="bg-black border-b border-orange-500">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 <div class="flex">
@@ -21,24 +20,12 @@
                     </div>
                 </div>
                 <div class="flex items-center space-x-4">
-                    <a href="/" class="text-primary hover:text-orange-500">Dashboard</a>
-                    <a href="/signals" class="text-primary hover:text-orange-500">Signals</a>
-                    <a href="/dex" class="text-primary hover:text-orange-500">DEX Analytics</a>
-                    <a href="/quizzes" class="text-primary hover:text-orange-500">Learn & Earn</a>
-                    <a href="https://t.me/yieldsensei_bot" target="_blank" class="text-primary hover:text-orange-500">Telegram Bot</a>
-                    <a href="https://yieldsensei.gitbook.io/yieldsensei-docs" target="_blank" class="text-primary hover:text-orange-500">Docs</a>
-
-                    <!-- Theme Toggle Button -->
-                    <button onclick="toggleTheme()" class="theme-toggle p-2 rounded-lg">
-                        <!-- Moon icon for light mode -->
-                        <svg id="moon-icon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
-                        </svg>
-                        <!-- Sun icon for dark mode -->
-                        <svg id="sun-icon" class="w-6 h-6 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
-                        </svg>
-                    </button>
+                    <a href="/" class="text-white hover:text-orange-500">Dashboard</a>
+                    <a href="/signals" class="text-white hover:text-orange-500">Signals</a>
+                    <a href="/dex" class="text-white hover:text-orange-500">DEX Analytics</a>
+                    <a href="/quizzes" class="text-white hover:text-orange-500">Learn & Earn</a>
+                    <a href="https://t.me/yieldsensei_bot" target="_blank" class="text-white hover:text-orange-500">Telegram Bot</a>
+                    <a href="https://yieldsensei.gitbook.io/yieldsensei-docs" target="_blank" class="text-white hover:text-orange-500">Docs</a>
                 </div>
             </div>
         </div>
@@ -50,20 +37,20 @@
     </main>
 
     <!-- Footer -->
-    <footer class="bg-primary border-t border-orange-500 mt-8">
+    <footer class="bg-black border-t border-orange-500 mt-8">
         <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center">
-                <div class="text-secondary">
+                <div class="text-gray-400">
                     © 2025 YieldSensei. All rights reserved.
                 </div>
                 <div class="flex space-x-6">
-                    <a href="https://twitter.com/YieldSensei" target="_blank" class="text-secondary hover:text-orange-500">
+                    <a href="https://twitter.com/YieldSensei" target="_blank" class="text-gray-400 hover:text-orange-500">
                         Twitter
                     </a>
-                    <a href="https://t.me/yieldsensei" target="_blank" class="text-secondary hover:text-orange-500">
+                    <a href="https://t.me/yieldsensei" target="_blank" class="text-gray-400 hover:text-orange-500">
                         Telegram
                     </a>
-                    <a href="https://discord.gg/yieldsensei" target="_blank" class="text-secondary hover:text-orange-500">
+                    <a href="https://discord.gg/yieldsensei" target="_blank" class="text-gray-400 hover:text-orange-500">
                         Discord
                     </a>
                 </div>
