@@ -70,17 +70,24 @@
         </div>
     </div>
 
-    <!-- Price Chart -->
+    <!-- Price Levels -->
     <div class="bg-gray-900 rounded-lg p-4">
-        <h2 class="text-xl font-bold text-orange-500 mb-4">Price Chart</h2>
-        <div class="relative" style="height: 400px;">
-            <canvas id="priceChart"></canvas>
+        <h2 class="text-xl font-bold text-orange-500 mb-4">Price Levels</h2>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div class="relative" style="height: 400px;">
+                <canvas id="priceChart"></canvas>
+            </div>
+            <div class="relative" style="height: 400px;">
+                <canvas id="metricsChart"></canvas>
+            </div>
         </div>
     </div>
 
     <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const ctx = document.getElementById('priceChart').getContext('2d');
+        // Price Line Chart
+        const priceCtx = document.getElementById('priceChart').getContext('2d');
+        const metricsCtx = document.getElementById('metricsChart').getContext('2d');
         const chartData = {{ chart_data|tojson }};
 
         if (!chartData || !chartData.labels || !chartData.prices) {
@@ -94,7 +101,7 @@
         });
 
         // Create gradient for line
-        const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+        const gradient = priceCtx.createLinearGradient(0, 0, 0, 400);
         gradient.addColorStop(0, 'rgba(249, 115, 22, 0.4)');
         gradient.addColorStop(1, 'rgba(249, 115, 22, 0)');
 
@@ -103,8 +110,8 @@
         const resistance1 = chartData.resistance_levels[0];
         const resistance2 = chartData.resistance_levels[1];
 
-        // Create the chart
-        window.priceChart = new Chart(ctx, {
+        // Create the price chart
+        window.priceChart = new Chart(priceCtx, {
             type: 'line',
             data: {
                 labels: labels,
@@ -220,6 +227,76 @@
                                 return label;
                             }
                         }
+                    }
+                }
+            }
+        });
+
+        // Create the metrics bar chart
+        window.metricsChart = new Chart(metricsCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Signal Strength', 'Trend Score', 'RSI'],
+                datasets: [{
+                    label: 'Market Metrics',
+                    data: [
+                        {{ signal_strength }},
+                        {{ trend_score }},
+                        {{ rsi }}
+                    ],
+                    backgroundColor: [
+                        'rgba(249, 115, 22, 0.7)',  // Orange
+                        'rgba(50, 205, 50, 0.7)',   // Green
+                        'rgba(59, 130, 246, 0.7)'   // Blue
+                    ],
+                    borderColor: [
+                        'rgb(249, 115, 22)',
+                        'rgb(50, 205, 50)',
+                        'rgb(59, 130, 246)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: '#FFF'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: '#FFF'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            color: '#FFF',
+                            font: {
+                                size: 12
+                            }
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                        titleColor: '#F97316',
+                        bodyColor: '#FFFFFF',
+                        padding: 12,
+                        displayColors: true
                     }
                 }
             }
