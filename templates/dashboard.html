@@ -119,16 +119,17 @@
             </div>
             <div class="space-y-4">
                 <div class="bg-black bg-opacity-50 p-3 rounded">
-                    <h3 class="text-orange-500 font-semibold mb-2">Suggested Entry Points:</h3>
+                    <h3 class="text-orange-500 font-semibold mb-2">Trade Recommendation:</h3>
+                    <p class="text-sm whitespace-pre-line mb-4">{{ dca_recommendation }}</p>
+                </div>
+                <div class="bg-black bg-opacity-50 p-3 rounded">
+                    <h3 class="text-orange-500 font-semibold mb-2">Entry Strategy:</h3>
                     <p>Optimal Entry: ${{ "%.2f"|format(optimal_entry|float) }}</p>
                     <p>Stop Loss: ${{ "%.2f"|format(stop_loss|float) }}</p>
                 </div>
                 <div class="bg-black bg-opacity-50 p-3 rounded">
-                    <h3 class="text-orange-500 font-semibold mb-2">Target Exit:</h3>
+                    <h3 class="text-orange-500 font-semibold mb-2">Exit Strategy:</h3>
                     <p>Take Profit: ${{ "%.2f"|format(optimal_exit|float) }}</p>
-                </div>
-                <div class="mt-4">
-                    <p class="text-sm whitespace-pre-line">{{ dca_recommendation }}</p>
                 </div>
             </div>
         </div>
@@ -192,28 +193,28 @@ document.addEventListener('DOMContentLoaded', function() {
                 {
                     label: 'Support 1',
                     data: Array(labels.length).fill(chartData.support_levels[0]),
-                    borderColor: 'rgba(34, 197, 94, 0.6)',
+                    borderColor: 'rgb(50, 205, 50)', // Lime green
                     borderDash: [5, 5],
                     fill: false
                 },
                 {
                     label: 'Support 2',
                     data: Array(labels.length).fill(chartData.support_levels[1]),
-                    borderColor: 'rgba(34, 197, 94, 0.4)',
+                    borderColor: 'rgb(0, 100, 0)', // Dark green
                     borderDash: [5, 5],
                     fill: false
                 },
                 {
                     label: 'Resistance 1',
                     data: Array(labels.length).fill(chartData.resistance_levels[0]),
-                    borderColor: 'rgba(239, 68, 68, 0.6)',
+                    borderColor: 'rgb(128, 128, 128)', // Grey
                     borderDash: [5, 5],
                     fill: false
                 },
                 {
                     label: 'Resistance 2',
                     data: Array(labels.length).fill(chartData.resistance_levels[1]),
-                    borderColor: 'rgba(239, 68, 68, 0.4)',
+                    borderColor: 'rgb(255, 0, 0)', // Red
                     borderDash: [5, 5],
                     fill: false
                 }
