@@ -1,0 +1,95 @@
+<!-- Price Chart -->
+<div class="bg-gray-900 rounded-lg p-4">
+    <h2 class="text-xl font-bold text-orange-500 mb-4">Price Levels</h2>
+    <div class="relative" style="height: 400px;">
+        <canvas id="priceChart"></canvas>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const priceCtx = document.getElementById('priceChart').getContext('2d');
+    const chartData = {{ chart_data|tojson }};
+
+    if (!chartData || !chartData.labels || !chartData.prices) {
+        console.error('Invalid chart data:', chartData);
+        return;
+    }
+
+    const support1 = chartData.support_levels[0];
+    const support2 = chartData.support_levels[1];
+    const resistance1 = chartData.resistance_levels[0];
+    const resistance2 = chartData.resistance_levels[1];
+
+    // Create the price levels bar chart
+    window.priceChart = new Chart(priceCtx, {
+        type: 'bar',
+        data: {
+            labels: ['Support 2', 'Support 1', 'Resistance 1', 'Resistance 2'],
+            datasets: [{
+                data: [support2, support1, resistance1, resistance2],
+                backgroundColor: [
+                    'rgba(0, 100, 0, 0.7)',    // Dark green for Support 2
+                    'rgba(50, 205, 50, 0.7)',   // Light green for Support 1
+                    'rgba(255, 99, 99, 0.7)',   // Light red for Resistance 1
+                    'rgba(255, 0, 0, 0.7)'      // Dark red for Resistance 2
+                ],
+                borderColor: [
+                    'rgb(0, 100, 0)',
+                    'rgb(50, 205, 50)',
+                    'rgb(255, 99, 99)',
+                    'rgb(255, 0, 0)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            },
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    },
+                    ticks: {
+                        color: '#FFF',
+                        callback: function(value) {
+                            return '$' + value.toLocaleString();
+                        }
+                    }
+                },
+                x: {
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    },
+                    ticks: {
+                        color: '#FFF'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                    titleColor: '#F97316',
+                    bodyColor: '#FFFFFF',
+                    padding: 12,
+                    displayColors: true,
+                    callbacks: {
+                        label: function(context) {
+                            return '$' + context.parsed.y.toLocaleString();
+                        }
+                    }
+                }
+            }
+        }
+    });
+});
+</script>

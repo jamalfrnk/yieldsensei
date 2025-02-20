@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0">
+  <!-- Rate Limit Error -->
+  <symbol id="error-rate-limit" viewBox="0 0 200 200">
+    <circle cx="100" cy="100" r="90" fill="#2A2A2A" stroke="#FF6B4A" stroke-width="4"/>
+    <path d="M100 40v60M100 120v5" stroke="#FF6B4A" stroke-width="8" stroke-linecap="round"/>
+    <circle cx="100" cy="100" r="40" fill="none" stroke="#FF6B4A" stroke-width="4" stroke-dasharray="8,8">
+      <animateTransform attributeName="transform" type="rotate" from="0 100 100" to="360 100 100" dur="3s" repeatCount="indefinite"/>
+    </circle>
+    <text x="100" y="160" text-anchor="middle" fill="#FF6B4A" font-size="14">Rate Limit Exceeded</text>
+  </symbol>
+  
+  <!-- Invalid Token Error -->
+  <symbol id="error-invalid-token" viewBox="0 0 200 200">
+    <circle cx="100" cy="100" r="90" fill="#2A2A2A" stroke="#FF6B4A" stroke-width="4"/>
+    <path d="M70 70l60 60M130 70l-60 60" stroke="#FF6B4A" stroke-width="8" stroke-linecap="round"/>
+    <text x="100" y="160" text-anchor="middle" fill="#FF6B4A" font-size="14">Invalid Token</text>
+  </symbol>
+  
+  <!-- Network Error -->
+  <symbol id="error-network" viewBox="0 0 200 200">
+    <circle cx="100" cy="100" r="90" fill="#2A2A2A" stroke="#FF6B4A" stroke-width="4"/>
+    <path d="M60 100h80M60 80l80 40M60 120l80-40" stroke="#FF6B4A" stroke-width="4" stroke-linecap="round" opacity="0.3"/>
+    <path d="M60 100h80" stroke="#FF6B4A" stroke-width="4" stroke-linecap="round">
+      <animate attributeName="opacity" values="1;0.3;1" dur="2s" repeatCount="indefinite"/>
+    </path>
+    <text x="100" y="160" text-anchor="middle" fill="#FF6B4A" font-size="14">Network Error</text>
+  </symbol>
+  
+  <!-- Generic Error -->
+  <symbol id="error-generic" viewBox="0 0 200 200">
+    <circle cx="100" cy="100" r="90" fill="#2A2A2A" stroke="#FF6B4A" stroke-width="4"/>
+    <path d="M100 60v50M100 130v10" stroke="#FF6B4A" stroke-width="8" stroke-linecap="round"/>
+    <text x="100" y="160" text-anchor="middle" fill="#FF6B4A" font-size="14">Error Occurred</text>
+  </symbol>
+</svg>

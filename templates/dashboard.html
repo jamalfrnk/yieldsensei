@@ -1,4 +1,6 @@
 {% extends "base.html" %}
+{% from "components/error.html" import render_error %}
+
 {% block content %}
 <div class="space-y-6">
     <!-- Search Bar -->
@@ -13,23 +15,20 @@
     </div>
 
     {% if error %}
-    <div class="bg-red-900 text-white rounded-lg p-4">
-        {{ error }}
-    </div>
-    {% endif %}
-
-    <!-- Market Overview -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="bg-gray-900 rounded-lg p-6 border-2 border-orange-500 hover:bg-gray-800 transition-colors duration-200 col-span-1 md:col-span-2">
-            <h3 class="text-xl font-semibold text-orange-500 mb-4">{{ token_symbol }}</h3>
-            <p class="text-4xl font-bold text-orange-500 mb-2">${{ "%.2f"|format(price|float) }}</p>
-            <p class="text-lg text-orange-400">24h Change: 
-                <span class="{% if price_change >= 0 %}text-green-500{% else %}text-red-500{% endif %}">
-                    {{ "%.2f"|format(price_change|float) }}%
-                </span>
-            </p>
-        </div>
-        <div class="bg-gray-900 rounded-lg p-4 border border-orange-500 hover:bg-gray-800 transition-colors duration-200">
+        {{ render_error(error) }}
+    {% else %}
+        <!-- Market Overview -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="bg-gray-900 rounded-lg p-6 border-2 border-orange-500 hover:bg-gray-800 transition-colors duration-200 col-span-1 md:col-span-2">
+                <h3 class="text-2xl font-semibold text-orange-500 mb-4">{{ token_symbol }}</h3>
+                <p class="text-5xl font-bold text-orange-500 mb-3">${{ "%.2f"|format(price|float) }}</p>
+                <p class="text-xl text-orange-400">24h Change: 
+                    <span class="{% if price_change >= 0 %}text-green-500{% else %}text-red-500{% endif %}">
+                        {{ "%.2f"|format(price_change|float) }}%
+                    </span>
+                </p>
+            </div>
+            <div class="bg-gray-900 rounded-lg p-4 border border-orange-500 hover:bg-gray-800 transition-colors duration-200">
             <div class="flex items-center mb-2">
                 <h3 class="text-lg font-semibold text-orange-500">Signal Strength</h3>
                 <div class="ml-2 group relative">
@@ -86,213 +85,15 @@
         </div>
     </div>
 </div>
-    </div>
-
-    <!-- Historical Price Ranges -->
-    <div class="bg-gray-900 rounded-lg p-6">
-        <h2 class="text-xl font-bold text-orange-500 mb-4">Historical Price Ranges</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div class="bg-black bg-opacity-50 p-4 rounded">
-                <h3 class="text-orange-500 font-semibold mb-2">7 Day Range</h3>
-                <p class="text-sm">High: ${{ "%.2f"|format(seven_day_high|float) }}</p>
-                <p class="text-sm">Low: ${{ "%.2f"|format(seven_day_low|float) }}</p>
-            </div>
-            <div class="bg-black bg-opacity-50 p-4 rounded">
-                <h3 class="text-orange-500 font-semibold mb-2">30 Day Range</h3>
-                <p class="text-sm">High: ${{ "%.2f"|format(thirty_day_high|float) }}</p>
-                <p class="text-sm">Low: ${{ "%.2f"|format(thirty_day_low|float) }}</p>
-            </div>
-            <div class="bg-black bg-opacity-50 p-4 rounded">
-                <h3 class="text-orange-500 font-semibold mb-2">90 Day Range</h3>
-                <p class="text-sm">High: ${{ "%.2f"|format(ninety_day_high|float) }}</p>
-                <p class="text-sm">Low: ${{ "%.2f"|format(ninety_day_low|float) }}</p>
-            </div>
-            <div class="bg-black bg-opacity-50 p-4 rounded">
-                <h3 class="text-orange-500 font-semibold mb-2">365 Day Range</h3>
-                <p class="text-sm">High: ${{ "%.2f"|format(yearly_high|float) }}</p>
-                <p class="text-sm">Low: ${{ "%.2f"|format(yearly_low|float) }}</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Support/Resistance Levels and Trading Strategy -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div class="bg-gray-900 rounded-lg p-4">
-            <h2 class="text-xl font-bold text-orange-500 mb-4">Key Levels</h2>
-            <div class="space-y-2">
-                <div class="flex justify-between items-center p-2 hover:bg-gray-800 rounded transition-colors duration-200">
-                    <span>Resistance 2:</span>
-                    <span class="text-red-500">${{ "%.2f"|format(resistance_2|float) }}</span>
-                </div>
-                <div class="flex justify-between items-center p-2 hover:bg-gray-800 rounded transition-colors duration-200">
-                    <span>Resistance 1:</span>
-                    <span class="text-red-400">${{ "%.2f"|format(resistance_1|float) }}</span>
-                </div>
-                <div class="flex justify-between items-center p-2 hover:bg-gray-800 rounded transition-colors duration-200">
-                    <span>Current Price:</span>
-                    <span class="text-white">${{ "%.2f"|format(price|float) }}</span>
-                </div>
-                <div class="flex justify-between items-center p-2 hover:bg-gray-800 rounded transition-colors duration-200">
-                    <span>Support 1:</span>
-                    <span class="text-green-400">${{ "%.2f"|format(support_1|float) }}</span>
-                </div>
-                <div class="flex justify-between items-center p-2 hover:bg-gray-800 rounded transition-colors duration-200">
-                    <span>Support 2:</span>
-                    <span class="text-green-500">${{ "%.2f"|format(support_2|float) }}</span>
-                </div>
-            </div>
         </div>
 
-        <!-- Trading Strategy -->
-        <div class="bg-gray-900 rounded-lg p-4">
-            <div class="flex items-center mb-4">
-                <h2 class="text-xl font-bold text-orange-500">Trading Strategy</h2>
-                <div class="ml-2 group relative">
-                    <span class="cursor-help text-orange-500">ⓘ</span>
-                    <div class="opacity-0 bg-black text-white text-sm rounded-lg py-2 px-3 absolute z-10 bottom-full mb-2 -left-1/2 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 w-64">
-                        Personalized trading recommendations based on current market conditions, technical analysis, and risk management principles. These strategies suggest optimal entry points and position sizing using Dollar Cost Averaging (DCA).
-                    </div>
-                </div>
-            </div>
-            <div class="space-y-4">
-                <div class="bg-black bg-opacity-50 p-3 rounded">
-                    <h3 class="text-orange-500 font-semibold mb-2">Trade Recommendation:</h3>
-                    <p class="text-sm whitespace-pre-line mb-4">{{ dca_recommendation }}</p>
-                </div>
-                <div class="bg-black bg-opacity-50 p-3 rounded">
-                    <h3 class="text-orange-500 font-semibold mb-2">Entry Strategy:</h3>
-                    <p>Optimal Entry: ${{ "%.2f"|format(optimal_entry|float) }}</p>
-                    <p>Stop Loss: ${{ "%.2f"|format(stop_loss|float) }}</p>
-                </div>
-                <div class="bg-black bg-opacity-50 p-3 rounded">
-                    <h3 class="text-orange-500 font-semibold mb-2">Exit Strategy:</h3>
-                    <p>Take Profit: ${{ "%.2f"|format(optimal_exit|float) }}</p>
-                </div>
-            </div>
-        </div>
-    </div>
+        {% include "components/price_ranges.html" %}
 
-    <!-- Price Chart -->
-    <div class="bg-gray-900 rounded-lg p-4">
-        <h2 class="text-xl font-bold text-orange-500 mb-4">Price Levels</h2>
-        <div class="relative" style="height: 400px;">
-            <canvas id="priceChart"></canvas>
-        </div>
-    </div>
+        {% include "components/trading_strategy.html" %}
 
-    <!-- Telegram Bot Integration -->
-    <div class="bg-gray-900 rounded-lg p-4 mt-6">
-        <h2 class="text-xl font-bold text-orange-500 mb-4">Get More with YieldSensei Bot</h2>
-        <p class="text-gray-300 mb-4">Access these features and more through our Telegram bot:</p>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div class="p-4 bg-black rounded-lg border border-orange-500">
-                <h3 class="text-lg font-semibold text-orange-500 mb-2">Real-time Signals</h3>
-                <p class="text-sm text-gray-400">Get instant trading signals with /signal command</p>
-            </div>
-            <div class="p-4 bg-black rounded-lg border border-orange-500">
-                <h3 class="text-lg font-semibold text-orange-500 mb-2">Market Data</h3>
-                <p class="text-sm text-gray-400">Check market stats with /market command</p>
-            </div>
-            <div class="p-4 bg-black rounded-lg border border-orange-500">
-                <h3 class="text-lg font-semibold text-orange-500 mb-2">DEX Analytics</h3>
-                <p class="text-sm text-gray-400">Analyze DEX pairs with /dexinfo command</p>
-            </div>
-        </div>
-        <div class="mt-6 text-center">
-            <a href="https://t.me/yieldsensei_bot" target="_blank" 
-               class="inline-block bg-orange-500 text-white px-8 py-3 rounded-lg hover:bg-orange-600 transition-colors duration-200">
-                Open Telegram Bot
-            </a>
-        </div>
-    </div>
+        {% include "components/price_chart.html" %}
+
+        {% include "components/telegram_bot.html" %}
+    {% endif %}
 </div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const priceCtx = document.getElementById('priceChart').getContext('2d');
-    const chartData = {{ chart_data|tojson }};
-
-    if (!chartData || !chartData.labels || !chartData.prices) {
-        console.error('Invalid chart data:', chartData);
-        return;
-    }
-
-    const support1 = chartData.support_levels[0];
-    const support2 = chartData.support_levels[1];
-    const resistance1 = chartData.resistance_levels[0];
-    const resistance2 = chartData.resistance_levels[1];
-
-    // Create the price levels bar chart
-    window.priceChart = new Chart(priceCtx, {
-        type: 'bar',
-        data: {
-            labels: ['Support 2', 'Support 1', 'Resistance 1', 'Resistance 2'],
-            datasets: [{
-                data: [support2, support1, resistance1, resistance2],
-                backgroundColor: [
-                    'rgba(0, 100, 0, 0.7)',    // Dark green for Support 2
-                    'rgba(50, 205, 50, 0.7)',   // Light green for Support 1
-                    'rgba(255, 99, 99, 0.7)',   // Light red for Resistance 1
-                    'rgba(255, 0, 0, 0.7)'      // Dark red for Resistance 2
-                ],
-                borderColor: [
-                    'rgb(0, 100, 0)',
-                    'rgb(50, 205, 50)',
-                    'rgb(255, 99, 99)',
-                    'rgb(255, 0, 0)'
-                ],
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            interaction: {
-                intersect: false,
-                mode: 'index'
-            },
-            scales: {
-                y: {
-                    beginAtZero: false,
-                    grid: {
-                        color: 'rgba(255, 255, 255, 0.1)'
-                    },
-                    ticks: {
-                        color: '#FFF',
-                        callback: function(value) {
-                            return '$' + value.toLocaleString();
-                        }
-                    }
-                },
-                x: {
-                    grid: {
-                        color: 'rgba(255, 255, 255, 0.1)'
-                    },
-                    ticks: {
-                        color: '#FFF'
-                    }
-                }
-            },
-            plugins: {
-                legend: {
-                    display: false
-                },
-                tooltip: {
-                    backgroundColor: 'rgba(0, 0, 0, 0.9)',
-                    titleColor: '#F97316',
-                    bodyColor: '#FFFFFF',
-                    padding: 12,
-                    displayColors: true,
-                    callbacks: {
-                        label: function(context) {
-                            return '$' + context.parsed.y.toLocaleString();
-                        }
-                    }
-                }
-            }
-        }
-    });
-});
-</script>
-
 {% endblock %}

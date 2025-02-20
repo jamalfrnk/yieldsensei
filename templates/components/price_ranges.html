@@ -1,0 +1,26 @@
+<!-- Historical Price Ranges -->
+<div class="bg-gray-900 rounded-lg p-6">
+    <h2 class="text-xl font-bold text-orange-500 mb-4">Historical Price Ranges</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-black bg-opacity-50 p-4 rounded">
+            <h3 class="text-orange-500 font-semibold mb-2">7 Day Range</h3>
+            <p class="text-sm">High: ${{ "%.2f"|format(seven_day_high|float) }}</p>
+            <p class="text-sm">Low: ${{ "%.2f"|format(seven_day_low|float) }}</p>
+        </div>
+        <div class="bg-black bg-opacity-50 p-4 rounded">
+            <h3 class="text-orange-500 font-semibold mb-2">30 Day Range</h3>
+            <p class="text-sm">High: ${{ "%.2f"|format(thirty_day_high|float) }}</p>
+            <p class="text-sm">Low: ${{ "%.2f"|format(thirty_day_low|float) }}</p>
+        </div>
+        <div class="bg-black bg-opacity-50 p-4 rounded">
+            <h3 class="text-orange-500 font-semibold mb-2">90 Day Range</h3>
+            <p class="text-sm">High: ${{ "%.2f"|format(ninety_day_high|float) }}</p>
+            <p class="text-sm">Low: ${{ "%.2f"|format(ninety_day_low|float) }}</p>
+        </div>
+        <div class="bg-black bg-opacity-50 p-4 rounded">
+            <h3 class="text-orange-500 font-semibold mb-2">365 Day Range</h3>
+            <p class="text-sm">High: ${{ "%.2f"|format(yearly_high|float) }}</p>
+            <p class="text-sm">Low: ${{ "%.2f"|format(yearly_low|float) }}</p>
+        </div>
+    </div>
+</div>

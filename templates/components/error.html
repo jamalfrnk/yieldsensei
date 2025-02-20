@@ -1,0 +1,37 @@
+{% macro render_error(error_message, error_type='generic') %}
+<div class="bg-gray-900 rounded-lg p-6 border-2 border-orange-500 my-4 animate-fade-in">
+    <div class="flex flex-col items-center space-y-4">
+        <!-- Error Illustration -->
+        <div class="w-32 h-32">
+            {% if "rate limit" in error_message.lower() %}
+                <svg class="w-full h-full"><use href="/static/images/error-illustrations.svg#error-rate-limit"/></svg>
+            {% elif "invalid token" in error_message.lower() %}
+                <svg class="w-full h-full"><use href="/static/images/error-illustrations.svg#error-invalid-token"/></svg>
+            {% elif "network" in error_message.lower() %}
+                <svg class="w-full h-full"><use href="/static/images/error-illustrations.svg#error-network"/></svg>
+            {% else %}
+                <svg class="w-full h-full"><use href="/static/images/error-illustrations.svg#error-generic"/></svg>
+            {% endif %}
+        </div>
+        
+        <!-- Error Message -->
+        <div class="text-center">
+            <h3 class="text-xl font-bold text-orange-500 mb-2">Oops! Something went wrong</h3>
+            <p class="text-gray-300">{{ error_message }}</p>
+        </div>
+        
+        <!-- Helpful Tips -->
+        <div class="mt-4 text-sm text-gray-400">
+            {% if "rate limit" in error_message.lower() %}
+                <p>💡 Try again in a few moments</p>
+            {% elif "invalid token" in error_message.lower() %}
+                <p>💡 Check if the token symbol is correct</p>
+            {% elif "network" in error_message.lower() %}
+                <p>💡 Check your internet connection</p>
+            {% else %}
+                <p>💡 Please try again or use a different token</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endmacro %}
