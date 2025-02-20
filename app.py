@@ -5,6 +5,11 @@ from services.coingecko_service import get_token_price, get_token_market_data
 import logging
 from datetime import datetime, timedelta
 from asgiref.wsgi import WsgiToAsgi
+from flask_talisman import Talisman
+from flask_compress import Compress
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+import os
 
 # Configure logging
 logging.basicConfig(
@@ -14,6 +19,37 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
+
+# Security headers
+Talisman(app, 
+    content_security_policy={
+        'default-src': "'self'",
+        'script-src': ["'self'", "'unsafe-inline'", 'cdn.jsdelivr.net'],
+        'style-src': ["'self'", "'unsafe-inline'", 'cdn.jsdelivr.net'],
+        'img-src': ["'self'", 'data:', 'cdn.jsdelivr.net'],
+        'font-src': ["'self'", 'cdn.jsdelivr.net']
+    },
+    force_https=True
+)
+
+# Enable compression
+Compress(app)
+
+# Configure rate limiting
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    default_limits=["200 per day", "50 per hour"]
+)
+
+# Production configuration
+app.config.update(
+    ENV='production',
+    DEBUG=False,
+    SEND_FILE_MAX_AGE_DEFAULT=31536000,  # 1 year cache for static files
+    JSON_SORT_KEYS=False,  # Preserve JSON response order
+    PREFERRED_URL_SCHEME='https'
+)
 
 # Register custom template filters
 @app.template_filter('price_color')
@@ -25,7 +61,19 @@ def price_color_filter(value):
     except (ValueError, TypeError):
         return 'text-gray-500'
 
+@app.errorhandler(429)
+async def ratelimit_handler(e):
+    """Handle rate limit exceeded errors."""
+    return jsonify(error="Rate limit exceeded. Please try again later."), 429
+
+@app.errorhandler(500)
+async def internal_error(e):
+    """Handle internal server errors."""
+    logger.error(f"Internal server error: {str(e)}")
+    return jsonify(error="An internal server error occurred. Please try again later."), 500
+
 @app.route('/')
+@limiter.exempt  # Main page is exempt from rate limiting
 async def index():
     """Render the main dashboard with default values."""
     default_data = {
@@ -51,6 +99,7 @@ async def index():
     return render_template('dashboard.html', **default_data)
 
 @app.route('/chart-data')
+@limiter.limit("30 per minute")  # Specific rate limit for chart data
 async def chart_data():
     """Handle chart data requests for different timeframes."""
     token = request.args.get('token', 'bitcoin').lower()
@@ -64,6 +113,7 @@ async def chart_data():
         return jsonify({'error': str(e)}), 400
 
 @app.route('/search')
+@limiter.limit("20 per minute")  # Specific rate limit for token search
 async def search():
     """Handle token search and analysis."""
     token = request.args.get('token', 'bitcoin').lower()
@@ -181,4 +231,4 @@ async def generate_chart_data(token, days=30):
         return {'labels': [], 'datasets': []}
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=3000, debug=True)
+    app.run(host='0.0.0.0', port=3000)

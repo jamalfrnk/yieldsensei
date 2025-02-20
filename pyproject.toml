@@ -5,8 +5,12 @@ description = "Add your description here"
 requires-python = ">=3.11"
 dependencies = [
     "aiohttp>=3.11.12",
+    "asgiref>=3.8.1",
     "cachetools>=5.5.1",
     "firebase-admin>=6.6.0",
+    "flask-compress>=1.17",
+    "flask-limiter>=3.10.1",
+    "flask-talisman>=1.1.0",
     "flask[async]>=3.1.0",
     "numpy>=2.2.3",
     "openai>=1.0.0",
