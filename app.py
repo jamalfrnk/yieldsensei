@@ -12,6 +12,7 @@ from flask_limiter.util import get_remote_address
 from flask_sqlalchemy import SQLAlchemy
 from models import db, Quiz, Question, UserProgress, User
 from flask_cors import CORS
+import pandas as pd # Added import for pandas
 
 # Configure logging
 logging.basicConfig(
@@ -120,13 +121,31 @@ async def search():
         optimal_exit = (current_price + resistance_1) / 2
         stop_loss = support_2
 
-        # Extract historical price data
+        # Extract historical price data and MACD values
         historical_prices = []
         if 'prices' in market_data and market_data['prices']:
             historical_prices = market_data['prices'][-30:]  # Last 30 days
             logger.info(f"Found {len(historical_prices)} historical price points")
+
+            # Extract price values for MACD calculation
+            prices = pd.Series([price[1] for price in historical_prices])
+            exp1 = prices.ewm(span=12, adjust=False).mean()
+            exp2 = prices.ewm(span=26, adjust=False).mean()
+            macd = exp1 - exp2
+            signal = macd.ewm(span=9, adjust=False).mean()
+
+            # Calculate MACD histogram
+            histogram = macd - signal
+
+            # Convert to lists for JSON serialization
+            macd_data = {
+                'macd': macd.tolist(),
+                'signal': signal.tolist(),
+                'histogram': histogram.tolist()
+            }
         else:
             logger.warning("No historical prices found in market data")
+            macd_data = {'macd': [], 'signal': [], 'histogram': []}
 
         # Prepare template data with proper formatting for the chart
         template_data = {
@@ -152,7 +171,8 @@ async def search():
                 'labels': [price[0] for price in historical_prices],
                 'prices': [price[1] for price in historical_prices],
                 'support_levels': [float(support_1), float(support_2)],
-                'resistance_levels': [float(resistance_1), float(resistance_2)]
+                'resistance_levels': [float(resistance_1), float(resistance_2)],
+                'macd_data': macd_data
             }
         }
 

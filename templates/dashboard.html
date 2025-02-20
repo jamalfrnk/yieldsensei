@@ -70,17 +70,23 @@
         </div>
     </div>
 
-    <!-- Price Levels -->
+    <!-- Price Levels and MACD -->
     <div class="bg-gray-900 rounded-lg p-4">
         <h2 class="text-xl font-bold text-orange-500 mb-4">Price Levels</h2>
-        <div class="relative" style="height: 400px;">
-            <canvas id="priceChart"></canvas>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div class="relative" style="height: 400px;">
+                <canvas id="priceChart"></canvas>
+            </div>
+            <div class="relative" style="height: 400px;">
+                <canvas id="macdChart"></canvas>
+            </div>
         </div>
     </div>
 
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         const priceCtx = document.getElementById('priceChart').getContext('2d');
+        const macdCtx = document.getElementById('macdChart').getContext('2d');
         const chartData = {{ chart_data|tojson }};
 
         if (!chartData || !chartData.labels || !chartData.prices) {
@@ -159,6 +165,99 @@
                                 return '$' + context.parsed.y.toLocaleString();
                             }
                         }
+                    }
+                }
+            }
+        });
+
+        // Create the MACD chart
+        const macdData = chartData.macd_data;
+        const labels = chartData.labels.map(timestamp => new Date(timestamp).toLocaleDateString());
+
+        window.macdChart = new Chart(macdCtx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'MACD Histogram',
+                        data: macdData.histogram,
+                        type: 'bar',
+                        backgroundColor: function(context) {
+                            const value = context.dataset.data[context.dataIndex];
+                            return value >= 0 ? 'rgba(50, 205, 50, 0.7)' : 'rgba(255, 99, 99, 0.7)';
+                        },
+                        borderColor: function(context) {
+                            const value = context.dataset.data[context.dataIndex];
+                            return value >= 0 ? 'rgb(50, 205, 50)' : 'rgb(255, 99, 99)';
+                        },
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'MACD Line',
+                        data: macdData.macd,
+                        type: 'line',
+                        borderColor: 'rgb(249, 115, 22)',
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.4
+                    },
+                    {
+                        label: 'Signal Line',
+                        data: macdData.signal,
+                        type: 'line',
+                        borderColor: 'rgb(59, 130, 246)',
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
+                },
+                scales: {
+                    y: {
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: '#FFF'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: '#FFF',
+                            maxRotation: 45,
+                            minRotation: 45,
+                            maxTicksLimit: 8
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            color: '#FFF',
+                            font: {
+                                size: 12
+                            }
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                        titleColor: '#F97316',
+                        bodyColor: '#FFFFFF',
+                        padding: 12,
+                        displayColors: true
                     }
                 }
             }
