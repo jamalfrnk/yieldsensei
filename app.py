@@ -12,7 +12,7 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
-from models import db, Quiz, Question, UserProgress, User
+from models import db, User
 
 # Configure logging with more detailed format
 logging.basicConfig(
@@ -228,7 +228,6 @@ app = create_app()
 with app.app_context():
     try:
         db.create_all()
-
         # Create default user if none exists
         if not User.query.first():
             default_user = User(
