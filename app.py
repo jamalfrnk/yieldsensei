@@ -231,6 +231,12 @@ def submit_quiz(quiz_id):
                          percentage=percentage_score,
                          points_earned=points_earned)
 
+@app.route('/glossary')
+@limiter.exempt
+def glossary():
+    """Render the metrics glossary page."""
+    return render_template('glossary.html')
+
 # Initialize database
 with app.app_context():
     db.create_all()

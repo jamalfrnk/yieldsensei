@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="space-y-6">
+    <div class="bg-gray-900 rounded-lg p-4">
+        <h1 class="text-2xl font-bold text-orange-500 mb-4">Trading Metrics Glossary</h1>
+        <p class="text-gray-300 mb-6">A comprehensive guide to the trading metrics and indicators used in YieldSensei.</p>
+    </div>
+
+    <!-- Technical Indicators -->
+    <div class="bg-gray-900 rounded-lg p-6">
+        <h2 class="text-xl font-bold text-orange-500 mb-4">Technical Indicators</h2>
+        
+        <div class="space-y-6">
+            <!-- RSI -->
+            <div class="border-b border-gray-700 pb-4">
+                <h3 class="text-lg font-semibold text-white mb-2">RSI (Relative Strength Index)</h3>
+                <p class="text-gray-300 mb-2">A momentum indicator that measures the magnitude of recent price changes to evaluate overbought or oversold conditions.</p>
+                <ul class="list-disc list-inside text-gray-400 space-y-1">
+                    <li>RSI > 70: Potentially overbought</li>
+                    <li>RSI < 30: Potentially oversold</li>
+                    <li>RSI = 50: Neutral momentum</li>
+                </ul>
+            </div>
+
+            <!-- MACD -->
+            <div class="border-b border-gray-700 pb-4">
+                <h3 class="text-lg font-semibold text-white mb-2">MACD (Moving Average Convergence Divergence)</h3>
+                <p class="text-gray-300 mb-2">A trend-following momentum indicator that shows the relationship between two moving averages of an asset's price.</p>
+                <ul class="list-disc list-inside text-gray-400 space-y-1">
+                    <li>MACD Line: 12-day EMA minus 26-day EMA</li>
+                    <li>Signal Line: 9-day EMA of MACD Line</li>
+                    <li>MACD Histogram: MACD Line minus Signal Line</li>
+                </ul>
+            </div>
+
+            <!-- Support & Resistance -->
+            <div class="border-b border-gray-700 pb-4">
+                <h3 class="text-lg font-semibold text-white mb-2">Support & Resistance Levels</h3>
+                <p class="text-gray-300 mb-2">Price levels where an asset tends to stop and reverse direction due to concentrated buying (support) or selling (resistance) pressure.</p>
+                <ul class="list-disc list-inside text-gray-400 space-y-1">
+                    <li>Support 1: Primary level where buying pressure is expected</li>
+                    <li>Support 2: Secondary, stronger support level</li>
+                    <li>Resistance 1: Primary level where selling pressure is expected</li>
+                    <li>Resistance 2: Secondary, stronger resistance level</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Trading Metrics -->
+    <div class="bg-gray-900 rounded-lg p-6">
+        <h2 class="text-xl font-bold text-orange-500 mb-4">Trading Metrics</h2>
+        
+        <div class="space-y-6">
+            <!-- Signal Strength -->
+            <div class="border-b border-gray-700 pb-4">
+                <h3 class="text-lg font-semibold text-white mb-2">Signal Strength (0-100)</h3>
+                <p class="text-gray-300 mb-2">A composite score that measures the overall strength of a trading signal based on multiple technical indicators.</p>
+                <ul class="list-disc list-inside text-gray-400 space-y-1">
+                    <li>80-100: Very Strong Signal</li>
+                    <li>60-79: Strong Signal</li>
+                    <li>40-59: Moderate Signal</li>
+                    <li>20-39: Weak Signal</li>
+                    <li>0-19: Very Weak Signal</li>
+                </ul>
+            </div>
+
+            <!-- Trend Score -->
+            <div class="border-b border-gray-700 pb-4">
+                <h3 class="text-lg font-semibold text-white mb-2">Trend Score</h3>
+                <p class="text-gray-300 mb-2">Measures the strength and direction of the current market trend on a scale of 0-100.</p>
+                <ul class="list-disc list-inside text-gray-400 space-y-1">
+                    <li>70-100: Strong Uptrend</li>
+                    <li>30-69: Neutral Trend</li>
+                    <li>0-29: Strong Downtrend</li>
+                </ul>
+            </div>
+
+            <!-- Market Status -->
+            <div class="border-b border-gray-700 pb-4">
+                <h3 class="text-lg font-semibold text-white mb-2">Market Status</h3>
+                <p class="text-gray-300 mb-2">Overall market condition based on RSI and other indicators.</p>
+                <ul class="list-disc list-inside text-gray-400 space-y-1">
+                    <li>Overbought 🔴: Market likely overextended upward</li>
+                    <li>Neutral ⚖️: Balanced market conditions</li>
+                    <li>Oversold 🟢: Market likely overextended downward</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Trading Strategy Components -->
+    <div class="bg-gray-900 rounded-lg p-6">
+        <h2 class="text-xl font-bold text-orange-500 mb-4">Trading Strategy Components</h2>
+        
+        <div class="space-y-6">
+            <!-- Entry Strategy -->
+            <div class="border-b border-gray-700 pb-4">
+                <h3 class="text-lg font-semibold text-white mb-2">Entry Strategy</h3>
+                <p class="text-gray-300 mb-2">Components used to determine optimal entry points for trades.</p>
+                <ul class="list-disc list-inside text-gray-400 space-y-1">
+                    <li>Optimal Entry: Calculated best price point to enter a trade</li>
+                    <li>Stop Loss: Price level to exit trade to minimize losses</li>
+                </ul>
+            </div>
+
+            <!-- Exit Strategy -->
+            <div class="border-b border-gray-700 pb-4">
+                <h3 class="text-lg font-semibold text-white mb-2">Exit Strategy</h3>
+                <p class="text-gray-300 mb-2">Guidelines for taking profits and managing trade exits.</p>
+                <ul class="list-disc list-inside text-gray-400 space-y-1">
+                    <li>Take Profit: Target price level for closing profitable trades</li>
+                    <li>Based on resistance levels and trend strength</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-black bg-opacity-50 p-4 rounded-lg mt-8">
+        <p class="text-orange-500 font-semibold">⚠️ Disclaimer</p>
+        <p class="text-gray-400 text-sm">
+            These metrics and indicators are tools to assist in trading decisions but do not guarantee future results. 
+            Always conduct your own research and consider your risk tolerance before trading.
+        </p>
+    </div>
+</div>
+{% endblock %}
