@@ -146,28 +146,45 @@ def calculate_optimal_levels(current_price, levels, signal_strength):
         resistance_1 = float(levels['resistance_1'])
         resistance_2 = float(levels['resistance_2'])
 
+        # Calculate risk-reward ratios
+        risk_reward_ratio = 2.5  # Minimum 2.5:1 reward-to-risk ratio
+        volatility_factor = (resistance_1 - support_1) / current_price
+
         # Calculate optimal entry based on signal strength and support levels
         if signal_strength > 60:  # Strong buy signal
             optimal_entry = current_price  # Enter immediately
-            stop_loss = support_2  # Use second support as stop loss
+            stop_loss = max(support_2, current_price * 0.95)  # Max 5% loss
+            # Ensure take profit is at least 2.5x the risk
+            risk = current_price - stop_loss
+            optimal_exit = current_price + (risk * risk_reward_ratio)
         elif signal_strength > 20:  # Moderate buy signal
             optimal_entry = (current_price + support_1) / 2  # Enter halfway to support
             stop_loss = support_2
+            # Calculate minimum profit target
+            risk = optimal_entry - stop_loss
+            optimal_exit = optimal_entry + (risk * risk_reward_ratio)
         elif signal_strength < -60:  # Strong sell signal
             optimal_entry = resistance_2  # Wait for strong resistance
-            stop_loss = resistance_2 * 1.02  # Stop loss slightly above resistance
+            stop_loss = resistance_2 * 1.02  # 2% above resistance
+            optimal_exit = support_1  # Target first support
         elif signal_strength < -20:  # Moderate sell signal
             optimal_entry = resistance_1  # Wait for first resistance
             stop_loss = resistance_1 * 1.02
+            optimal_exit = support_1
         else:  # Neutral
             optimal_entry = (current_price + support_1) / 2
             stop_loss = support_2
+            risk = optimal_entry - stop_loss
+            optimal_exit = optimal_entry + (risk * risk_reward_ratio)
 
-        # Calculate optimal exit based on resistance levels
+        # Adjust exit based on volatility
         if signal_strength > 0:
-            optimal_exit = resistance_1  # Target first resistance for profit
-        else:
-            optimal_exit = support_1  # Exit at first support if bearish
+            # For bullish signals, ensure exit is above resistance_1
+            optimal_exit = max(optimal_exit, resistance_1 * (1 + volatility_factor))
+
+        # Final validation to ensure proper order
+        optimal_exit = max(optimal_exit, optimal_entry * 1.02)  # Minimum 2% profit
+        stop_loss = min(stop_loss, optimal_entry * 0.98)  # Maximum 2% loss
 
         return {
             'optimal_entry': optimal_entry,
@@ -245,21 +262,21 @@ async def get_signal_analysis(token_id: str):
         raise Exception(f"Failed to generate signal analysis: {str(e)}")
 
 def calculate_enhanced_signal_strength(current_price, current_rsi, is_macd_bullish, macd_strength, levels, ml_predictions):
-    """Calculate signal strength incorporating ML predictions."""
+    """Calculate signal strength incorporating ML predictions and additional indicators."""
     signal_strength = 0
 
-    # Traditional indicators contribution (60% weight)
-    # RSI contribution (25%)
+    # Traditional indicators contribution (50% weight)
+    # RSI contribution (20%)
     if current_rsi < 30:
-        signal_strength += 25 * (1 - current_rsi/30)
+        signal_strength += 20 * (1 - current_rsi/30)
     elif current_rsi > 70:
-        signal_strength -= 25 * (current_rsi-70)/30
+        signal_strength -= 20 * (current_rsi-70)/30
 
-    # MACD contribution (20%)
+    # MACD contribution (15%)
     if is_macd_bullish:
-        signal_strength += 20 * (macd_strength/abs(current_price))
+        signal_strength += 15 * (macd_strength/abs(current_price))
     else:
-        signal_strength -= 20 * (macd_strength/abs(current_price))
+        signal_strength -= 15 * (macd_strength/abs(current_price))
 
     # Support/Resistance contribution (15%)
     price_to_support1 = (current_price - levels['support_1']) / current_price
@@ -270,15 +287,29 @@ def calculate_enhanced_signal_strength(current_price, current_rsi, is_macd_bulli
     elif price_to_resistance1 < 0.03:
         signal_strength -= 15 * (1 - price_to_resistance1/0.03)
 
-    # ML predictions contribution (40% weight)
+    # ML predictions contribution (50% weight)
     if ml_predictions and 'next_day' in ml_predictions:
-        pred_price = ml_predictions['next_day']['prophet_prediction']
-        price_change = (pred_price - current_price) / current_price
+        # Calculate weighted average of predictions
+        rf_pred = float(ml_predictions['next_day']['rf_prediction'])
+        prophet_pred = float(ml_predictions['next_day']['prophet_prediction'])
+
+        # Use confidence score to weight the predictions
         confidence = ml_predictions['confidence_score'] / 100
 
-        # Add ML signal (-40 to +40 range)
-        ml_signal = 40 * price_change * confidence
+        # Calculate predicted price changes
+        rf_change = (rf_pred - current_price) / current_price
+        prophet_change = (prophet_pred - current_price) / current_price
+
+        # Weight the predictions based on confidence
+        weighted_change = (rf_change + prophet_change) / 2 * confidence
+
+        # Add ML signal (-50 to +50 range)
+        ml_signal = 50 * weighted_change
         signal_strength += ml_signal
+
+        # Add trend confirmation bonus (up to 10 points)
+        if (rf_change > 0 and prophet_change > 0) or (rf_change < 0 and prophet_change < 0):
+            signal_strength += 10 * confidence
 
     return signal_strength
 
