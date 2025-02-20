@@ -1,4 +1,6 @@
 import logging
+import os
+import sys
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters
 from bot_handlers import (
@@ -30,8 +32,8 @@ def main():
         if not TELEGRAM_TOKEN:
             raise ValueError("No TELEGRAM_TOKEN provided")
 
-        # Create the Application
-        application = Application.builder().token(TELEGRAM_TOKEN).build()
+        # Create the Application with specific settings to prevent multiple instances
+        application = Application.builder().token(TELEGRAM_TOKEN).concurrent_updates(False).build()
 
         # Add command handlers
         application.add_handler(CommandHandler("start", start_command))
@@ -48,12 +50,12 @@ def main():
         application.add_error_handler(error_handler)
 
         logger.info("Starting bot...")
-        # Use non-concurrent updates to prevent multiple instances
-        application.run_polling(allowed_updates=Update.ALL_TYPES, drop_pending_updates=True)
+        # Use drop_pending_updates to prevent multiple instances from processing the same updates
+        application.run_polling(drop_pending_updates=True)
 
     except Exception as e:
         logger.error(f"Critical error: {e}")
-        raise
+        sys.exit(1)
 
 if __name__ == '__main__':
     try:
@@ -62,3 +64,4 @@ if __name__ == '__main__':
         logger.info("Bot stopped by user")
     except Exception as e:
         logger.error(f"Bot stopped due to error: {e}")
+        sys.exit(1)
