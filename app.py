@@ -4,6 +4,7 @@ from services.technical_analysis import get_signal_analysis
 from services.coingecko_service import get_token_price, get_token_market_data
 import logging
 from datetime import datetime, timedelta
+from asgiref.wsgi import WsgiToAsgi
 
 # Configure logging
 logging.basicConfig(
@@ -25,7 +26,7 @@ def price_color_filter(value):
         return 'text-gray-500'
 
 @app.route('/')
-def index():
+async def index():
     """Render the main dashboard with default values."""
     default_data = {
         'token': 'BTC',
@@ -67,13 +68,10 @@ async def search():
     """Handle token search and analysis."""
     token = request.args.get('token', 'bitcoin').lower()
     try:
-        # Create event loop for async operations
-        loop = asyncio.get_event_loop()
-
         # Get market data
-        price_data = await loop.run_in_executor(None, get_token_price, token)
-        market_data = await loop.run_in_executor(None, get_token_market_data, token)
-        signal_data = await loop.run_in_executor(None, get_signal_analysis, token)
+        price_data = await get_token_price(token)
+        market_data = await get_token_market_data(token)
+        signal_data = await get_signal_analysis(token)
 
         # Calculate trend score (0-100)
         trend_score = min(100, max(0, float(signal_data['signal_strength'])))
@@ -159,7 +157,7 @@ async def generate_chart_data(token, days=30):
                     'data': prices,
                     'borderColor': '#F97316',
                     'backgroundColor': 'rgba(249, 115, 22, 0.1)',
-                    'fill': true,
+                    'fill': True,
                     'tension': 0.4
                 },
                 {
@@ -167,14 +165,14 @@ async def generate_chart_data(token, days=30):
                     'data': [support_1] * len(prices),
                     'borderColor': '#10B981',
                     'borderDash': [5, 5],
-                    'fill': false
+                    'fill': False
                 },
                 {
                     'label': 'Resistance 1',
                     'data': [resistance_1] * len(prices),
                     'borderColor': '#EF4444',
                     'borderDash': [5, 5],
-                    'fill': false
+                    'fill': False
                 }
             ]
         }

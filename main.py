@@ -14,9 +14,15 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-def error_handler(update, context):
+async def error_handler(update: Update, context):
     """Log Errors caused by Updates."""
-    logger.error(f'Update "{update}" caused error "{context.error}"')
+    try:
+        if update:
+            logger.error(f'Update "{update}" caused error "{context.error}"')
+        else:
+            logger.error(f'Error occurred: {context.error}')
+    except Exception as e:
+        logger.error(f'Error in error handler: {e}')
 
 def main():
     """Start the bot."""
@@ -42,7 +48,8 @@ def main():
         application.add_error_handler(error_handler)
 
         logger.info("Starting bot...")
-        application.run_polling(allowed_updates=Update.ALL_TYPES)
+        # Use non-concurrent updates to prevent multiple instances
+        application.run_polling(allowed_updates=Update.ALL_TYPES, drop_pending_updates=True)
 
     except Exception as e:
         logger.error(f"Critical error: {e}")
