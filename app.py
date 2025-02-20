@@ -124,6 +124,9 @@ async def search():
         historical_prices = []
         if 'prices' in market_data and market_data['prices']:
             historical_prices = market_data['prices'][-30:]  # Last 30 days
+            logger.info(f"Found {len(historical_prices)} historical price points")
+        else:
+            logger.warning("No historical prices found in market data")
 
         # Prepare template data with proper formatting for the chart
         template_data = {
@@ -146,14 +149,15 @@ async def search():
             'dca_recommendation': signal_data['dca_recommendation'],
             'historical_data': historical_prices,
             'chart_data': {
-                'labels': [price[0] for price in historical_prices] if historical_prices else [],
-                'prices': [price[1] for price in historical_prices] if historical_prices else [],
-                'support_levels': [support_1, support_2],
-                'resistance_levels': [resistance_1, resistance_2]
+                'labels': [price[0] for price in historical_prices],
+                'prices': [price[1] for price in historical_prices],
+                'support_levels': [float(support_1), float(support_2)],
+                'resistance_levels': [float(resistance_1), float(resistance_2)]
             }
         }
 
         logger.info(f"Successfully processed data for {token}")
+        logger.debug(f"Chart data prepared: {len(template_data['chart_data']['labels'])} data points")
         return render_template('dashboard.html', **template_data)
     except Exception as e:
         logger.error(f"Error processing search request: {str(e)}")
