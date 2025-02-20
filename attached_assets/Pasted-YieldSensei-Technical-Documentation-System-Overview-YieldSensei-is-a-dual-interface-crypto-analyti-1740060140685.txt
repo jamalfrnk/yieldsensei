@@ -1,0 +1,115 @@
+YieldSensei Technical Documentation
+System Overview
+YieldSensei is a dual-interface crypto analytics platform consisting of:
+
+A Telegram bot (@yieldsensei_bot)
+A Flask web application
+Core Technologies
+Programming Languages:
+
+Python 3.11 (Primary)
+JavaScript/TypeScript (Frontend)
+Frameworks & Libraries:
+
+Backend:
+Flask - Web framework
+python-telegram-bot - Telegram bot API wrapper
+Prophet - ML forecasting
+scikit-learn - ML predictions
+pandas - Data manipulation
+numpy - Numerical operations
+Frontend:
+Tailwind CSS - Styling
+Chart.js - Data visualization
+APIs & Services:
+CoinGecko API - Crypto market data
+DexScreener API - DEX pair information
+Telegram Bot API - Bot functionality
+Architecture Components
+1. Core Services
+Technical Analysis Service (services/technical_analysis.py):
+
+Calculates technical indicators (RSI, MACD)
+Generates trading signals
+Integrates ML predictions
+ML Prediction Service (services/ml_prediction_service.py):
+
+Implements Random Forest and Prophet models
+Provides price predictions
+Handles model training and persistence
+Market Data Services:
+
+coingecko_service.py - Price and market data
+dexscreener_service.py - DEX information
+sentiment_service.py - Market sentiment analysis
+2. Web Application (app.py)
+Components:
+
+Flask routes and controllers
+Template rendering
+API endpoints
+Rate limiting
+Caching
+Database operations
+3. Telegram Bot (main.py, bot_handlers.py)
+Features:
+
+Command handling
+Message processing
+Error handling
+Rate limiting
+Asynchronous operations
+Communication Flow
+[User] ─┬─> [Telegram Bot] ─┬─> [Core Services] <──> [External APIs]
+        └─> [Web App] ──────┘         │
+                                      └──> [ML Models]
+Data Flow:
+User Input:
+
+Via Telegram commands
+Through web interface
+Request Processing:
+
+Rate limiting
+Command parsing
+Authentication (if applicable)
+Core Processing:
+
+Market data fetching
+Technical analysis
+ML predictions
+Sentiment analysis
+Response Generation:
+
+Formatted messages (Telegram)
+HTML templates (Web)
+JSON APIs
+Key Features
+Technical Analysis:
+
+Price tracking
+Market indicators
+Trading signals
+Support/Resistance levels
+ML Integration:
+
+Price predictions
+Trend analysis
+Confidence scoring
+Market Intelligence:
+
+Sentiment analysis
+Volume analysis
+DEX pair tracking
+Deployment Architecture
+The application runs two parallel processes:
+
+Flask server on port 3000
+Telegram bot polling process
+Both components share:
+
+Common services
+Configuration
+Database access (if implemented)
+Caching mechanisms
+This architecture allows for scalable, maintainable, and extensible crypto analytics delivery through multiple interfaces while maintaining code reusability and service consistency.
