@@ -123,7 +123,23 @@ document.addEventListener('DOMContentLoaded', function() {
     const ctx = document.getElementById('priceChart').getContext('2d');
     const chartData = {{ chart_data|tojson }};
 
-    new Chart(ctx, {
+    // Update chart colors to match theme
+    chartData.datasets[0].backgroundColor = [
+        'rgba(34, 197, 94, 0.2)',  // Support 2 - Light green
+        'rgba(34, 197, 94, 0.4)',  // Support 1 - Darker green
+        'rgba(249, 115, 22, 0.6)', // Current - Orange
+        'rgba(239, 68, 68, 0.4)',  // Resistance 1 - Light red
+        'rgba(239, 68, 68, 0.2)'   // Resistance 2 - Darker red
+    ];
+    chartData.datasets[0].borderColor = [
+        'rgb(34, 197, 94)',  // Support 2
+        'rgb(34, 197, 94)',  // Support 1
+        'rgb(249, 115, 22)', // Current price
+        'rgb(239, 68, 68)',  // Resistance 1
+        'rgb(239, 68, 68)'   // Resistance 2
+    ];
+
+    window.priceChart = new Chart(ctx, {
         type: 'bar',
         data: chartData,
         options: {
@@ -137,10 +153,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 y: {
                     beginAtZero: false,
                     grid: {
-                        color: 'rgba(255, 255, 255, 0.1)'
+                        color: getComputedStyle(document.documentElement)
+                            .getPropertyValue('--chart-grid').trim()
                     },
                     ticks: {
-                        color: '#ffffff',
+                        color: getComputedStyle(document.documentElement)
+                            .getPropertyValue('--text-primary').trim(),
                         callback: function(value) {
                             return '$' + value.toLocaleString();
                         }
@@ -148,10 +166,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 },
                 x: {
                     grid: {
-                        color: 'rgba(255, 255, 255, 0.1)'
+                        color: getComputedStyle(document.documentElement)
+                            .getPropertyValue('--chart-grid').trim()
                     },
                     ticks: {
-                        color: '#ffffff'
+                        color: getComputedStyle(document.documentElement)
+                            .getPropertyValue('--text-primary').trim()
                     }
                 }
             },
@@ -160,9 +180,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     display: false
                 },
                 tooltip: {
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    backgroundColor: 'rgba(0, 0, 0, 0.9)',
                     titleColor: '#F97316',
-                    bodyColor: '#ffffff',
+                    bodyColor: '#FFFFFF',
+                    titleFont: {
+                        weight: 'bold'
+                    },
                     padding: 12,
                     displayColors: false,
                     callbacks: {
