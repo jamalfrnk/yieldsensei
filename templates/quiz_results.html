@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="space-y-6">
+    <div class="bg-gray-900 rounded-lg p-6 border border-orange-500 text-center">
+        <h1 class="text-2xl font-bold text-orange-500 mb-4">Quiz Results</h1>
+        
+        <div class="text-6xl font-bold mb-4 
+            {% if percentage >= 80 %}text-green-500
+            {% elif percentage >= 60 %}text-yellow-500
+            {% else %}text-red-500{% endif %}">
+            {{ percentage|round|int }}%
+        </div>
+        
+        <p class="text-xl text-gray-300 mb-2">
+            You got <span class="text-orange-500">{{ score }}</span> out of <span class="text-orange-500">{{ total }}</span> questions correct
+        </p>
+        
+        <p class="text-lg text-gray-400">
+            Points earned: <span class="text-orange-500">+{{ points_earned }}</span>
+        </p>
+    </div>
+
+    <div class="flex justify-center space-x-4">
+        <a href="{{ url_for('quizzes') }}" 
+           class="bg-orange-500 text-white px-6 py-2 rounded hover:bg-orange-600 transition-colors duration-200">
+            Back to Quizzes
+        </a>
+    </div>
+</div>
+{% endblock %}

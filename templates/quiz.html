@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="space-y-6">
+    <!-- Quiz Header -->
+    <div class="bg-gray-900 rounded-lg p-6 border border-orange-500">
+        <h1 class="text-2xl font-bold text-orange-500 mb-2">Crypto Knowledge Quiz</h1>
+        <p class="text-gray-300">Test your crypto knowledge and earn points!</p>
+    </div>
+
+    <!-- Quiz Categories -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {% for quiz in quizzes %}
+        <div class="bg-gray-900 rounded-lg p-6 border border-orange-500 hover:bg-gray-800 transition-colors duration-200">
+            <div class="flex justify-between items-start mb-4">
+                <h2 class="text-xl font-semibold text-orange-500">{{ quiz.title }}</h2>
+                <span class="px-2 py-1 text-sm rounded-full 
+                    {% if quiz.difficulty == 'beginner' %}bg-green-500
+                    {% elif quiz.difficulty == 'intermediate' %}bg-yellow-500
+                    {% else %}bg-red-500{% endif %}
+                    text-white">
+                    {{ quiz.difficulty|title }}
+                </span>
+            </div>
+            <p class="text-gray-300 mb-4">{{ quiz.description }}</p>
+            <div class="flex justify-between items-center">
+                <span class="text-sm text-gray-400">{{ quiz.points_reward }} points</span>
+                <a href="{{ url_for('start_quiz', quiz_id=quiz.id) }}" 
+                   class="bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600 transition-colors duration-200">
+                    Start Quiz
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Leaderboard -->
+    <div class="bg-gray-900 rounded-lg p-6">
+        <h2 class="text-xl font-bold text-orange-500 mb-4">Top Crypto Masters</h2>
+        <div class="space-y-2">
+            {% for user in leaderboard %}
+            <div class="flex justify-between items-center p-3 {% if loop.first %}bg-orange-500 bg-opacity-20{% else %}hover:bg-gray-800{% endif %} rounded-lg transition-colors duration-200">
+                <div class="flex items-center space-x-3">
+                    <span class="text-lg font-semibold {% if loop.first %}text-orange-500{% else %}text-white{% endif %}">
+                        #{{ loop.index }}
+                    </span>
+                    <span class="text-gray-300">{{ user.username }}</span>
+                </div>
+                <span class="text-orange-500 font-semibold">{{ user.total_points }} points</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
