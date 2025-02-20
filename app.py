@@ -62,8 +62,7 @@ app.config.update(
     TESTING=True,  # Enable testing mode for development
     SEND_FILE_MAX_AGE_DEFAULT=0,  # Disable cache for development
     JSON_SORT_KEYS=False,
-    PREFERRED_URL_SCHEME='http',
-    SERVER_NAME=None  # Allow all host headers
+    PREFERRED_URL_SCHEME='http'
 )
 
 @login_manager.user_loader
