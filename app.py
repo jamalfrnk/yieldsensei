@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 
 # Default data for the dashboard
 DEFAULT_DATA = {
+    'token_symbol': 'Enter a token',
     'price': 0.0,
     'price_change': 0.0,
     'signal_strength': 0,
@@ -115,6 +116,7 @@ async def search():
         trend_score = min(100, max(0, float(signal_data['signal_strength'])))
 
         template_data = {
+            'token_symbol': token.upper(),
             'price': float(price_data['usd']),
             'price_change': float(price_data['usd_24h_change']),
             'signal_strength': float(signal_data['signal_strength']),
@@ -140,11 +142,11 @@ async def search():
                         float(signal_data['resistance_2'].replace('$', '').replace(',', ''))
                     ],
                     'backgroundColor': [
-                        'rgba(34, 197, 94, 0.2)',  # Support 2 - green
-                        'rgba(34, 197, 94, 0.4)',  # Support 1 - lighter green
-                        'rgba(249, 115, 22, 0.6)', # Current - orange
-                        'rgba(239, 68, 68, 0.4)',  # Resistance 1 - lighter red
-                        'rgba(239, 68, 68, 0.2)'   # Resistance 2 - red
+                        'rgba(34, 197, 94, 0.2)',
+                        'rgba(34, 197, 94, 0.4)',
+                        'rgba(249, 115, 22, 0.6)',
+                        'rgba(239, 68, 68, 0.4)',
+                        'rgba(239, 68, 68, 0.2)'
                     ],
                     'borderColor': [
                         'rgb(34, 197, 94)',
