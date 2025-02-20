@@ -138,38 +138,72 @@ def calculate_support_resistance(prices):
     except Exception as e:
         raise Exception(f"Support/Resistance calculation error: {str(e)}")
 
+def calculate_optimal_levels(current_price, levels, signal_strength):
+    """Calculate optimal entry and exit points based on price levels and signal strength."""
+    try:
+        support_1 = float(levels['support_1'])
+        support_2 = float(levels['support_2'])
+        resistance_1 = float(levels['resistance_1'])
+        resistance_2 = float(levels['resistance_2'])
+
+        # Calculate optimal entry based on signal strength and support levels
+        if signal_strength > 60:  # Strong buy signal
+            optimal_entry = current_price  # Enter immediately
+            stop_loss = support_2  # Use second support as stop loss
+        elif signal_strength > 20:  # Moderate buy signal
+            optimal_entry = (current_price + support_1) / 2  # Enter halfway to support
+            stop_loss = support_2
+        elif signal_strength < -60:  # Strong sell signal
+            optimal_entry = resistance_2  # Wait for strong resistance
+            stop_loss = resistance_2 * 1.02  # Stop loss slightly above resistance
+        elif signal_strength < -20:  # Moderate sell signal
+            optimal_entry = resistance_1  # Wait for first resistance
+            stop_loss = resistance_1 * 1.02
+        else:  # Neutral
+            optimal_entry = (current_price + support_1) / 2
+            stop_loss = support_2
+
+        # Calculate optimal exit based on resistance levels
+        if signal_strength > 0:
+            optimal_exit = resistance_1  # Target first resistance for profit
+        else:
+            optimal_exit = support_1  # Exit at first support if bearish
+
+        return {
+            'optimal_entry': optimal_entry,
+            'optimal_exit': optimal_exit,
+            'stop_loss': stop_loss
+        }
+    except Exception as e:
+        logger.error(f"Error calculating optimal levels: {str(e)}")
+        # Provide default values based on current price if calculation fails
+        return {
+            'optimal_entry': current_price * 0.98,
+            'optimal_exit': current_price * 1.05,
+            'stop_loss': current_price * 0.95
+        }
+
 async def get_signal_analysis(token_id: str):
     """Generate detailed trading signal analysis with ML-enhanced predictions."""
     logger.info(f"Starting signal analysis for token: {token_id}")
     try:
-        logger.info("Fetching historical price data")
         prices = await get_historical_prices(token_id)
         current_price = prices[-1]
         logger.info(f"Current price: ${current_price:,.2f}")
 
-        # Train ML models if needed
-        if not os.path.exists('models/rf_model.joblib'):
-            logger.info("Training ML models with historical data")
-            ml_service.train_models(prices)
-
-        # Get ML predictions
-        logger.info("Generating ML predictions")
-        ml_predictions = await ml_service.predict_price(prices)
-
-        # Calculate traditional indicators
-        logger.info("Calculating technical indicators")
+        # Calculate indicators and levels
         current_rsi = calculate_rsi(prices)
-        logger.info(f"RSI: {current_rsi:.2f}")
-
         is_macd_bullish, macd_strength = calculate_macd(prices)
-        macd_signal = "Bullish 📈" if is_macd_bullish else "Bearish 📉"
-        logger.info(f"MACD Signal: {macd_signal}")
-
-        logger.info("Calculating support and resistance levels")
         levels = calculate_support_resistance(prices)
 
-        # Calculate enhanced signal strength incorporating ML predictions
-        logger.info("Calculating overall signal strength")
+        # Get ML predictions if models are available
+        try:
+            ml_predictions = await ml_service.predict_price(prices)
+        except Exception as e:
+            logger.warning(f"ML prediction failed: {str(e)}")
+            ml_predictions = None
+
+        # Calculate signal strength
         signal_strength = calculate_enhanced_signal_strength(
             current_price=current_price,
             current_rsi=current_rsi,
@@ -179,28 +213,31 @@ async def get_signal_analysis(token_id: str):
             ml_predictions=ml_predictions
         )
 
+        # Calculate optimal trading levels
+        optimal_levels = calculate_optimal_levels(current_price, levels, signal_strength)
 
-        # Determine signal type
+        # Determine signal type and build response
         signal = get_signal_type(signal_strength)
-        logger.info(f"Generated signal: {signal}")
 
-        # Build and return the analysis result
         result = {
-            "signal": signal,
-            "signal_strength": abs(signal_strength),
-            "trend_direction": "Bullish 📈" if signal_strength > 0 else "Bearish 📉" if signal_strength < 0 else "Neutral ⚖️",
-            "current_price": f"${current_price:,.2f}",
-            "rsi": current_rsi,
-            "macd_signal": macd_signal,
-            "support_1": f"${levels['support_1']:,.2f}",
-            "support_2": f"${levels['support_2']:,.2f}",
-            "resistance_1": f"${levels['resistance_1']:,.2f}",
-            "resistance_2": f"${levels['resistance_2']:,.2f}",
-            "ml_predictions": ml_predictions if ml_predictions else {},
-            "dca_recommendation": get_enhanced_dca_recommendation(signal_strength, ml_predictions)
+            'signal': signal,
+            'signal_strength': abs(signal_strength),
+            'trend_direction': "Bullish 📈" if signal_strength > 0 else "Bearish 📉" if signal_strength < 0 else "Neutral ⚖️",
+            'current_price': f"${current_price:,.2f}",
+            'rsi': current_rsi,
+            'macd_signal': "Bullish 📈" if is_macd_bullish else "Bearish 📉",
+            'support_1': f"${levels['support_1']:,.2f}",
+            'support_2': f"${levels['support_2']:,.2f}",
+            'resistance_1': f"${levels['resistance_1']:,.2f}",
+            'resistance_2': f"${levels['resistance_2']:,.2f}",
+            'optimal_entry': optimal_levels['optimal_entry'],
+            'optimal_exit': optimal_levels['optimal_exit'],
+            'stop_loss': optimal_levels['stop_loss'],
+            'ml_predictions': ml_predictions if ml_predictions else {},
+            'dca_recommendation': get_enhanced_dca_recommendation(signal_strength, ml_predictions)
         }
 
-        logger.info("Successfully generated signal analysis with ML predictions")
+        logger.info("Successfully generated signal analysis")
         return result
 
     except Exception as e:
