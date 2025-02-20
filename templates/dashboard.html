@@ -92,55 +92,32 @@
         const support2 = chartData.support_levels[1];
         const resistance1 = chartData.resistance_levels[0];
         const resistance2 = chartData.resistance_levels[1];
-        const currentPrice = chartData.prices[chartData.prices.length - 1];
 
         // Create the price levels bar chart
         window.priceChart = new Chart(priceCtx, {
             type: 'bar',
             data: {
-                labels: ['Price Levels'],
-                datasets: [
-                    {
-                        label: 'Current Price',
-                        data: [currentPrice],
-                        backgroundColor: 'rgba(249, 115, 22, 0.7)',
-                        borderColor: 'rgb(249, 115, 22)',
-                        borderWidth: 1
-                    },
-                    {
-                        label: `Support 1 ($${support1.toLocaleString()})`,
-                        data: [support1],
-                        backgroundColor: 'rgba(50, 205, 50, 0.7)',
-                        borderColor: 'rgb(50, 205, 50)',
-                        borderWidth: 1
-                    },
-                    {
-                        label: `Support 2 ($${support2.toLocaleString()})`,
-                        data: [support2],
-                        backgroundColor: 'rgba(0, 100, 0, 0.7)',
-                        borderColor: 'rgb(0, 100, 0)',
-                        borderWidth: 1
-                    },
-                    {
-                        label: `Resistance 1 ($${resistance1.toLocaleString()})`,
-                        data: [resistance1],
-                        backgroundColor: 'rgba(255, 99, 99, 0.7)',
-                        borderColor: 'rgb(255, 99, 99)',
-                        borderWidth: 1
-                    },
-                    {
-                        label: `Resistance 2 ($${resistance2.toLocaleString()})`,
-                        data: [resistance2],
-                        backgroundColor: 'rgba(255, 0, 0, 0.7)',
-                        borderColor: 'rgb(255, 0, 0)',
-                        borderWidth: 1
-                    }
-                ]
+                labels: ['Support 2', 'Support 1', 'Resistance 1', 'Resistance 2'],
+                datasets: [{
+                    data: [support2, support1, resistance1, resistance2],
+                    backgroundColor: [
+                        'rgba(0, 100, 0, 0.7)',    // Dark green for Support 2
+                        'rgba(50, 205, 50, 0.7)',   // Light green for Support 1
+                        'rgba(255, 99, 99, 0.7)',   // Light red for Resistance 1
+                        'rgba(255, 0, 0, 0.7)'      // Dark red for Resistance 2
+                    ],
+                    borderColor: [
+                        'rgb(0, 100, 0)',
+                        'rgb(50, 205, 50)',
+                        'rgb(255, 99, 99)',
+                        'rgb(255, 0, 0)'
+                    ],
+                    borderWidth: 1
+                }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                indexAxis: 'y',
                 interaction: {
                     intersect: false,
                     mode: 'index'
@@ -152,7 +129,10 @@
                             color: 'rgba(255, 255, 255, 0.1)'
                         },
                         ticks: {
-                            color: '#FFF'
+                            color: '#FFF',
+                            callback: function(value) {
+                                return '$' + value.toLocaleString();
+                            }
                         }
                     },
                     x: {
@@ -160,25 +140,13 @@
                             color: 'rgba(255, 255, 255, 0.1)'
                         },
                         ticks: {
-                            color: '#FFF',
-                            callback: function(value) {
-                                return '$' + value.toLocaleString();
-                            }
+                            color: '#FFF'
                         }
                     }
                 },
                 plugins: {
                     legend: {
-                        display: true,
-                        position: 'top',
-                        labels: {
-                            color: '#FFF',
-                            usePointStyle: true,
-                            padding: 20,
-                            font: {
-                                size: 12
-                            }
-                        }
+                        display: false
                     },
                     tooltip: {
                         backgroundColor: 'rgba(0, 0, 0, 0.9)',
@@ -188,14 +156,7 @@
                         displayColors: true,
                         callbacks: {
                             label: function(context) {
-                                let label = context.dataset.label || '';
-                                if (label) {
-                                    label += ': ';
-                                }
-                                if (context.parsed.x !== null) {
-                                    label += '$' + context.parsed.x.toLocaleString();
-                                }
-                                return label;
+                                return '$' + context.parsed.y.toLocaleString();
                             }
                         }
                     }
