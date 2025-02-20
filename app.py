@@ -115,11 +115,14 @@ async def search():
         # Calculate trend score
         trend_score = min(100, max(0, float(signal_data['signal_strength'])))
 
+        # Scale signal strength to 0-10 range
+        scaled_signal_strength = min(10, max(0, float(signal_data['signal_strength']) / 10))
+
         template_data = {
             'token_symbol': token.upper(),
             'price': float(price_data['usd']),
             'price_change': float(price_data['usd_24h_change']),
-            'signal_strength': float(signal_data['signal_strength']),
+            'signal_strength': scaled_signal_strength,
             'signal_description': signal_data['signal'],
             'trend_score': trend_score,
             'trend_direction': signal_data['trend_direction'],

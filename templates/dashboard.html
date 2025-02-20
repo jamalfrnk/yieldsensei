@@ -39,7 +39,7 @@
                     </div>
                 </div>
             </div>
-            <p class="text-2xl mt-2">{{ "%.1f"|format(signal_strength|float) }}%</p>
+            <p class="text-2xl mt-2">{{ "%.1f"|format(signal_strength|float) }}/10</p>
             <p class="text-sm text-gray-400">{{ signal_description }}</p>
         </div>
         <div class="bg-gray-900 rounded-lg p-4 border border-orange-500 hover:bg-gray-800 transition-colors duration-200">
@@ -108,7 +108,15 @@
 
         <!-- DCA Recommendations -->
         <div class="bg-gray-900 rounded-lg p-4">
-            <h2 class="text-xl font-bold text-orange-500 mb-4">Trading Strategy</h2>
+            <div class="flex items-center mb-4">
+                <h2 class="text-xl font-bold text-orange-500">Trading Strategy</h2>
+                <div class="ml-2 group relative">
+                    <span class="cursor-help text-orange-500">ⓘ</span>
+                    <div class="opacity-0 bg-black text-white text-sm rounded-lg py-2 px-3 absolute z-10 bottom-full mb-2 -left-1/2 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 w-64">
+                        Personalized trading recommendations based on current market conditions, technical analysis, and risk management principles. These strategies suggest optimal entry points and position sizing using Dollar Cost Averaging (DCA).
+                    </div>
+                </div>
+            </div>
             <div class="space-y-2">
                 <p class="text-sm whitespace-pre-line">{{ dca_recommendation }}</p>
             </div>
