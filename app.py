@@ -11,6 +11,7 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_sqlalchemy import SQLAlchemy
 from models import db, Quiz, Question, UserProgress, User
+from flask_cors import CORS
 
 # Configure logging
 logging.basicConfig(
@@ -59,18 +60,22 @@ DEFAULT_DATA = {
 }
 
 app = Flask(__name__)
+# Enable CORS
+CORS(app)
+
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 
-# Security headers with relaxed CSP for Chart.js
+# Security headers with relaxed CSP for Chart.js and external resources
 Talisman(app, 
     content_security_policy={
-        'default-src': "'self'",
-        'script-src': ["'self'", "'unsafe-inline'", 'cdn.jsdelivr.net'],
+        'default-src': ["'self'", "'unsafe-inline'", "'unsafe-eval'", 'cdn.jsdelivr.net'],
+        'script-src': ["'self'", "'unsafe-inline'", "'unsafe-eval'", 'cdn.jsdelivr.net'],
         'style-src': ["'self'", "'unsafe-inline'", 'cdn.jsdelivr.net'],
-        'img-src': ["'self'", 'data:', 'cdn.jsdelivr.net'],
-        'font-src': ["'self'", 'cdn.jsdelivr.net']
+        'img-src': ["'self'", 'data:', 'cdn.jsdelivr.net', '*'],
+        'font-src': ["'self'", 'cdn.jsdelivr.net'],
+        'connect-src': ["'self'", '*']
     },
     force_https=False
 )
