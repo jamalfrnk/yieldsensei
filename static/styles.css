@@ -1,0 +1,81 @@
+:root {
+    --primary-color: #ff6b00;
+    --secondary-color: #ff8533;
+    --background: #ffffff;
+    --text-primary: #000000;
+    --text-secondary: #333333;
+}
+
+.feature-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.1);
+}
+
+.bot-interface {
+    padding: 2rem;
+    background: var(--background);
+    border-radius: 1rem;
+    margin: 2rem 0;
+}
+
+.command-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+.command-box {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.command-form {
+    margin-top: 1rem;
+    display: flex;
+    gap: 0.5rem;
+}
+
+.command-form input {
+    flex: 1;
+    padding: 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 0.25rem;
+}
+
+.command-form button {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 0.25rem;
+    cursor: pointer;
+}
+
+.command-form button:hover {
+    background: var(--secondary-color);
+}
+
+/* Placeholder for social media links -  requires actual links to be added */
+.social-media-links {
+    margin-top: 2rem;
+}
+
+.social-media-links a {
+    margin-right: 1rem;
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+/* Placeholder for YieldSensei bot integration - requires actual implementation */
+.yieldsensei-bot {
+  margin-top: 2rem;
+  padding: 1rem;
+  background-color: #f0f0f0;
+  border: 1px solid #ccc;
+  border-radius: 0.5rem;
+}

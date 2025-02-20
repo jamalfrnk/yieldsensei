@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>YieldSensei</title>
+<style>
+body {
+    font-family: sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #fff; /* White background */
+    color: #333; /* Dark text */
+}
+
+.hero {
+    background-color: #FFA500; /* Orange background */
+    color: #fff; /* White text */
+    padding: 2em 0;
+    text-align: center;
+}
+
+.cta-buttons {
+    margin-top: 1em;
+}
+
+.primary-btn {
+    background-color: #000; /* Black button */
+    color: #fff;
+    padding: 1em 2em;
+    text-decoration: none;
+    margin-right: 1em;
+}
+
+.secondary-btn {
+    background-color: #fff; /* White button */
+    color: #000;
+    padding: 1em 2em;
+    text-decoration: none;
+    border: 1px solid #000;
+}
+
+.bot-interface {
+    padding: 2em;
+    text-align: center;
+}
+
+.command-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-gap: 1em;
+}
+
+.command-box {
+    background-color: #fff;
+    padding: 1em;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.command-form input[type="text"] {
+    width: 100%;
+    padding: 0.5em;
+    margin-bottom: 0.5em;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.command-form button {
+    background-color: #000; /* Black button */
+    color: #fff;
+    padding: 0.5em 1em;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+
+</style>
+</head>
+<body>
+    <main>
+        <section class="hero">
+            <h2>AI-Powered DeFi Analysis</h2>
+            <p>Your personal Sensei for crypto market insights</p>
+            <div class="cta-buttons">
+                <a href="https://t.me/yieldsensei_bot" class="primary-btn">Start Trading</a>
+                <a href="#features" class="secondary-btn">Learn More</a>
+            </div>
+        </section>
+
+        <section class="bot-interface">
+            <h3>YieldSensei Commands</h3>
+            <div class="command-grid">
+                <div class="command-box">
+                    <h4>/price &lt;token&gt;</h4>
+                    <p>Get current price and 24h change</p>
+                    <form class="command-form" data-command="price">
+                        <input type="text" placeholder="Enter token (e.g., btc)" required>
+                        <button type="submit">Get Price</button>
+                    </form>
+                </div>
+                <div class="command-box">
+                    <h4>/signal &lt;token&gt;</h4>
+                    <p>Get trading signals and analysis</p>
+                    <form class="command-form" data-command="signal">
+                        <input type="text" placeholder="Enter token or address" required>
+                        <button type="submit">Get Signals</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </main>
+    <script>
+        // Add Javascript functionality here for bot interaction (fetch calls, etc.)  This would need to be expanded upon significantly.
+    </script>
+</body>
+</html>
