@@ -244,6 +244,7 @@ with app.app_context():
 if __name__ == '__main__':
     try:
         logger.info("Starting Flask server...")
-        app.run(host='0.0.0.0', port=3000, debug=True)
+        port = int(os.environ.get('PORT', 3000))
+        app.run(host='0.0.0.0', port=port, debug=False)
     except Exception as e:
         logger.error(f"Failed to start server: {str(e)}")
