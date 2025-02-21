@@ -9,13 +9,24 @@
     --chart-grid: rgba(255, 255, 255, 0.1);
 }
 
+/* Mobile-first Typography */
+html {
+    font-size: 14px;
+}
+
+@media (min-width: 640px) {
+    html {
+        font-size: 16px;
+    }
+}
+
 /* Custom styles to complement Tailwind CSS */
 .price-up {
-    color: #10B981; /* Green */
+    color: #10B981;
 }
 
 .price-down {
-    color: #EF4444; /* Red */
+    color: #EF4444;
 }
 
 .gradient-border {
@@ -24,9 +35,15 @@
     background-clip: padding-box;
 }
 
-/* Custom scrollbar */
+/* Mobile-optimized scrollbar */
 ::-webkit-scrollbar {
-    width: 8px;
+    width: 4px;
+}
+
+@media (min-width: 640px) {
+    ::-webkit-scrollbar {
+        width: 8px;
+    }
 }
 
 ::-webkit-scrollbar-track {
@@ -42,14 +59,22 @@
     background: #EA580C;
 }
 
-/* Loading animation */
+/* Responsive loading animation */
 .loading-spinner {
-    border: 4px solid var(--bg-secondary);
-    border-top: 4px solid var(--border-color);
+    border: 3px solid var(--bg-secondary);
+    border-top: 3px solid var(--border-color);
     border-radius: 50%;
-    width: 40px;
-    height: 40px;
+    width: 30px;
+    height: 30px;
     animation: spin 1s linear infinite;
+}
+
+@media (min-width: 640px) {
+    .loading-spinner {
+        border-width: 4px;
+        width: 40px;
+        height: 40px;
+    }
 }
 
 @keyframes spin {
@@ -57,40 +82,59 @@
     100% { transform: rotate(360deg); }
 }
 
-/* Chart customization */
+/* Responsive chart container */
 .chart-container {
     background: var(--bg-secondary);
     border-radius: 8px;
-    padding: 16px;
+    padding: 12px;
+    touch-action: pan-x pan-y;
+    -webkit-overflow-scrolling: touch;
 }
 
-/* Custom button styles */
+@media (min-width: 640px) {
+    .chart-container {
+        padding: 16px;
+    }
+}
+
+/* Touch-friendly buttons */
 .btn-primary {
     background-color: var(--border-color);
     color: var(--text-primary);
-    padding: 0.5rem 1rem;
+    padding: 0.75rem 1rem;
     border-radius: 0.375rem;
     transition: all 0.2s;
+    touch-action: manipulation;
 }
 
 .btn-primary:hover {
     background-color: #EA580C;
 }
 
-/* Card hover effects */
+/* Responsive cards */
 .market-card {
     background-color: var(--bg-card);
     color: var(--text-primary);
     transition: transform 0.2s;
+    padding: 1rem;
+    margin-bottom: 0.5rem;
 }
 
-.market-card:hover {
-    transform: translateY(-2px);
+@media (min-width: 640px) {
+    .market-card {
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .market-card:hover {
+        transform: translateY(-2px);
+    }
 }
 
-/* Search bar styling */
+/* Mobile-optimized search */
 .search-container {
     position: relative;
+    width: 100%;
 }
 
 .search-input {
@@ -101,6 +145,13 @@
     padding: 0.75rem 1rem;
     border-radius: 0.5rem;
     transition: all 0.2s;
+    font-size: 0.875rem;
+}
+
+@media (min-width: 640px) {
+    .search-input {
+        font-size: 1rem;
+    }
 }
 
 .search-input:focus {
@@ -108,17 +159,48 @@
     box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.2);
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .chart-container {
-        padding: 8px;
-    }
+/* Touch-friendly tooltips */
+.tooltip {
+    position: relative;
+    display: inline-block;
+}
 
-    .market-card {
-        margin-bottom: 1rem;
+.tooltip-content {
+    visibility: hidden;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    text-align: center;
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    position: absolute;
+    z-index: 1;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 200px;
+    font-size: 0.75rem;
+}
+
+@media (min-width: 640px) {
+    .tooltip-content {
+        width: 240px;
+        font-size: 0.875rem;
     }
 }
 
+.tooltip:hover .tooltip-content,
+.tooltip:active .tooltip-content {
+    visibility: visible;
+}
+
+/* Responsive chart adjustments */
 @media (max-width: 480px) {
-   
+    .chart-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    canvas {
+        min-width: 400px;
+    }
 }
