@@ -215,12 +215,14 @@ async def get_signal_analysis(token_id: str):
 
         # Get ML predictions if models are available
         try:
-            ml_predictions = await ml_service.predict_price(prices)
+            ml_predictions = await ml_service.predict_price(prices, token_id)
+            if ml_predictions:
+                logger.info(f"Successfully generated ML predictions for {token_id}")
         except Exception as e:
-            logger.warning(f"ML prediction failed: {str(e)}")
+            logger.warning(f"ML prediction failed for {token_id}: {str(e)}")
             ml_predictions = None
 
-        # Calculate signal strength
+        # Calculate signal strength with ML insights
         signal_strength = calculate_enhanced_signal_strength(
             current_price=current_price,
             current_rsi=current_rsi,
@@ -249,10 +251,26 @@ async def get_signal_analysis(token_id: str):
             'resistance_2': f"${levels['resistance_2']:,.2f}",
             'optimal_entry': optimal_levels['optimal_entry'],
             'optimal_exit': optimal_levels['optimal_exit'],
-            'stop_loss': optimal_levels['stop_loss'],
-            'ml_predictions': ml_predictions if ml_predictions else {},
-            'dca_recommendation': get_enhanced_dca_recommendation(signal_strength, ml_predictions)
+            'stop_loss': optimal_levels['stop_loss']
         }
+
+        # Add ML predictions if available
+        if ml_predictions:
+            result.update({
+                'ml_predictions': ml_predictions,
+                'next_day_prediction': f"${ml_predictions['next_day']['combined_prediction']:,.2f}",
+                'prediction_range': f"${ml_predictions['next_day']['lower_bound']:,.2f} - ${ml_predictions['next_day']['upper_bound']:,.2f}",
+                'confidence_score': ml_predictions['confidence_score'],
+                'dca_recommendation': get_enhanced_dca_recommendation(signal_strength, ml_predictions, token_id)
+            })
+        else:
+            result.update({
+                'ml_predictions': {},
+                'next_day_prediction': "Unavailable",
+                'prediction_range': "Unavailable",
+                'confidence_score': 0,
+                'dca_recommendation': get_dca_recommendation(signal_strength)
+            })
 
         logger.info("Successfully generated signal analysis")
         return result
@@ -313,7 +331,7 @@ def calculate_enhanced_signal_strength(current_price, current_rsi, is_macd_bulli
 
     return signal_strength
 
-def get_enhanced_dca_recommendation(signal_strength, ml_predictions):
+def get_enhanced_dca_recommendation(signal_strength, ml_predictions, token_id):
     """Get enhanced DCA recommendation incorporating ML predictions."""
     base_recommendation = get_dca_recommendation(signal_strength)
 
@@ -321,16 +339,18 @@ def get_enhanced_dca_recommendation(signal_strength, ml_predictions):
         return base_recommendation
 
     confidence_score = ml_predictions['confidence_score']
-    pred_change = (ml_predictions['next_day']['prophet_prediction'] - 
-                  float(ml_predictions['next_day']['rf_prediction'])) / \
-                 float(ml_predictions['next_day']['rf_prediction'])
+    current_price = float(ml_predictions['next_day']['rf_prediction'])
+    predicted_price = float(ml_predictions['next_day']['combined_prediction'])
+    price_change = ((predicted_price - current_price) / current_price) * 100
 
     # Add ML-specific insights
     ml_insights = (
-        f"\n\n💡 ML Analysis:\n"
+        f"\n\n💡 ML Analysis for {token_id.upper()}:\n"
         f"• Prediction Confidence: {confidence_score:.1f}%\n"
-        f"• Expected Price Range: ${ml_predictions['next_day']['lower_bound']:,.2f} "
+        f"• Expected Price: ${predicted_price:,.2f}\n"
+        f"• Expected Range: ${ml_predictions['next_day']['lower_bound']:,.2f} "
         f"to ${ml_predictions['next_day']['upper_bound']:,.2f}\n"
+        f"• Predicted Change: {price_change:+.2f}%\n"
     )
 
     if confidence_score > 70:
