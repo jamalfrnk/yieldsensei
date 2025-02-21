@@ -98,7 +98,7 @@ def create_app():
         return render_template('dashboard.html', **DEFAULT_DATA)
 
     @app.route('/search')
-    @limiter.limit("20 per minute")
+    @limiter.limit("60 per minute")
     async def search():
         """Handle token search and analysis."""
         token = request.args.get('token', 'bitcoin').lower()
