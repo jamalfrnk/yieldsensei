@@ -51,7 +51,6 @@ args = "python main.py"
 [deployment]
 run = ["sh", "-c", "python app.py"]
 deploymentTarget = "gce"
-ignorePorts = true
 
 [[ports]]
 localPort = 3000
