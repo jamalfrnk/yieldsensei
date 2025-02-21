@@ -204,3 +204,61 @@ html {
         min-width: 400px;
     }
 }
+
+/* Mobile-friendly info tooltips */
+.info-tooltip {
+    position: relative;
+    display: inline-block;
+}
+
+.info-icon {
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.info-content {
+    visibility: hidden;
+    opacity: 0;
+    position: absolute;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Show tooltip on hover for desktop */
+@media (hover: hover) {
+    .info-tooltip:hover .info-content {
+        visibility: visible;
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+/* Show tooltip on tap for mobile */
+.info-tooltip.active .info-content {
+    visibility: visible;
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* Add touch feedback */
+.info-icon:active {
+    background-color: rgba(249, 115, 22, 0.1);
+}
+
+/* Ensure tooltips don't get cut off on mobile */
+@media (max-width: 640px) {
+    .info-content {
+        width: calc(100vw - 32px);
+        max-width: 280px;
+        left: 50%;
+        transform: translateX(-50%) translateY(10px);
+    }
+}

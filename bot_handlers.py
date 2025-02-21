@@ -74,7 +74,23 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Send a message when the command /help is issued."""
     await update.message.reply_text(HELP_TEXT)
 
-@rate_limit
+# Update the rate limit error messages
+RATE_LIMIT_MESSAGES = {
+    "default": "🚦 Whoa there, trading warrior! You're moving faster than the crypto markets. Please wait {wait_time} before your next query.",
+    "price": "💹 Market data cooldown in effect! Try again in {wait_time} for fresh price updates.",
+    "signal": "📊 Signal analysis needs {wait_time} to recharge. The best traders are patient traders!",
+    "market": "📈 Market intel cooling period. Check back in {wait_time} for updated data.",
+    "dexinfo": "🔍 DEX data request limit reached. Next analysis available in {wait_time}."
+}
+
+def format_wait_time(seconds):
+    """Convert seconds to human-readable format."""
+    if seconds < 60:
+        return f"{seconds} seconds"
+    minutes = seconds // 60
+    return f"{minutes} minute{'s' if minutes > 1 else ''}"
+
+@rate_limit(error_message=RATE_LIMIT_MESSAGES["price"])
 @cache
 async def price_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Get token price."""
@@ -116,7 +132,7 @@ async def price_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception:
             await context.bot.send_message(chat_id=update.effective_chat.id, text=error_message)
 
-@rate_limit
+@rate_limit(error_message=RATE_LIMIT_MESSAGES["market"])
 @cache
 async def market_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Get detailed market data."""
@@ -168,7 +184,7 @@ async def market_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception:
             await context.bot.send_message(chat_id=update.effective_chat.id, text=error_message)
 
-@rate_limit
+@rate_limit(error_message=RATE_LIMIT_MESSAGES["dexinfo"])
 @cache
 async def dexinfo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Get token information from DEXScreener."""
@@ -243,7 +259,7 @@ async def dexinfo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception:
             await context.bot.send_message(chat_id=update.effective_chat.id, text=error_message)
 
-@rate_limit
+@rate_limit(error_message=RATE_LIMIT_MESSAGES["signal"])
 @cache
 async def signal_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Get detailed trading signal analysis for token symbol or contract address."""

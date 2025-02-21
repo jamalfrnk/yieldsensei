@@ -52,5 +52,41 @@
             </div>
         </div>
     </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Handle info icon interactions
+            const infoTooltips = document.querySelectorAll('.info-tooltip');
+
+            infoTooltips.forEach(tooltip => {
+                const button = tooltip.querySelector('.info-icon');
+
+                // Close other tooltips when a new one is opened
+                button.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    // Close all other tooltips
+                    infoTooltips.forEach(t => {
+                        if (t !== tooltip) {
+                            t.classList.remove('active');
+                        }
+                    });
+
+                    // Toggle current tooltip
+                    tooltip.classList.toggle('active');
+                });
+            });
+
+            // Close tooltips when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.info-tooltip')) {
+                    infoTooltips.forEach(tooltip => {
+                        tooltip.classList.remove('active');
+                    });
+                }
+            });
+        });
+    </script>
 </body>
 </html>
