@@ -87,7 +87,7 @@ def create_app():
     limiter = Limiter(
         app=app,
         key_func=get_remote_address,
-        default_limits=["200 per hour"]
+        default_limits=["150 per minute"]  # Increased from 200 per hour to 150 per minute
     )
 
     @app.route('/')
@@ -98,7 +98,7 @@ def create_app():
         return render_template('dashboard.html', **DEFAULT_DATA)
 
     @app.route('/search')
-    @limiter.limit("60 per minute")
+    @limiter.limit("200 per minute")  # Increased limit for crypto asset queries
     async def search():
         """Handle token search and analysis."""
         token = request.args.get('token', 'bitcoin').lower()
