@@ -163,13 +163,9 @@ def create_app():
                         price_ranges[period]['high'] = float(price_data['usd'])
 
                 try:
-                    # Train ML models with historical data if not already trained
-                    price_values = [price[1] for price in historical_prices]
-                    if not ml_service.rf_model or not ml_service.prophet_model:
-                        ml_service.train_models(price_values)
-
                     # Get price predictions
-                    predictions = await ml_service.predict_price(price_values)
+                    price_values = [price[1] for price in historical_prices]
+                    predictions = await ml_service.predict_price(price_values, token)
                     logger.info("Generated ML predictions successfully")
 
                     # Calculate all necessary template data
