@@ -76,19 +76,27 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # Update the rate limit error messages
 RATE_LIMIT_MESSAGES = {
-    "default": "🚦 Whoa there, trading warrior! You're moving faster than the crypto markets. Please wait {wait_time} before your next query.",
-    "price": "💹 Market data cooldown in effect! Try again in {wait_time} for fresh price updates.",
-    "signal": "📊 Signal analysis needs {wait_time} to recharge. The best traders are patient traders!",
-    "market": "📈 Market intel cooling period. Check back in {wait_time} for updated data.",
-    "dexinfo": "🔍 DEX data request limit reached. Next analysis available in {wait_time}."
+    "default": "🚦 Trading cooldown in effect! Please wait {wait_time} before your next request.\n\n💡 Tip: Use this time to review your trading strategy or check our documentation.",
+    "price": "💹 Market data request limit reached! Next update available in {wait_time}.\n\n💡 Tip: Try using /market for more comprehensive data when available.",
+    "signal": "📊 Signal analysis cooldown active ({wait_time} remaining).\n\n💡 Pro tip: Use this time to review previous signals and set up your trading parameters.",
+    "market": "📈 Market data cooling period ({wait_time} left).\n\n💡 Consider checking token pairs on DEX in the meantime with /dexinfo.",
+    "dexinfo": "🔍 DEX data request limit reached. Next analysis in {wait_time}.\n\n💡 While waiting, you can check basic price info with /price."
 }
 
 def format_wait_time(seconds):
-    """Convert seconds to human-readable format."""
+    """Convert seconds to a user-friendly time format."""
     if seconds < 60:
         return f"{seconds} seconds"
-    minutes = seconds // 60
-    return f"{minutes} minute{'s' if minutes > 1 else ''}"
+    elif seconds < 3600:
+        minutes = seconds // 60
+        remaining_seconds = seconds % 60
+        if remaining_seconds == 0:
+            return f"{minutes} minute{'s' if minutes > 1 else ''}"
+        return f"{minutes}m {remaining_seconds}s"
+    else:
+        hours = seconds // 3600
+        minutes = (seconds % 3600) // 60
+        return f"{hours}h {minutes}m"
 
 @rate_limit(error_message=RATE_LIMIT_MESSAGES["price"])
 @cache
