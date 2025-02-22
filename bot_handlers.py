@@ -1,7 +1,7 @@
 import logging
 import re
-from telegram import Update
-from telegram.ext import ContextTypes, CommandHandler, MessageHandler, filters
+from telegram import Update, Bot
+from telegram.ext import ContextTypes, CommandHandler, MessageHandler, filters, Application
 from services.coingecko_service import get_token_price, get_token_market_data
 from services.dexscreener_service import get_token_pairs
 from utils.rate_limiter import rate_limit
@@ -17,24 +17,26 @@ logger = logging.getLogger(__name__)
 
 BOT_USERNAME = "yieldsensei_bot"
 HELP_TEXT = """
-Welcome to Yield Sensei! 🎯 Here are the available commands:
+🎯 Yield Sensei Bot Commands:
 
-📊 Market Data Commands:
-@yieldsensei_bot /price <token> - Get current price and 24h change
-@yieldsensei_bot /market <token> - Get market cap, volume, and 24h high/low
+📊 Price & Market Data:
+/price <token> - Get current price (e.g., /price btc)
+/market <token> - Get market stats (e.g., /market eth)
 
-🔍 DEX Information:
-@yieldsensei_bot /dexinfo <token_address> - Get detailed DEX pair info
+🔍 Analysis:
+/signal <token> - Get trading signals (e.g., /signal btc)
+/dexinfo <address> - Get DEX pair info
 
-📈 Trading Signals:
-@yieldsensei_bot /signal <token_or_address> - Get detailed trading signal analysis
-Examples:
-• /signal btc - Analysis for Bitcoin
-• /signal 7GCihgDB8fe6KNjn2MYtkzZcRjQy3t9GHdC8uHYmW2hr - Analysis by contract address
+ℹ️ Help:
+/help - Show this menu
+/start - Get started
 
-ℹ️ General Commands:
-@yieldsensei_bot /help - Show this help message
-@yieldsensei_bot /start - Get started with Yield Sensei
+Example usage:
+• /signal btc - Bitcoin analysis
+• /price eth - Ethereum price
+• /market sol - Solana market data
+
+⚠️ All predictions are AI-powered estimates. Always DYOR!
 """
 
 def is_contract_address(input_str: str) -> bool:
@@ -116,11 +118,11 @@ async def price_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Get token price."""
     if not context.args:
         try:
-            await update.message.reply_text(f"Please provide a token symbol. Example: @{BOT_USERNAME} /price btc")
+            await update.message.reply_text("Please provide a token symbol. Example: /price btc")
         except Exception:
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
-                text=f"Please provide a token symbol. Example: @{BOT_USERNAME} /price btc"
+                text="Please provide a token symbol. Example: /price btc"
             )
         return
 
@@ -140,7 +142,7 @@ async def price_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"💰 {token.upper()} Price Analysis\n\n"
             f"Current Price: ${price:,.2f}\n"
             f"24h Change: {change_emoji} {abs(change):.2f}%\n\n"
-            f"Use @{BOT_USERNAME} /market {token} for more details"
+            f"Use /market {token} for more details"
         )
 
         try:
@@ -163,11 +165,11 @@ async def market_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Get detailed market data."""
     if not context.args:
         try:
-            await update.message.reply_text(f"Please provide a token symbol. Example: @{BOT_USERNAME} /market btc")
+            await update.message.reply_text("Please provide a token symbol. Example: /market btc")
         except Exception:
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
-                text=f"Please provide a token symbol. Example: @{BOT_USERNAME} /market btc"
+                text="Please provide a token symbol. Example: /market btc"
             )
         return
 
@@ -195,7 +197,7 @@ async def market_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"24h High: ${high_24h:,.2f}\n"
             f"24h Low: ${low_24h:,.2f}\n"
             f"24h Change: {price_change:.2f}%\n\n"
-            f"Use @{BOT_USERNAME} /dexinfo <token_address> for DEX details"
+            f"Use /dexinfo <token_address> for DEX details"
         )
 
         try:
@@ -217,7 +219,7 @@ async def market_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def dexinfo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Get token information from DEXScreener."""
     if not context.args:
-        help_message = f"🔍 Please provide a token address. Example: @{BOT_USERNAME} /dexinfo <address>"
+        help_message = f"🔍 Please provide a token address. Example: /dexinfo <address>"
         logger.info("DEX info command called without arguments")
         try:
             await update.message.reply_text(help_message)
@@ -378,34 +380,13 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle messages that are not commands."""
     message = update.message.text
 
-    # Check if message starts with @yieldsensei_bot
-    if not message.startswith(f"@{BOT_USERNAME}"):
-        return
-
-    # Remove the bot username from the message
-    query = message[len(f"@{BOT_USERNAME}"):].strip()
-
-    if not query:
-        suggestion = (
-            "Please provide a command after mentioning me!\n\n"
-            "💡 Try these commands:\n"
-            "• /help - See all available commands\n"
-            "• /signal btc - Get Bitcoin analysis\n"
-            "• /price eth - Get Ethereum price"
-        )
-        try:
-            await update.message.reply_text(suggestion)
-        except Exception:
-            await context.bot.send_message(chat_id=update.effective_chat.id, text=suggestion)
-        return
-
     suggestion = (
-        "Command not recognized.\n\n"
+        "Need help? Try these commands:\n\n"
         "💡 Available commands:\n"
         "• /help - See all commands\n"
-        "• /signal <token/address> - Get trading signals\n"
-        "• /price <token> - Get token price\n"
-        "• /market <token> - Get market data\n"
+        "• /signal btc - Get Bitcoin analysis\n"
+        "• /price eth - Get Ethereum price\n"
+        "• /market sol - Get Solana market data\n"
         "• /dexinfo <address> - Get DEX information"
     )
     try:

@@ -1,8 +1,16 @@
 import logging
 import os
 import sys
-from telegram import Update
-from telegram.ext import Application, CommandHandler, MessageHandler, filters
+try:
+    from telegram import Update
+    from telegram.ext import (
+        Application, CommandHandler, MessageHandler,
+        filters, ContextTypes
+    )
+except ImportError:
+    logging.error("Failed to import telegram modules. Make sure python-telegram-bot is installed.")
+    sys.exit(1)
+
 from bot_handlers import (
     start_command, help_command, price_command, market_command,
     signal_command, dexinfo_command, handle_message, BOT_USERNAME

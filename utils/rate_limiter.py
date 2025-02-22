@@ -6,7 +6,7 @@ from config import RATE_LIMIT_CALLS, RATE_LIMIT_PERIOD, ERROR_RATE_LIMIT
 # Store user calls with timestamps
 user_calls = defaultdict(list)
 
-def rate_limit(func=None, error_message=None):
+def rate_limit(func=None, *, error_message=None):
     """Rate limiting decorator with custom error messages."""
     if func is None:
         return lambda f: rate_limit(f, error_message=error_message)
