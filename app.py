@@ -225,49 +225,70 @@ def create_app():
 
             # Fetch real-time token data
             token_data = get_token_data(token)
-
             if not token_data:
+                logger.error(f"Could not fetch data for token: {token}")
                 return render_template('error.html', 
                     error=f"Could not fetch data for token: {token.upper()}"), 404
 
-            # Calculate technical indicators (simplified for now)
-            signal_strength = 65.0  # Placeholder
-            rsi = 55.0  # Placeholder
+            try:
+                from services.technical_analysis import get_signal_analysis
+                # Get technical analysis data
+                analysis_data = get_signal_analysis(token) #removed await as it's not async
 
-            return render_template('dashboard.html',
-                token_symbol=token_data["token_symbol"],
-                price=token_data["price"],
-                price_change=token_data["price_change"],
-                signal_strength=signal_strength,
-                signal_description="Bullish momentum building",
-                rsi=rsi,
-                trend_direction='Upward 📈',
-                price_ranges=token_data["price_ranges"],
-                predictions={
-                    'next_day': {
-                        'rf_prediction': token_data["price"] * 1.01,
-                        'prophet_prediction': token_data["price"] * 1.02,
-                        'upper_bound': token_data["price"] * 1.05,
-                        'lower_bound': token_data["price"] * 0.95
-                    },
-                    'forecast': {
-                        'dates': [point[0] for point in token_data["historical_data"][-30:]],
-                        'values': [point[1] for point in token_data["historical_data"][-30:]],
-                        'lower_bounds': [point[1] * 0.95 for point in token_data["historical_data"][-30:]],
-                        'upper_bounds': [point[1] * 1.05 for point in token_data["historical_data"][-30:]]
-                    }
-                },
-                confidence_score=75.0,
-                historical_data=token_data["historical_data"],
-                support_1=token_data["price"] * 0.95,
-                support_2=token_data["price"] * 0.90,
-                resistance_1=token_data["price"] * 1.05,
-                resistance_2=token_data["price"] * 1.10,
-                optimal_entry=token_data["price"] * 0.98,
-                stop_loss=token_data["price"] * 0.93,
-                optimal_exit=token_data["price"] * 1.07,
-                dca_recommendation=f"Consider entering {token.upper()} at ${token_data['price']*0.98:,.2f} with a stop loss at ${token_data['price']*0.93:,.2f}"
-            )
+                return render_template('dashboard.html',
+                    token_symbol=token_data["token_symbol"],
+                    price=token_data["price"],
+                    price_change=token_data["price_change"],
+                    signal_strength=analysis_data.get('signal_strength', 50.0),
+                    signal_description=analysis_data.get('signal', "Neutral"),
+                    rsi=analysis_data.get('rsi', 50.0),
+                    trend_direction=analysis_data.get('trend_direction', 'Neutral ⚖️'),
+                    price_ranges=token_data["price_ranges"],
+                    predictions=analysis_data.get('ml_predictions', {
+                        'next_day': {
+                            'rf_prediction': token_data["price"] * 1.01,
+                            'prophet_prediction': token_data["price"] * 1.02,
+                            'upper_bound': token_data["price"] * 1.05,
+                            'lower_bound': token_data["price"] * 0.95
+                        }
+                    }),
+                    confidence_score=analysis_data.get('confidence_score', 75.0),
+                    historical_data=token_data.get("historical_data", []),
+                    support_1=analysis_data.get('support_1', token_data["price"] * 0.95),
+                    support_2=analysis_data.get('support_2', token_data["price"] * 0.90),
+                    resistance_1=analysis_data.get('resistance_1', token_data["price"] * 1.05),
+                    resistance_2=analysis_data.get('resistance_2', token_data["price"] * 1.10),
+                    optimal_entry=analysis_data.get('optimal_entry', token_data["price"] * 0.98),
+                    stop_loss=analysis_data.get('stop_loss', token_data["price"] * 0.93),
+                    optimal_exit=analysis_data.get('optimal_exit', token_data["price"] * 1.07),
+                    dca_recommendation=analysis_data.get('dca_recommendation', 
+                        f"Consider entering {token.upper()} at ${token_data['price']*0.98:,.2f}")
+                )
+            except Exception as e:
+                logger.error(f"Error in technical analysis: {str(e)}")
+                # Fall back to basic data if technical analysis fails
+                return render_template('dashboard.html',
+                    token_symbol=token_data["token_symbol"],
+                    price=token_data["price"],
+                    price_change=token_data["price_change"],
+                    signal_strength=50.0,
+                    signal_description="Technical analysis unavailable",
+                    rsi=50.0,
+                    trend_direction='Neutral ⚖️',
+                    price_ranges=token_data["price_ranges"],
+                    predictions={},
+                    confidence_score=0.0,
+                    historical_data=token_data.get("historical_data", []),
+                    support_1=token_data["price"] * 0.95,
+                    support_2=token_data["price"] * 0.90,
+                    resistance_1=token_data["price"] * 1.05,
+                    resistance_2=token_data["price"] * 1.10,
+                    optimal_entry=token_data["price"] * 0.98,
+                    stop_loss=token_data["price"] * 0.93,
+                    optimal_exit=token_data["price"] * 1.07,
+                    dca_recommendation=f"Basic analysis for {token.upper()}"
+                )
+
         except Exception as e:
             logger.error(f"Search error: {str(e)}")
             return render_template('error.html', error=str(e)), 500
