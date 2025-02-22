@@ -10,7 +10,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     const priceCtx = document.getElementById('priceChart').getContext('2d');
     const historicalData = {{ historical_data|tojson if historical_data else '[]' }};
-    const predictions = {{ predictions.forecast|tojson if predictions and predictions.forecast else '{"dates":[], "values":[], "lower_bounds":[], "upper_bounds":[]}' }};
+    const predictions = {{ predictions|tojson if predictions else '{"forecast":{"dates":[], "values":[], "lower_bounds":[], "upper_bounds":[]}}' }};
 
     if (!historicalData.length) {
         console.log('No historical data available');
@@ -18,14 +18,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Prepare historical data
-    const labels = historicalData.map(d => new Date(d[0]).toLocaleDateString());
+    const labels = historicalData.map(d => {
+        const date = new Date(d[0]);
+        return date.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric'
+        });
+    });
     const prices = historicalData.map(d => d[1]);
-
-    // Add prediction data if available
-    if (predictions.dates && predictions.dates.length) {
-        labels.push(...predictions.dates);
-        prices.push(...predictions.values);
-    }
 
     // Create the price chart
     window.priceChart = new Chart(priceCtx, {
@@ -34,37 +34,12 @@ document.addEventListener('DOMContentLoaded', function() {
             labels: labels,
             datasets: [{
                 label: 'Historical Price',
-                data: prices.slice(0, historicalData.length),
+                data: prices,
                 borderColor: 'rgb(249, 115, 22)',
                 backgroundColor: 'rgba(249, 115, 22, 0.1)',
                 tension: 0.4,
                 fill: true
-            },
-            ...(predictions.values.length ? [{
-                label: 'Price Prediction',
-                data: Array(historicalData.length).fill(null).concat(predictions.values),
-                borderColor: 'rgb(59, 130, 246)',
-                backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                borderDash: [5, 5],
-                tension: 0.4,
-                fill: true
-            }] : []),
-            ...(predictions.lower_bounds.length ? [{
-                label: 'Confidence Range',
-                data: Array(historicalData.length).fill(null).concat(predictions.lower_bounds),
-                borderColor: 'rgba(59, 130, 246, 0.3)',
-                backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                fill: '+1',
-                pointRadius: 0
-            },
-            {
-                data: Array(historicalData.length).fill(null).concat(predictions.upper_bounds),
-                borderColor: 'rgba(59, 130, 246, 0.3)',
-                backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                fill: false,
-                pointRadius: 0
-            }] : [])
-            ]
+            }]
         },
         options: {
             responsive: true,

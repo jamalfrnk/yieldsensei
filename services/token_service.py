@@ -2,6 +2,7 @@ import requests
 import logging
 from typing import Dict, Any, Optional
 import os
+from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
 
@@ -14,33 +15,55 @@ def get_token_data(token_symbol: str) -> Optional[Dict[str, Any]]:
         search_url = f"{COINGECKO_API_URL}/search"
         search_response = requests.get(search_url, params={"query": token_symbol})
         search_data = search_response.json()
-        
+
         if not search_data.get("coins"):
             logger.warning(f"No token found for symbol: {token_symbol}")
             return None
-            
+
         token_id = search_data["coins"][0]["id"]
-        
-        # Get detailed token data
+
+        # Get detailed token data with market data and sparkline
+        price_url = f"{COINGECKO_API_URL}/coins/{token_id}/market_chart"
+        current_time = datetime.now()
+        params = {
+            "vs_currency": "usd",
+            "days": "30",
+            "interval": "daily"
+        }
+
+        response = requests.get(price_url, params=params)
+        chart_data = response.json()
+
+        # Get current price and other market data
         price_url = f"{COINGECKO_API_URL}/coins/{token_id}"
         params = {
             "localization": "false",
             "tickers": "false",
             "market_data": "true",
             "community_data": "false",
-            "developer_data": "false",
-            "sparkline": "true"
+            "developer_data": "false"
         }
-        
+
         response = requests.get(price_url, params=params)
         data = response.json()
-        
+
         if not data or "market_data" not in data:
             logger.error(f"Invalid data received for token: {token_symbol}")
             return None
-            
+
         market_data = data["market_data"]
-        
+
+        # Format historical data for Chart.js
+        historical_data = []
+        if "prices" in chart_data:
+            historical_data = [
+                [
+                    datetime.fromtimestamp(timestamp/1000).strftime("%Y-%m-%d"),
+                    price
+                ]
+                for timestamp, price in chart_data["prices"]
+            ]
+
         return {
             "token_symbol": data["symbol"].upper(),
             "price": market_data["current_price"]["usd"],
@@ -55,28 +78,25 @@ def get_token_data(token_symbol: str) -> Optional[Dict[str, Any]]:
                     "low": market_data["low_24h"]["usd"]
                 },
                 "week": {
-                    "high": market_data["high_24h"]["usd"] * 1.1,  # Placeholder
-                    "low": market_data["low_24h"]["usd"] * 0.9  # Placeholder
+                    "high": max(price for _, price in historical_data[-7:]) if historical_data else market_data["high_24h"]["usd"],
+                    "low": min(price for _, price in historical_data[-7:]) if historical_data else market_data["low_24h"]["usd"]
                 },
                 "month": {
-                    "high": market_data["high_24h"]["usd"] * 1.2,  # Placeholder
-                    "low": market_data["low_24h"]["usd"] * 0.8  # Placeholder
+                    "high": max(price for _, price in historical_data) if historical_data else market_data["high_24h"]["usd"],
+                    "low": min(price for _, price in historical_data) if historical_data else market_data["low_24h"]["usd"]
                 },
                 "quarter": {
-                    "high": market_data["high_24h"]["usd"] * 1.3,  # Placeholder
-                    "low": market_data["low_24h"]["usd"] * 0.7  # Placeholder
+                    "high": market_data["ath"]["usd"],
+                    "low": market_data["atl"]["usd"]
                 },
                 "year": {
-                    "high": market_data["high_24h"]["usd"] * 1.5,  # Placeholder
-                    "low": market_data["low_24h"]["usd"] * 0.5  # Placeholder
+                    "high": market_data["ath"]["usd"],
+                    "low": market_data["atl"]["usd"]
                 }
             },
-            "historical_data": [
-                [str(point[0]), point[1]] 
-                for point in data.get("sparkline_in_7d", {}).get("price", [])
-            ] if data.get("sparkline_in_7d") else []
+            "historical_data": historical_data
         }
-        
+
     except Exception as e:
         logger.error(f"Error fetching token data: {str(e)}")
         return None
