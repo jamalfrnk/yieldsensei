@@ -8,38 +8,40 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    {% block extra_head %}{% endblock %}
 </head>
 <body class="bg-black text-white min-h-screen">
     <!-- Mobile-friendly Navigation -->
-<nav class="bg-black border-b border-orange-500">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between h-16">
-            <div class="flex items-center">
-                <div class="flex-shrink-0 flex items-center">
-                    <img class="h-8 w-auto" src="{{ url_for('static', filename='images/logo.svg') }}" alt="YieldSensei">
-                    <span class="ml-2 text-xl font-bold text-orange-500 hidden sm:inline">YieldSensei</span>
+    <nav class="bg-black border-b border-orange-500">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 flex items-center">
+                        <img class="h-8 w-auto" src="{{ url_for('static', filename='images/logo.svg') }}" alt="YieldSensei">
+                        <span class="ml-2 text-xl font-bold text-orange-500 hidden sm:inline">YieldSensei</span>
+                    </div>
+                </div>
+                <!-- Mobile-optimized navigation menu -->
+                <div class="flex items-center space-x-2 sm:space-x-4">
+                    <a href="/" class="flex items-center text-sm sm:text-base text-white hover:text-orange-500 px-2 py-1">
+                        <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                        </svg>
+                        Home
+                    </a>
+                    <a href="/dashboard" class="text-sm sm:text-base text-white hover:text-orange-500 px-2 py-1">Dashboard</a>
+                    <a href="https://t.me/yieldsenseisanSOL" target="_blank" class="text-sm sm:text-base text-white hover:text-orange-500 px-2 py-1">Bot</a>
+                    <a href="https://yieldsensei.gitbook.io/yieldsensei-docs" target="_blank" class="text-sm sm:text-base text-white hover:text-orange-500 px-2 py-1">Docs</a>
                 </div>
             </div>
-            <!-- Mobile-optimized navigation menu -->
-            <div class="flex items-center space-x-2 sm:space-x-4">
-                <a href="/" class="flex items-center text-sm sm:text-base text-white hover:text-orange-500 px-2 py-1">
-                    <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
-                    </svg>
-                    Home
-                </a>
-                <a href="/dashboard" class="text-sm sm:text-base text-white hover:text-orange-500 px-2 py-1">Dashboard</a>
-                <a href="https://t.me/yieldsenseisanSOL" target="_blank" class="text-sm sm:text-base text-white hover:text-orange-500 px-2 py-1">Bot</a>
-                <a href="https://yieldsensei.gitbook.io/yieldsensei-docs" target="_blank" class="text-sm sm:text-base text-white hover:text-orange-500 px-2 py-1">Docs</a>
-            </div>
         </div>
-    </div>
-</nav>
+    </nav>
 
     <!-- Responsive Main Content -->
     <main class="max-w-7xl mx-auto py-4 sm:py-6 px-4 sm:px-6 lg:px-8">
         {% block content %}{% endblock %}
     </main>
+
     <!-- Mobile-friendly Footer -->
     <footer class="bg-black border-t border-orange-500 mt-8">
         <div class="max-w-7xl mx-auto py-4 sm:py-6 px-4 sm:px-6 lg:px-8">
@@ -94,6 +96,6 @@
             });
         });
     </script>
-    {{ super() }}
+    {% block extra_scripts %}{% endblock %}
 </body>
 </html>

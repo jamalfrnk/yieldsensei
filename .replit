@@ -45,11 +45,11 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python app.py"
+args = "ENVIRONMENT=development SECRET_KEY=dev_secret_key DEBUG=true python app.py"
 waitForPort = 3000
 
 [deployment]
-run = ["sh", "-c", "python app.py"]
+run = ["sh", "-c", "ENVIRONMENT=development SECRET_KEY=dev_secret_key DEBUG=true python app.py"]
 deploymentTarget = "gce"
 
 [[ports]]

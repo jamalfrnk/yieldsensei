@@ -46,6 +46,10 @@ def create_app():
         }
     )
 
+    # Environment-specific settings
+    is_development = os.environ.get('ENVIRONMENT', 'production').lower() == 'development'
+    logger.info(f"Running in {'development' if is_development else 'production'} mode")
+
     if not app.config['SECRET_KEY']:
         raise RuntimeError("SECRET_KEY environment variable must be set")
 
@@ -75,11 +79,11 @@ def create_app():
         logger.error("DATABASE_URL environment variable is not set")
         raise RuntimeError("DATABASE_URL environment variable must be set")
 
-    # Initialize rate limiter with more lenient defaults for production
+    # Initialize rate limiter with environment-specific settings
     limiter = Limiter(
         app=app,
         key_func=get_remote_address,
-        default_limits=["1000 per day", "100 per hour"],  # More conservative limits
+        default_limits=["1000 per day", "100 per hour"] if not is_development else [],
         storage_uri=os.environ.get("REDIS_URL", "memory://"),
         strategy="fixed-window-elastic-expiry"
     )
@@ -103,7 +107,7 @@ def create_app():
     # Initialize production-ready middleware
     Compress(app)
 
-    # Configure Talisman with updated CSP
+    # Configure Talisman with environment-specific settings
     csp = {
         'default-src': ["'self'"],
         'script-src': [
@@ -133,13 +137,25 @@ def create_app():
         ]
     }
 
-    Talisman(app,
-        force_https=True,
-        strict_transport_security=True,
-        session_cookie_secure=True,
-        content_security_policy=csp,
-        content_security_policy_report_only=False
-    )
+    if is_development:
+        logger.info("Development mode: Relaxing security settings")
+        # Add development-specific CSP rules if needed
+        csp['connect-src'].append("*")
+        Talisman(app,
+            force_https=False,  # Disable HTTPS enforcement in development
+            strict_transport_security=False,
+            session_cookie_secure=False,
+            content_security_policy=csp
+        )
+    else:
+        logger.info("Production mode: Enforcing strict security settings")
+        Talisman(app,
+            force_https=True,
+            strict_transport_security=True,
+            session_cookie_secure=True,
+            content_security_policy=csp,
+            content_security_policy_report_only=False
+        )
 
     # Main routes with adjusted rate limits
     @app.route('/')
@@ -194,8 +210,14 @@ if __name__ == '__main__':
         logger.info("Creating application instance")
         app = create_app()
         port = int(os.environ.get('PORT', 3000))
-        logger.info(f"Starting production server on port {port}")
-        serve(app, host='0.0.0.0', port=port, threads=4)
+        logger.info(f"Starting server on port {port}")
+        if os.environ.get('ENVIRONMENT', 'production').lower() == 'development':
+            # Use Flask's development server in development mode
+            app.run(host='0.0.0.0', port=port, debug=True)
+        else:
+            # Use production server
+            logger.info("Starting production server")
+            serve(app, host='0.0.0.0', port=port, threads=4)
     except Exception as e:
         logger.error(f"Failed to start server: {str(e)}", exc_info=True)
         raise
