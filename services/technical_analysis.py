@@ -187,25 +187,17 @@ async def get_signal_analysis(token_id: str):
         # Calculate Fibonacci levels
         fib_levels = calculate_fibonacci_levels(prices)
 
-        # Calculate support/resistance levels
+        # Calculate support/resistance levels with fallback
         try:
             levels = calculate_support_resistance(prices)
         except Exception as e:
             logger.error(f"Error calculating support/resistance: {str(e)}")
             levels = {
-                'support_1': current_price * 0.95,
-                'support_2': current_price * 0.90,
-                'resistance_1': current_price * 1.05,
-                'resistance_2': current_price * 1.10
+                'support_1': round(current_price * 0.95, 2),
+                'support_2': round(current_price * 0.90, 2),
+                'resistance_1': round(current_price * 1.05, 2),
+                'resistance_2': round(current_price * 1.10, 2)
             }
-
-        # Get ML predictions
-        try:
-            ml_predictions = await ml_service.predict_price(prices, token_id)
-            logger.info(f"Successfully generated ML predictions for {token_id}")
-        except Exception as e:
-            logger.warning(f"ML prediction failed: {str(e)}")
-            ml_predictions = None
 
         # Calculate signal strength
         signal_strength = calculate_enhanced_signal_strength(
@@ -214,7 +206,7 @@ async def get_signal_analysis(token_id: str):
             is_macd_bullish=is_macd_bullish,
             macd_strength=macd_strength,
             levels=levels,
-            ml_predictions=ml_predictions,
+            ml_predictions=None,  # ML predictions might not be available
             rsi_trend=rsi_trend,
             rsi_strength=rsi_strength,
             macd_crossover=macd_crossover,
@@ -227,6 +219,9 @@ async def get_signal_analysis(token_id: str):
             levels=levels,
             signal_strength=signal_strength
         )
+
+        # Get DCA recommendation
+        dca_recommendation = get_dca_recommendation(signal_strength)
 
         # Structure technical indicators data
         technical_indicators = {
@@ -251,15 +246,9 @@ async def get_signal_analysis(token_id: str):
             'technical_indicators': technical_indicators,
             'fibonacci_levels': fib_levels,
             'price_levels': levels,
-            'trading_levels': optimal_levels
+            'trading_levels': optimal_levels,
+            'dca_recommendation': dca_recommendation
         }
-
-        # Add ML predictions if available
-        if ml_predictions:
-            result.update({
-                'ml_predictions': ml_predictions,
-                'confidence_score': ml_predictions['confidence_score']
-            })
 
         logger.info("Successfully generated signal analysis")
         return result
@@ -341,13 +330,11 @@ def calculate_optimal_levels(current_price, levels, signal_strength):
         if signal_strength > 60:  # Strong buy signal
             optimal_entry = current_price  # Enter immediately
             stop_loss = max(support_2, current_price * 0.95)  # Max 5% loss
-            # Ensure take profit is at least 2.5x the risk
             risk = current_price - stop_loss
             optimal_exit = current_price + (risk * risk_reward_ratio)
         elif signal_strength > 20:  # Moderate buy signal
             optimal_entry = (current_price + support_1) / 2  # Enter halfway to support
             stop_loss = support_2
-            # Calculate minimum profit target
             risk = optimal_entry - stop_loss
             optimal_exit = optimal_entry + (risk * risk_reward_ratio)
         elif signal_strength < -60:  # Strong sell signal
@@ -364,27 +351,22 @@ def calculate_optimal_levels(current_price, levels, signal_strength):
             risk = optimal_entry - stop_loss
             optimal_exit = optimal_entry + (risk * risk_reward_ratio)
 
-        # Adjust exit based on volatility
-        if signal_strength > 0:
-            # For bullish signals, ensure exit is above resistance_1
-            optimal_exit = max(optimal_exit, resistance_1 * (1 + volatility_factor))
-
         # Final validation to ensure proper order
         optimal_exit = max(optimal_exit, optimal_entry * 1.02)  # Minimum 2% profit
         stop_loss = min(stop_loss, optimal_entry * 0.98)  # Maximum 2% loss
 
         return {
-            'optimal_entry': optimal_entry,
-            'optimal_exit': optimal_exit,
-            'stop_loss': stop_loss
+            'optimal_entry': round(optimal_entry, 2),
+            'optimal_exit': round(optimal_exit, 2),
+            'stop_loss': round(stop_loss, 2)
         }
     except Exception as e:
         logger.error(f"Error calculating optimal levels: {str(e)}")
-        # Provide default values based on current price if calculation fails
+        # Provide calculated fallback values based on current price
         return {
-            'optimal_entry': current_price * 0.98,
-            'optimal_exit': current_price * 1.05,
-            'stop_loss': current_price * 0.95
+            'optimal_entry': round(current_price * 0.98, 2),
+            'optimal_exit': round(current_price * 1.05, 2),
+            'stop_loss': round(current_price * 0.95, 2)
         }
 
 def calculate_support_resistance(prices):
