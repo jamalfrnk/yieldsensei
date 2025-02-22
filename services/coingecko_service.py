@@ -2,9 +2,14 @@ import aiohttp
 import asyncio
 from config import COINGECKO_BASE_URL, ERROR_INVALID_TOKEN
 import logging
+import os
 
 # Configure logging
 logger = logging.getLogger(__name__)
+
+# Get API key from environment
+COINGECKO_API_KEY = os.environ.get('COINGECKO_API_KEY')
+BASE_URL = "https://pro-api.coingecko.com/api/v3" if COINGECKO_API_KEY else COINGECKO_BASE_URL
 
 async def retry_with_backoff(func, *args, max_retries=3):
     """Retry a function with exponential backoff."""
@@ -22,28 +27,32 @@ async def retry_with_backoff(func, *args, max_retries=3):
 async def get_token_price(input_token: str):
     """Fetch token price data from CoinGecko API."""
     async def _fetch_price(token_id: str):
+        headers = {"x-cg-pro-api-key": COINGECKO_API_KEY} if COINGECKO_API_KEY else {}
+
         async with aiohttp.ClientSession() as session:
             try:
                 logger.info(f"Fetching price data for token: {token_id}")
-                url = f"{COINGECKO_BASE_URL}/simple/price"
+                url = f"{BASE_URL}/simple/price"
                 params = {
                     "ids": token_id,
                     "vs_currencies": "usd",
                     "include_24hr_change": "true"
                 }
 
-                async with session.get(url, params=params) as response:
+                async with session.get(url, params=params, headers=headers) as response:
                     if response.status == 404:
                         logger.error(f"Token not found: {token_id}")
                         raise ValueError(ERROR_INVALID_TOKEN)
                     elif response.status == 429:
                         logger.error("Rate limit exceeded")
-                        raise Exception("Rate limit exceeded")
+                        raise Exception("Rate limit exceeded. Please try again later.")
+                    elif response.status == 403:
+                        logger.error("Invalid API key or unauthorized access")
+                        raise Exception("API authentication failed. Please check your API key.")
 
                     data = await response.json()
                     logger.info(f"Received response: {data}")
 
-                    # Check if response contains error status
                     if isinstance(data, dict) and 'status' in data and 'error_code' in data['status']:
                         if data['status']['error_code'] == 429:
                             raise Exception("Rate limit exceeded")
@@ -76,7 +85,6 @@ async def get_token_price(input_token: str):
         'matic': 'matic-network',
     }
 
-    # Convert common symbols to CoinGecko IDs
     if token_id in token_map:
         token_id = token_map[token_id]
 
@@ -85,12 +93,14 @@ async def get_token_price(input_token: str):
 async def get_token_market_data(input_token: str):
     """Fetch detailed market data including historical prices from CoinGecko API."""
     async def _fetch_market_data(token_id: str):
+        headers = {"x-cg-pro-api-key": COINGECKO_API_KEY} if COINGECKO_API_KEY else {}
+
         async with aiohttp.ClientSession() as session:
             try:
                 logger.info(f"Fetching market data for token: {token_id}")
 
                 # Get current market data
-                url = f"{COINGECKO_BASE_URL}/coins/{token_id}"
+                url = f"{BASE_URL}/coins/{token_id}"
                 params = {
                     "localization": "false",
                     "tickers": "false",
@@ -99,13 +109,16 @@ async def get_token_market_data(input_token: str):
                     "sparkline": "false"
                 }
 
-                async with session.get(url, params=params) as response:
+                async with session.get(url, params=params, headers=headers) as response:
                     if response.status == 404:
                         logger.error(f"Token not found: {token_id}")
                         raise ValueError(ERROR_INVALID_TOKEN)
                     elif response.status == 429:
                         logger.error("Rate limit exceeded")
                         raise Exception("Rate limit exceeded")
+                    elif response.status == 403:
+                        logger.error("Invalid API key or unauthorized access")
+                        raise Exception("API authentication failed. Please check your API key.")
 
                     data = await response.json()
 
@@ -117,15 +130,15 @@ async def get_token_market_data(input_token: str):
 
                     market_data = data["market_data"]
 
-                # Get historical price data (last 365 days)
-                history_url = f"{COINGECKO_BASE_URL}/coins/{token_id}/market_chart"
+                # Get historical price data
+                history_url = f"{BASE_URL}/coins/{token_id}/market_chart"
                 history_params = {
                     "vs_currency": "usd",
                     "days": "365",
                     "interval": "daily"
                 }
 
-                async with session.get(history_url, params=history_params) as history_response:
+                async with session.get(history_url, params=history_params, headers=headers) as history_response:
                     if history_response.status == 404:
                         logger.error(f"Historical data not found for token: {token_id}")
                         raise ValueError(ERROR_INVALID_TOKEN)
@@ -134,12 +147,6 @@ async def get_token_market_data(input_token: str):
                         raise Exception("Rate limit exceeded")
 
                     history_data = await history_response.json()
-
-                    # Check for error response
-                    if isinstance(history_data, dict) and 'status' in history_data and 'error_code' in history_data['status']:
-                        if history_data['status']['error_code'] == 429:
-                            raise Exception("Rate limit exceeded")
-                        raise ValueError(history_data['status'].get('error_message', ERROR_INVALID_TOKEN))
 
                     if not history_data or "prices" not in history_data:
                         logger.error("No price data in historical response")
@@ -152,7 +159,7 @@ async def get_token_market_data(input_token: str):
                         "low_24h": market_data["low_24h"]["usd"],
                         "price_change_percentage_24h": market_data["price_change_percentage_24h"],
                         "market_cap_rank": data["market_cap_rank"],
-                        "prices": history_data["prices"]  # Array of [timestamp, price] pairs
+                        "prices": history_data["prices"]
                     }
 
             except aiohttp.ClientError as e:
