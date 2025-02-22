@@ -111,54 +111,79 @@ def calculate_macd(prices):
         return False, 0.0
 
 def calculate_support_resistance(prices):
-    """Calculate support and resistance levels using price clustering."""
+    """Calculate support and resistance levels using improved price clustering."""
     try:
+        if len(prices) < 30:
+            raise ValueError("Insufficient price data for support/resistance calculation")
+
+        # Convert prices to numpy array and sort
         sorted_prices = np.sort(prices)
         price_range = sorted_prices[-1] - sorted_prices[0]
         current_price = prices[-1]
 
+        # Dynamic clustering threshold based on price volatility
+        volatility = np.std(prices) / np.mean(prices)
+        cluster_threshold = price_range * min(max(0.01, volatility), 0.03)
+
         clusters = []
-        cluster_threshold = price_range * 0.015
         current_cluster = [sorted_prices[0]]
 
+        # Improved clustering algorithm
         for price in sorted_prices[1:]:
             if price - current_cluster[-1] <= cluster_threshold:
                 current_cluster.append(price)
             else:
-                if len(current_cluster) > 3:
-                    clusters.append(np.mean(current_cluster))
+                if len(current_cluster) > len(prices) * 0.05:  # At least 5% of price points
+                    cluster_mean = np.mean(current_cluster)
+                    cluster_strength = len(current_cluster) / len(prices)
+                    clusters.append((cluster_mean, cluster_strength))
                 current_cluster = [price]
 
-        if len(current_cluster) > 3:
-            clusters.append(np.mean(current_cluster))
+        # Add the last cluster if significant
+        if len(current_cluster) > len(prices) * 0.05:
+            cluster_mean = np.mean(current_cluster)
+            cluster_strength = len(current_cluster) / len(prices)
+            clusters.append((cluster_mean, cluster_strength))
 
-        clusters = np.array(clusters)
-        supports = clusters[clusters < current_price]
-        supports = np.sort(supports)[::-1]
-        resistances = clusters[clusters > current_price]
-        resistances = np.sort(resistances)
+        # Sort clusters by strength
+        clusters.sort(key=lambda x: x[1], reverse=True)
+        cluster_prices = [c[0] for c in clusters]
 
+        # Separate support and resistance levels
+        supports = [p for p in cluster_prices if p < current_price]
+        resistances = [p for p in cluster_prices if p > current_price]
+
+        # Ensure we have at least two levels for each
         if len(supports) < 2:
-            support_levels = [
-                current_price * 0.95,
-                current_price * 0.90
-            ] if len(supports) == 0 else [
-                supports[0],
-                supports[0] * 0.95
-            ]
-        else:
-            support_levels = supports[:2]
+            # Calculate dynamic fallback levels based on volatility
+            volatility_factor = max(0.05, min(0.15, volatility))
+            if len(supports) == 0:
+                supports = [
+                    current_price * (1 - volatility_factor),
+                    current_price * (1 - volatility_factor * 2)
+                ]
+            else:
+                supports = [
+                    supports[0],
+                    supports[0] * (1 - volatility_factor)
+                ]
 
         if len(resistances) < 2:
-            resistance_levels = [
-                current_price * 1.05,
-                current_price * 1.10
-            ] if len(resistances) == 0 else [
-                resistances[0],
-                resistances[0] * 1.05
-            ]
-        else:
-            resistance_levels = resistances[:2]
+            volatility_factor = max(0.05, min(0.15, volatility))
+            if len(resistances) == 0:
+                resistances = [
+                    current_price * (1 + volatility_factor),
+                    current_price * (1 + volatility_factor * 2)
+                ]
+            else:
+                resistances = [
+                    resistances[0],
+                    resistances[0] * (1 + volatility_factor)
+                ]
+
+        # Take the strongest levels
+        support_levels = sorted(supports[-2:], reverse=True)
+        resistance_levels = sorted(resistances[:2])
 
         return {
             "support_1": support_levels[0],
@@ -167,7 +192,14 @@ def calculate_support_resistance(prices):
             "resistance_2": resistance_levels[1]
         }
     except Exception as e:
-        raise Exception(f"Support/Resistance calculation error: {str(e)}")
+        logger.error(f"Support/Resistance calculation error: {str(e)}")
+        # Fallback to simple percentage-based levels
+        return {
+            "support_1": current_price * 0.95,
+            "support_2": current_price * 0.90,
+            "resistance_1": current_price * 1.05,
+            "resistance_2": current_price * 1.10
+        }
 
 def calculate_optimal_levels(current_price, levels, signal_strength):
     """Calculate optimal entry and exit points based on price levels and signal strength."""
