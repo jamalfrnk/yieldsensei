@@ -12,6 +12,7 @@ from flask_compress import Compress
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from waitress import serve
+from auth import auth
 
 # Configure logging with more detailed format
 logging.basicConfig(
@@ -32,7 +33,7 @@ def create_app():
     # Basic configuration
     logger.info("Setting up basic configuration")
     app.config.update(
-        SECRET_KEY=os.environ.get('SECRET_KEY'),
+        SECRET_KEY=os.environ.get('SECRET_KEY', 'dev_secret_key'),  # Set a default for development
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
         SESSION_COOKIE_SECURE=True,
         SESSION_COOKIE_HTTPONLY=True,
@@ -50,9 +51,6 @@ def create_app():
     is_development = os.environ.get('ENVIRONMENT', 'production').lower() == 'development'
     logger.info(f"Running in {'development' if is_development else 'production'} mode")
 
-    if not app.config['SECRET_KEY']:
-        raise RuntimeError("SECRET_KEY environment variable must be set")
-
     # Configure database
     logger.info("Configuring database connection")
     database_url = os.environ.get('DATABASE_URL')
@@ -68,7 +66,6 @@ def create_app():
             db.init_app(app)
             with app.app_context():
                 db.create_all()
-                # Verify database connection
                 db.session.execute(text('SELECT 1'))
                 db.session.commit()
                 logger.info("Database initialized and connected successfully")
@@ -88,21 +85,22 @@ def create_app():
         strategy="fixed-window-elastic-expiry"
     )
 
-    # Exempt static files and common routes from rate limiting
-    @limiter.request_filter
-    def exempt_static_and_common():
-        return request.path.startswith('/static/') or request.path == '/'
-
     # Initialize login manager
     logger.info("Initializing login manager")
     login_manager = LoginManager()
     login_manager.init_app(app)
-    login_manager.login_view = 'auth.login'
+    login_manager.login_view = 'auth.login'  # Set the login view
+    login_manager.login_message = 'Please log in to access this page.'
+    login_manager.login_message_category = 'info'
     login_manager.session_protection = 'strong'
 
     @login_manager.user_loader
     def load_user(user_id):
         return User.query.get(int(user_id))
+
+    # Register blueprints
+    logger.info("Registering blueprints")
+    app.register_blueprint(auth, url_prefix='/auth')  # Register auth blueprint with prefix
 
     # Initialize production-ready middleware
     Compress(app)
@@ -139,10 +137,9 @@ def create_app():
 
     if is_development:
         logger.info("Development mode: Relaxing security settings")
-        # Add development-specific CSP rules if needed
         csp['connect-src'].append("*")
         Talisman(app,
-            force_https=False,  # Disable HTTPS enforcement in development
+            force_https=False,
             strict_transport_security=False,
             session_cookie_secure=False,
             content_security_policy=csp
@@ -157,7 +154,7 @@ def create_app():
             content_security_policy_report_only=False
         )
 
-    # Main routes with adjusted rate limits
+    # Main routes
     @app.route('/')
     def index():
         try:
@@ -168,10 +165,10 @@ def create_app():
 
     @app.route('/dashboard')
     @login_required
-    @limiter.limit("100 per hour")  # Reduced limit for dashboard
+    @limiter.limit("100 per hour")
     def dashboard():
         try:
-            return render_template('dashboard.html', 
+            return render_template('dashboard.html',
                 token_symbol='Enter a token',
                 price=0.0,
                 price_change=0.0,
@@ -188,13 +185,13 @@ def create_app():
     @app.errorhandler(429)
     def ratelimit_handler(e):
         logger.warning(f"Rate limit exceeded: {str(e)}")
-        return render_template('error.html', 
+        return render_template('error.html',
             error="Rate limit exceeded. Please try again in a few minutes."), 429
 
     @app.errorhandler(500)
     def internal_error(error):
         logger.error(f"Internal Server Error: {str(error)}")
-        return render_template('error.html', 
+        return render_template('error.html',
             error="An internal error occurred. Please try again later."), 500
 
     @app.errorhandler(404)
@@ -212,10 +209,8 @@ if __name__ == '__main__':
         port = int(os.environ.get('PORT', 3000))
         logger.info(f"Starting server on port {port}")
         if os.environ.get('ENVIRONMENT', 'production').lower() == 'development':
-            # Use Flask's development server in development mode
             app.run(host='0.0.0.0', port=port, debug=True)
         else:
-            # Use production server
             logger.info("Starting production server")
             serve(app, host='0.0.0.0', port=port, threads=4)
     except Exception as e:
