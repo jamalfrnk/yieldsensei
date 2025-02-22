@@ -3,16 +3,19 @@ from flask import Flask, render_template, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, login_required
 from models import db, User
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
-from sqlalchemy import text
+from sqlalchemy import text, create_engine
+from sqlalchemy.pool import QueuePool
 from flask_talisman import Talisman
 from flask_compress import Compress
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from waitress import serve
 
-# Configure logging
+# Configure logging with more detailed format
 logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    format='%(asctime)s - %(name)s - %(levelname)s - [%(funcName)s] %(message)s',
     level=logging.INFO,
     handlers=[
         logging.StreamHandler(),
@@ -29,9 +32,22 @@ def create_app():
     # Basic configuration
     logger.info("Setting up basic configuration")
     app.config.update(
-        SECRET_KEY=os.environ.get('SECRET_KEY', 'dev-key-change-in-production'),
-        SQLALCHEMY_TRACK_MODIFICATIONS=False
+        SECRET_KEY=os.environ.get('SECRET_KEY'),
+        SQLALCHEMY_TRACK_MODIFICATIONS=False,
+        SESSION_COOKIE_SECURE=True,
+        SESSION_COOKIE_HTTPONLY=True,
+        SESSION_COOKIE_SAMESITE='Lax',
+        PERMANENT_SESSION_LIFETIME=timedelta(days=1),
+        SQLALCHEMY_ENGINE_OPTIONS={
+            'pool_size': 10,
+            'pool_recycle': 300,
+            'pool_pre_ping': True,
+            'pool_timeout': 30
+        }
     )
+
+    if not app.config['SECRET_KEY']:
+        raise RuntimeError("SECRET_KEY environment variable must be set")
 
     # Configure database
     logger.info("Configuring database connection")
@@ -40,7 +56,7 @@ def create_app():
         if database_url.startswith("postgres://"):
             database_url = database_url.replace("postgres://", "postgresql://", 1)
         app.config['SQLALCHEMY_DATABASE_URI'] = database_url
-        logger.info(f"Database URL configured: {database_url.split('@')[1] if '@' in database_url else 'configured'}")
+        logger.info("Database URL configured successfully")
 
         # Initialize database with error handling
         try:
@@ -59,36 +75,83 @@ def create_app():
         logger.error("DATABASE_URL environment variable is not set")
         raise RuntimeError("DATABASE_URL environment variable must be set")
 
-    # Initialize login manager
+    # Initialize rate limiter
+    limiter = Limiter(
+        app=app,
+        key_func=get_remote_address,
+        default_limits=["200 per day", "50 per hour"],
+        storage_uri=os.environ.get("REDIS_URL", "memory://")
+    )
+
+    # Initialize login manager with enhanced security
     logger.info("Initializing login manager")
     login_manager = LoginManager()
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
+    login_manager.session_protection = 'strong'
 
     @login_manager.user_loader
     def load_user(user_id):
         return User.query.get(int(user_id))
 
     # Initialize production-ready middleware
-    Compress(app)  # Enable compression
+    Compress(app)
 
     # Configure Talisman for security headers
     csp = {
         'default-src': ["'self'"],
-        'script-src': ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
-        'style-src': ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-        'img-src': ["'self'", "data:", "https://cdn.jsdelivr.net"],
-        'font-src': ["'self'", "https://fonts.gstatic.com", "https://cdn.jsdelivr.net"],
-        'connect-src': ["'self'", "https://api.coingecko.com"]
+        'script-src': [
+            "'self'",
+            "'unsafe-inline'",
+            "https://cdn.jsdelivr.net",
+            "https://api.coingecko.com"
+        ],
+        'style-src': [
+            "'self'",
+            "'unsafe-inline'",
+            "https://fonts.googleapis.com",
+            "https://cdn.jsdelivr.net"
+        ],
+        'img-src': ["'self'", "data:", "https://*"],
+        'font-src': [
+            "'self'",
+            "https://fonts.gstatic.com",
+            "https://cdn.jsdelivr.net"
+        ],
+        'connect-src': [
+            "'self'",
+            "https://api.coingecko.com",
+            "wss://api.coingecko.com"
+        ],
+        'frame-ancestors': ["'none'"],
+        'form-action': ["'self'"]
     }
-    Talisman(app, 
-        force_https=False,  # Set to True in production
+
+    Talisman(app,
+        force_https=True,
         strict_transport_security=True,
         session_cookie_secure=True,
-        content_security_policy=csp
+        content_security_policy=csp,
+        content_security_policy_report_only=False,
+        feature_policy={
+            'geolocation': "'none'",
+            'midi': "'none'",
+            'notifications': "'none'",
+            'push': "'none'",
+            'sync-xhr': "'none'",
+            'microphone': "'none'",
+            'camera': "'none'",
+            'magnetometer': "'none'",
+            'gyroscope': "'none'",
+            'speaker': "'none'",
+            'vibrate': "'none'",
+            'fullscreen': "'self'",
+            'payment': "'none'"
+        }
     )
 
-    # Basic test route
+    # Rate limit decorators for specific endpoints
+    @limiter.limit("5 per minute")
     @app.route('/test')
     def test():
         logger.info("Test endpoint accessed")
@@ -99,6 +162,7 @@ def create_app():
         })
 
     # Health check endpoint
+    @limiter.limit("30 per minute")
     @app.route('/health')
     def health_check():
         try:
@@ -123,6 +187,7 @@ def create_app():
 
     @app.route('/dashboard')
     @login_required
+    @limiter.limit("100 per hour")
     def dashboard():
         """Basic dashboard route."""
         try:
@@ -137,6 +202,11 @@ def create_app():
             return render_template('error.html', error=str(e)), 500
 
     # Error handlers
+    @app.errorhandler(429)
+    def ratelimit_handler(e):
+        logger.warning(f"Rate limit exceeded: {str(e)}")
+        return jsonify(error="Rate limit exceeded. Please try again later."), 429
+
     @app.errorhandler(500)
     def internal_error(error):
         logger.error(f"Internal Server Error: {str(error)}")
@@ -154,9 +224,9 @@ if __name__ == '__main__':
     try:
         logger.info("Creating application instance")
         app = create_app()
-        port = int(os.environ.get('PORT', 3000))  # Changed default port to 3000
+        port = int(os.environ.get('PORT', 3000))
         logger.info(f"Starting production server on port {port}")
-        serve(app, host='0.0.0.0', port=port)
+        serve(app, host='0.0.0.0', port=port, threads=4)
     except Exception as e:
         logger.error(f"Failed to start server: {str(e)}", exc_info=True)
         raise

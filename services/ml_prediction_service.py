@@ -7,40 +7,50 @@ from prophet import Prophet
 import joblib
 import os
 from datetime import datetime, timedelta
+from typing import Dict, List, Optional, Tuple, Union
+import fcntl
+import json
 
 # Configure logging
 logger = logging.getLogger(__name__)
 
 class MLPredictionService:
     def __init__(self):
-        self.models = {}  # Dictionary to store models per asset
-        self.scalers = {}  # Dictionary to store scalers per asset
-        self.model_path = 'models'
+        self.models: Dict[str, Dict] = {}  # Dictionary to store models per asset
+        self.scalers: Dict[str, MinMaxScaler] = {}  # Dictionary to store scalers per asset
+        self.model_path: str = 'models'
 
         # Create models directory if it doesn't exist
         if not os.path.exists(self.model_path):
             os.makedirs(self.model_path)
 
-    def prepare_features(self, prices, window_size=14):
+    def prepare_features(self, prices: List[float], window_size: int = 14) -> pd.DataFrame:
         """Prepare features for ML model."""
-        df = pd.DataFrame(prices, columns=['price'])
+        try:
+            if not isinstance(prices, (list, np.ndarray)) or len(prices) < window_size:
+                raise ValueError(f"Prices must be a list/array with at least {window_size} elements")
 
-        # Technical indicators as features
-        df['SMA'] = df['price'].rolling(window=window_size).mean()
-        df['STD'] = df['price'].rolling(window=window_size).std()
-        df['RSI'] = self._calculate_rsi(df['price'], window_size)
-        df['MACD'] = self._calculate_macd(df['price'])
+            df = pd.DataFrame(prices, columns=['price'])
 
-        # Price changes
-        df['price_change'] = df['price'].pct_change()
-        df['volatility'] = df['price_change'].rolling(window=window_size).std()
+            # Technical indicators as features
+            df['SMA'] = df['price'].rolling(window=window_size).mean()
+            df['STD'] = df['price'].rolling(window=window_size).std()
+            df['RSI'] = self._calculate_rsi(df['price'], window_size)
+            df['MACD'] = self._calculate_macd(df['price'])
 
-        # Remove NaN values
-        df = df.dropna()
+            # Price changes
+            df['price_change'] = df['price'].pct_change()
+            df['volatility'] = df['price_change'].rolling(window=window_size).std()
 
-        return df
+            # Remove NaN values
+            df = df.dropna()
 
-    def _calculate_rsi(self, prices, window_size=14):
+            return df
+        except Exception as e:
+            logger.error(f"Error preparing features: {str(e)}")
+            raise
+
+    def _calculate_rsi(self, prices: pd.Series, window_size: int = 14) -> pd.Series:
         """Calculate RSI."""
         delta = prices.diff()
         gain = (delta.where(delta > 0, 0)).rolling(window=window_size).mean()
@@ -48,13 +58,13 @@ class MLPredictionService:
         rs = gain / loss
         return 100 - (100 / (1 + rs))
 
-    def _calculate_macd(self, prices):
+    def _calculate_macd(self, prices: pd.Series) -> pd.Series:
         """Calculate MACD."""
         exp1 = prices.ewm(span=12, adjust=False).mean()
         exp2 = prices.ewm(span=26, adjust=False).mean()
         return exp1 - exp2
 
-    def _get_model_paths(self, asset_id):
+    def _get_model_paths(self, asset_id: str) -> Dict[str, str]:
         """Get asset-specific model file paths."""
         return {
             'rf_model': f'{self.model_path}/rf_model_{asset_id}.joblib',
@@ -62,10 +72,25 @@ class MLPredictionService:
             'scaler': f'{self.model_path}/scaler_{asset_id}.joblib'
         }
 
-    def train_models(self, historical_prices, asset_id):
+    def _acquire_lock(self, lock_path: str) -> None:
+        """Acquire a file lock for thread-safe operations."""
+        self.lock_file = open(lock_path, 'w')
+        fcntl.flock(self.lock_file.fileno(), fcntl.LOCK_EX)
+
+    def _release_lock(self) -> None:
+        """Release the file lock."""
+        fcntl.flock(self.lock_file.fileno(), fcntl.LOCK_UN)
+        self.lock_file.close()
+
+    def train_models(self, historical_prices: List[float], asset_id: str) -> bool:
         """Train both Random Forest and Prophet models for specific asset."""
+        lock_path = f"{self.model_path}/model_lock_{asset_id}"
         try:
+            self._acquire_lock(lock_path)
             logger.info(f"Starting model training for asset: {asset_id}")
+
+            if len(historical_prices) < 30:
+                raise ValueError("Insufficient historical data for training")
 
             # Prepare data for Random Forest
             df = self.prepare_features(historical_prices)
@@ -111,8 +136,10 @@ class MLPredictionService:
         except Exception as e:
             logger.error(f"Error training models for asset {asset_id}: {str(e)}")
             return False
+        finally:
+            self._release_lock()
 
-    def _load_models(self, asset_id):
+    def _load_models(self, asset_id: str) -> bool:
         """Load asset-specific models if they exist."""
         try:
             model_paths = self._get_model_paths(asset_id)
@@ -129,9 +156,12 @@ class MLPredictionService:
             logger.error(f"Error loading models for asset {asset_id}: {str(e)}")
             return False
 
-    async def predict_price(self, historical_prices, asset_id, days_ahead=7):
+    async def predict_price(self, historical_prices: List[float], asset_id: str, days_ahead: int = 7) -> Optional[Dict]:
         """Generate price predictions using both models for specific asset."""
         try:
+            if not isinstance(historical_prices, (list, np.ndarray)) or len(historical_prices) < 14:
+                raise ValueError("Invalid historical prices data")
+
             # Check if models exist for this asset
             if asset_id not in self.models:
                 if not self._load_models(asset_id):
@@ -197,7 +227,14 @@ class MLPredictionService:
             logger.error(f"Error generating predictions for asset {asset_id}: {str(e)}")
             return None
 
-    def _calculate_confidence_score(self, current_price, rf_pred, prophet_pred, lower_bound, upper_bound):
+    def _calculate_confidence_score(
+        self,
+        current_price: float,
+        rf_pred: float,
+        prophet_pred: float,
+        lower_bound: float,
+        upper_bound: float
+    ) -> float:
         """Calculate a confidence score for the predictions."""
         try:
             # Calculate prediction agreement
@@ -215,8 +252,8 @@ class MLPredictionService:
 
             # Combine scores (weighted average)
             confidence_score = (0.4 * pred_agreement + 
-                              0.4 * range_confidence + 
-                              0.2 * trend_agreement)
+                             0.4 * range_confidence + 
+                             0.2 * trend_agreement)
 
             return min(100, max(0, confidence_score))
 

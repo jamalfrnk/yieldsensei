@@ -1,4 +1,3 @@
-<replit_final_file>
 import logging
 from typing import Dict, Tuple
 from services.coingecko_service import get_token_price, get_token_market_data
