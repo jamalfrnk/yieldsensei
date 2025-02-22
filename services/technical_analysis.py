@@ -18,7 +18,7 @@ async def get_historical_prices(token_id: str):
             url = f"{COINGECKO_BASE_URL}/coins/{token_id}/market_chart"
             params = {
                 "vs_currency": "usd",
-                "days": "90",  # Changed from 30 to 90 days
+                "days": "90",
                 "interval": "daily"
             }
             logger.debug(f"Making API request to: {url}")
@@ -26,10 +26,10 @@ async def get_historical_prices(token_id: str):
             async with session.get(url, params=params) as response:
                 if response.status == 404:
                     logger.error(f"Token '{token_id}' not found in CoinGecko database")
-                    raise ValueError(f"'{token_id}' not found in our database. Please check the token symbol or try using a contract address.")
+                    raise ValueError(f"'{token_id}' not found in our database. Please check the token symbol.")
                 if response.status != 200:
                     logger.error(f"API error: {response.status}")
-                    raise Exception("Unable to fetch market data at the moment. Please try again in a few minutes.")
+                    raise Exception("Unable to fetch market data. Please try again later.")
 
                 data = await response.json()
                 if not data or "prices" not in data:
@@ -39,58 +39,76 @@ async def get_historical_prices(token_id: str):
                 prices = [price[1] for price in data["prices"]]
                 if not prices:
                     logger.error("No price data available")
-                    raise Exception("No price data available for this token. Try a different token or check back later.")
+                    raise Exception("No price data available for this token.")
 
                 logger.info(f"Successfully fetched {len(prices)} price points for {token_id}")
                 return np.array(prices)
-        except aiohttp.ClientError as e:
-            logger.error(f"Network error while fetching prices: {str(e)}")
-            raise Exception("Network connectivity issue. Please check your connection and try again.")
         except Exception as e:
             logger.error(f"Error fetching historical prices: {str(e)}")
             raise
 
 def calculate_rsi(prices, periods=14):
-    """Calculate RSI using pandas."""
+    """Calculate RSI using pandas with robust error handling."""
     try:
-        # Convert to pandas series and calculate returns
+        if len(prices) < periods + 1:
+            logger.warning("Insufficient data for RSI calculation")
+            return 50.0
+
         price_series = pd.Series(prices)
         returns = price_series.diff()
+
+        # Handle zero division cases
         gains = returns.where(returns > 0, 0)
         losses = -returns.where(returns < 0, 0)
 
-        # Calculate average gains and losses
+        # Ensure we have valid data
+        if gains.isna().all() or losses.isna().all():
+            logger.warning("Invalid data for RSI calculation")
+            return 50.0
+
         avg_gain = gains.rolling(window=periods, min_periods=1).mean()
         avg_loss = losses.rolling(window=periods, min_periods=1).mean()
 
-        # Calculate RS and RSI
-        rs = avg_gain / avg_loss
+        # Handle zero average loss case
+        rs = avg_gain / avg_loss.replace(0, float('inf'))
         rsi = 100 - (100 / (1 + rs))
 
-        # Handle edge cases
+        # Clean up the results
         rsi = rsi.fillna(50)  # Fill NaN values with neutral RSI
         rsi = rsi.clip(0, 100)  # Ensure RSI is between 0 and 100
 
         latest_rsi = float(rsi.iloc[-1])
         logger.info(f"Calculated RSI: {latest_rsi}")
         return latest_rsi
+
     except Exception as e:
         logger.error(f"RSI calculation error: {str(e)}")
         return 50.0  # Return neutral RSI on error
 
 def calculate_macd(prices):
-    """Calculate MACD using pandas."""
+    """Calculate MACD with improved error handling."""
     try:
+        if len(prices) < 26:  # Minimum required data points
+            logger.warning("Insufficient data for MACD calculation")
+            return False, 0.0
+
         price_series = pd.Series(prices)
         exp1 = price_series.ewm(span=12, adjust=False).mean()
         exp2 = price_series.ewm(span=26, adjust=False).mean()
         macd = exp1 - exp2
         signal = macd.ewm(span=9, adjust=False).mean()
+
+        if macd.isna().all() or signal.isna().all():
+            logger.warning("Invalid MACD calculation results")
+            return False, 0.0
+
         macd_value = float(macd.iloc[-1])
         signal_value = float(signal.iloc[-1])
+
         return macd_value > signal_value, abs(macd_value - signal_value)
     except Exception as e:
-        raise Exception(f"MACD calculation error: {str(e)}")
+        logger.error(f"MACD calculation error: {str(e)}")
+        return False, 0.0
 
 def calculate_support_resistance(prices):
     """Calculate support and resistance levels using price clustering."""
@@ -214,28 +232,42 @@ def calculate_optimal_levels(current_price, levels, signal_strength):
         }
 
 async def get_signal_analysis(token_id: str):
-    """Generate detailed trading signal analysis with ML-enhanced predictions."""
+    """Generate detailed trading signal analysis with enhanced error handling."""
     logger.info(f"Starting signal analysis for token: {token_id}")
     try:
         prices = await get_historical_prices(token_id)
+        if len(prices) < 90:
+            logger.warning(f"Insufficient historical data: only {len(prices)} days available")
+            raise ValueError("Insufficient historical data available for analysis")
+
         current_price = prices[-1]
         logger.info(f"Current price: ${current_price:,.2f}")
 
-        # Calculate indicators and levels
+        # Calculate technical indicators with error handling
         current_rsi = calculate_rsi(prices)
         is_macd_bullish, macd_strength = calculate_macd(prices)
-        levels = calculate_support_resistance(prices)
 
-        # Get ML predictions if models are available
+        # Calculate support/resistance levels
+        try:
+            levels = calculate_support_resistance(prices)
+        except Exception as e:
+            logger.error(f"Error calculating support/resistance: {str(e)}")
+            levels = {
+                'support_1': current_price * 0.95,
+                'support_2': current_price * 0.90,
+                'resistance_1': current_price * 1.05,
+                'resistance_2': current_price * 1.10
+            }
+
+        # Get ML predictions
         try:
             ml_predictions = await ml_service.predict_price(prices, token_id)
-            if ml_predictions:
-                logger.info(f"Successfully generated ML predictions for {token_id}")
+            logger.info(f"Successfully generated ML predictions for {token_id}")
         except Exception as e:
-            logger.warning(f"ML prediction failed for {token_id}: {str(e)}")
+            logger.warning(f"ML prediction failed: {str(e)}")
             ml_predictions = None
 
-        # Calculate signal strength with ML insights
+        # Calculate signal strength
         signal_strength = calculate_enhanced_signal_strength(
             current_price=current_price,
             current_rsi=current_rsi,
@@ -245,15 +277,9 @@ async def get_signal_analysis(token_id: str):
             ml_predictions=ml_predictions
         )
 
-        # Calculate optimal trading levels
-        optimal_levels = calculate_optimal_levels(current_price, levels, signal_strength)
-
-        # Determine signal type and build response
-        signal = get_signal_type(signal_strength)
-
-        # Ensure all required data is included in the response
+        # Build response with all necessary data
         result = {
-            'signal': signal,
+            'signal': get_signal_type(signal_strength),
             'signal_strength': abs(signal_strength),
             'trend_direction': "Bullish 📈" if signal_strength > 0 else "Bearish 📉" if signal_strength < 0 else "Neutral ⚖️",
             'current_price': current_price,
@@ -262,18 +288,14 @@ async def get_signal_analysis(token_id: str):
             'support_1': levels['support_1'],
             'support_2': levels['support_2'],
             'resistance_1': levels['resistance_1'],
-            'resistance_2': levels['resistance_2'],
-            'optimal_entry': optimal_levels['optimal_entry'],
-            'optimal_exit': optimal_levels['optimal_exit'],
-            'stop_loss': optimal_levels['stop_loss']
+            'resistance_2': levels['resistance_2']
         }
 
         # Add ML predictions if available
         if ml_predictions:
             result.update({
                 'ml_predictions': ml_predictions,
-                'confidence_score': ml_predictions['confidence_score'],
-                'dca_recommendation': get_enhanced_dca_recommendation(signal_strength, ml_predictions, token_id)
+                'confidence_score': ml_predictions['confidence_score']
             })
         else:
             result.update({
@@ -286,8 +308,7 @@ async def get_signal_analysis(token_id: str):
                         'lower_bound': current_price * 0.95
                     }
                 },
-                'confidence_score': 75.0,
-                'dca_recommendation': get_dca_recommendation(signal_strength)
+                'confidence_score': 75.0
             })
 
         logger.info("Successfully generated signal analysis")
@@ -295,59 +316,59 @@ async def get_signal_analysis(token_id: str):
 
     except Exception as e:
         logger.error(f"Failed to generate signal analysis: {str(e)}")
-        raise Exception(f"Failed to generate signal analysis: {str(e)}")
+        raise
 
 def calculate_enhanced_signal_strength(current_price, current_rsi, is_macd_bullish, macd_strength, levels, ml_predictions):
-    """Calculate signal strength incorporating ML predictions and additional indicators."""
-    signal_strength = 0
+    """Calculate signal strength with improved error handling."""
+    try:
+        signal_strength = 0
 
-    # Traditional indicators contribution (50% weight)
-    # RSI contribution (20%)
-    if current_rsi < 30:
-        signal_strength += 20 * (1 - current_rsi/30)
-    elif current_rsi > 70:
-        signal_strength -= 20 * (current_rsi-70)/30
+        # RSI contribution (40%)
+        if 0 <= current_rsi <= 100:  # Validate RSI range
+            if current_rsi < 30:
+                signal_strength += 40 * (1 - current_rsi/30)
+            elif current_rsi > 70:
+                signal_strength -= 40 * (current_rsi-70)/30
 
-    # MACD contribution (15%)
-    if is_macd_bullish:
-        signal_strength += 15 * (macd_strength/abs(current_price))
-    else:
-        signal_strength -= 15 * (macd_strength/abs(current_price))
+        # MACD contribution (30%)
+        if is_macd_bullish and macd_strength > 0:
+            signal_strength += 30 * min(macd_strength/current_price, 1.0)
+        elif not is_macd_bullish and macd_strength > 0:
+            signal_strength -= 30 * min(macd_strength/current_price, 1.0)
 
-    # Support/Resistance contribution (15%)
-    price_to_support1 = (current_price - levels['support_1']) / current_price
-    price_to_resistance1 = (levels['resistance_1'] - current_price) / current_price
+        # Support/Resistance contribution (30%)
+        if all(v > 0 for v in [levels['support_1'], levels['resistance_1']]):
+            price_to_support1 = (current_price - levels['support_1']) / current_price
+            price_to_resistance1 = (levels['resistance_1'] - current_price) / current_price
 
-    if price_to_support1 < 0.03:
-        signal_strength += 15 * (1 - price_to_support1/0.03)
-    elif price_to_resistance1 < 0.03:
-        signal_strength -= 15 * (1 - price_to_resistance1/0.03)
+            if 0 <= price_to_support1 <= 0.05:  # Within 5% of support
+                signal_strength += 30 * (1 - price_to_support1/0.05)
+            elif 0 <= price_to_resistance1 <= 0.05:  # Within 5% of resistance
+                signal_strength -= 30 * (1 - price_to_resistance1/0.05)
 
-    # ML predictions contribution (50% weight)
-    if ml_predictions and 'next_day' in ml_predictions:
-        # Calculate weighted average of predictions
-        rf_pred = float(ml_predictions['next_day']['rf_prediction'])
-        prophet_pred = float(ml_predictions['next_day']['prophet_prediction'])
+        # ML predictions influence (if available)
+        if ml_predictions and 'next_day' in ml_predictions:
+            try:
+                rf_pred = float(ml_predictions['next_day']['rf_prediction'])
+                prophet_pred = float(ml_predictions['next_day']['prophet_prediction'])
+                confidence = min(ml_predictions['confidence_score'], 100) / 100
 
-        # Use confidence score to weight the predictions
-        confidence = ml_predictions['confidence_score'] / 100
+                # Calculate predicted changes
+                rf_change = (rf_pred - current_price) / current_price
+                prophet_change = (prophet_pred - current_price) / current_price
 
-        # Calculate predicted price changes
-        rf_change = (rf_pred - current_price) / current_price
-        prophet_change = (prophet_pred - current_price) / current_price
+                # Weight the predictions based on confidence
+                weighted_change = (rf_change + prophet_change) / 2 * confidence
+                signal_strength += 20 * weighted_change  # Add ML signal (±20 max)
+            except Exception as e:
+                logger.error(f"Error processing ML predictions: {str(e)}")
 
-        # Weight the predictions based on confidence
-        weighted_change = (rf_change + prophet_change) / 2 * confidence
+        # Ensure signal strength stays within bounds
+        return max(min(signal_strength, 100), -100)
 
-        # Add ML signal (-50 to +50 range)
-        ml_signal = 50 * weighted_change
-        signal_strength += ml_signal
-
-        # Add trend confirmation bonus (up to 10 points)
-        if (rf_change > 0 and prophet_change > 0) or (rf_change < 0 and prophet_change < 0):
-            signal_strength += 10 * confidence
-
-    return signal_strength
+    except Exception as e:
+        logger.error(f"Error calculating signal strength: {str(e)}")
+        return 0  # Return neutral signal on error
 
 def get_enhanced_dca_recommendation(signal_strength, ml_predictions, token_id):
     """Get enhanced DCA recommendation incorporating ML predictions."""
