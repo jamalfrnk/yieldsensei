@@ -79,7 +79,7 @@ def create_app():
     limiter = Limiter(
         app=app,
         key_func=get_remote_address,
-        default_limits=["2000 per day", "200 per hour"],  # More lenient limits
+        default_limits=["1000 per day", "100 per hour"],  # More conservative limits
         storage_uri=os.environ.get("REDIS_URL", "memory://"),
         strategy="fixed-window-elastic-expiry"
     )
@@ -152,7 +152,7 @@ def create_app():
 
     @app.route('/dashboard')
     @login_required
-    @limiter.limit("300 per hour")  # Increased limit for dashboard
+    @limiter.limit("100 per hour")  # Reduced limit for dashboard
     def dashboard():
         try:
             return render_template('dashboard.html', 
