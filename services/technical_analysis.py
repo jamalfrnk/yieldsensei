@@ -259,6 +259,13 @@ async def get_signal_analysis(token_id: str):
                 'resistance_2': current_price * 1.10
             }
 
+        # Calculate optimal trading levels
+        optimal_levels = calculate_optimal_levels(
+            current_price=current_price,
+            levels=levels,
+            signal_strength=0  # Initial neutral signal
+        )
+
         # Get ML predictions
         try:
             ml_predictions = await ml_service.predict_price(prices, token_id)
@@ -277,6 +284,13 @@ async def get_signal_analysis(token_id: str):
             ml_predictions=ml_predictions
         )
 
+        # Update optimal levels with final signal strength
+        optimal_levels = calculate_optimal_levels(
+            current_price=current_price,
+            levels=levels,
+            signal_strength=signal_strength
+        )
+
         # Build response with all necessary data
         result = {
             'signal': get_signal_type(signal_strength),
@@ -288,7 +302,10 @@ async def get_signal_analysis(token_id: str):
             'support_1': levels['support_1'],
             'support_2': levels['support_2'],
             'resistance_1': levels['resistance_1'],
-            'resistance_2': levels['resistance_2']
+            'resistance_2': levels['resistance_2'],
+            'optimal_entry': optimal_levels['optimal_entry'],
+            'optimal_exit': optimal_levels['optimal_exit'],
+            'stop_loss': optimal_levels['stop_loss']
         }
 
         # Add ML predictions if available
