@@ -7,6 +7,7 @@
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </head>
 <body class="bg-black text-white min-h-screen">
     <!-- Mobile-friendly Navigation -->
@@ -93,5 +94,6 @@
             });
         });
     </script>
+    {{ super() }}
 </body>
 </html>
