@@ -96,6 +96,51 @@ def create_app():
         """Render the main dashboard."""
         return render_template('dashboard.html', **DEFAULT_DATA)
 
+    @app.route('/search')
+    @limiter.limit("200 per minute")
+    async def search():
+        """Handle token search and analysis."""
+        token = request.args.get('token', 'bitcoin').lower()
+        try:
+            logger.info(f"Processing search request for token: {token}")
+
+            # Get market data and signal analysis
+            price_data = await get_token_price(token)
+            signal_data = await get_signal_analysis(token)
+            market_data = await get_token_market_data(token)
+
+            if not market_data or not price_data or not signal_data:
+                raise ValueError("Unable to fetch complete market data for the token")
+
+            logger.info(f"Retrieved data for {token}: Price=${price_data['usd']}, Signal strength={signal_data['signal_strength']}")
+
+            # Calculate template data
+            template_data = {
+                'token_symbol': token.upper(),
+                'price': float(price_data['usd']),
+                'price_change': float(price_data.get('usd_24h_change', 0)),
+                'signal_strength': float(signal_data['signal_strength']),
+                'signal_description': signal_data['signal'],
+                'trend_direction': signal_data['trend_direction'],
+                'rsi': float(signal_data['rsi']),
+                'support_1': float(signal_data['support_1'].replace('$', '').replace(',', '')),
+                'support_2': float(signal_data['support_2'].replace('$', '').replace(',', '')),
+                'resistance_1': float(signal_data['resistance_1'].replace('$', '').replace(',', '')),
+                'resistance_2': float(signal_data['resistance_2'].replace('$', '').replace(',', '')),
+                'optimal_entry': float(signal_data['optimal_entry']),
+                'optimal_exit': float(signal_data['optimal_exit']),
+                'stop_loss': float(signal_data['stop_loss']),
+                'dca_recommendation': signal_data['dca_recommendation']
+            }
+
+            logger.info(f"Successfully processed data for {token}")
+            return render_template('dashboard.html', **template_data)
+
+        except Exception as e:
+            logger.error(f"Error processing search request: {str(e)}")
+            error_message = f"Error analyzing token: {str(e)}"
+            return render_template('dashboard.html', error=error_message, **DEFAULT_DATA)
+
 
     @app.template_filter('price_color')
     def price_color_filter(value):
