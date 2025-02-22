@@ -17,24 +17,24 @@ logger = logging.getLogger(__name__)
 
 BOT_USERNAME = "yieldsensei_bot"
 HELP_TEXT = """
-Welcome to Yield Sensei! 🎯 Available commands:
+Welcome to Yield Sensei! 🎯 Here are the available commands:
 
-📊 Market Data:
-/price <token> - Get current price and 24h change
-/market <token> - Get market cap and volume data
+📊 Market Data Commands:
+@yieldsensei_bot /price <token> - Get current price and 24h change
+@yieldsensei_bot /market <token> - Get market cap, volume, and 24h high/low
 
-🔍 DEX Info:
-/dexinfo <address> - Get detailed DEX pair info
+🔍 DEX Information:
+@yieldsensei_bot /dexinfo <token_address> - Get detailed DEX pair info
 
 📈 Trading Signals:
-/signal <token/address> - Get trading analysis
+@yieldsensei_bot /signal <token_or_address> - Get detailed trading signal analysis
 Examples:
-• /signal btc
-• /signal 7GCihgDB8fe6KNjn2MYtkzZcRjQy3t9GHdC8uHYmW2hr
+• /signal btc - Analysis for Bitcoin
+• /signal 7GCihgDB8fe6KNjn2MYtkzZcRjQy3t9GHdC8uHYmW2hr - Analysis by contract address
 
-ℹ️ General:
-/start - Get started
-/help - Show this message
+ℹ️ General Commands:
+@yieldsensei_bot /help - Show this help message
+@yieldsensei_bot /start - Get started with Yield Sensei
 """
 
 def is_contract_address(input_str: str) -> bool:
