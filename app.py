@@ -187,8 +187,8 @@ def create_app():
             # Default trading levels
             trading_levels = {
                 'optimal_entry': 0.0,
-                'stop_loss': 0.0,
-                'optimal_exit': 0.0
+                'optimal_exit': 0.0,
+                'stop_loss': 0.0
             }
 
             # Default price levels
@@ -197,6 +197,15 @@ def create_app():
                 'support_2': 0.0,
                 'resistance_1': 0.0,
                 'resistance_2': 0.0
+            }
+
+            # Default price ranges
+            price_ranges = {
+                'day': {'high': 0.0, 'low': 0.0},
+                'week': {'high': 0.0, 'low': 0.0},
+                'month': {'high': 0.0, 'low': 0.0},
+                'quarter': {'high': 0.0, 'low': 0.0},
+                'year': {'high': 0.0, 'low': 0.0}
             }
 
             return render_template('dashboard.html',
@@ -210,13 +219,7 @@ def create_app():
                 trend_direction='Neutral ⚖️',
                 signal='Neutral',
                 fibonacci_levels=None,
-                price_ranges={
-                    'day': {'high': 0.0, 'low': 0.0},
-                    'week': {'high': 0.0, 'low': 0.0},
-                    'month': {'high': 0.0, 'low': 0.0},
-                    'quarter': {'high': 0.0, 'low': 0.0},
-                    'year': {'high': 0.0, 'low': 0.0}
-                },
+                price_ranges=price_ranges,
                 ml_predictions={
                     'next_day': {
                         'rf_prediction': 0.0,
@@ -230,7 +233,10 @@ def create_app():
                 historical_data=[],
                 price_levels=price_levels,
                 trading_levels=trading_levels,
-                # Add individual price level variables for the chart
+                # Explicitly pass individual variables needed by templates
+                optimal_entry=trading_levels['optimal_entry'],
+                optimal_exit=trading_levels['optimal_exit'],
+                stop_loss=trading_levels['stop_loss'],
                 support_1=price_levels['support_1'],
                 support_2=price_levels['support_2'],
                 resistance_1=price_levels['resistance_1'],
