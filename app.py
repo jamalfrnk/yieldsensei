@@ -37,6 +37,9 @@ def create_app():
             if database_url.startswith("postgres://"):
                 database_url = database_url.replace("postgres://", "postgresql://", 1)
             app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+            logger.info("Database URL configured successfully")
+        else:
+            logger.warning("No DATABASE_URL found in environment")
 
         # Initialize extensions with app
         db.init_app(app)
@@ -51,10 +54,21 @@ def create_app():
         # Register blueprints
         from auth import auth as auth_blueprint
         app.register_blueprint(auth_blueprint)
+        logger.info("Auth blueprint registered")
 
         @app.route('/')
         def index():
             try:
+                logger.info("Rendering index page")
+                return render_template('index.html')
+            except Exception as e:
+                logger.error(f"Error rendering index: {str(e)}", exc_info=True)
+                return render_template('error.html', error=str(e)), 500
+
+        @app.route('/dashboard')
+        def dashboard():
+            try:
+                logger.info("Rendering dashboard page")
                 # Default values for the dashboard
                 context = {
                     'token_symbol': 'Enter a token',
@@ -93,7 +107,7 @@ def create_app():
                 }
                 return render_template('dashboard.html', **context)
             except Exception as e:
-                logger.error(f"Error rendering index: {str(e)}", exc_info=True)
+                logger.error(f"Error rendering dashboard: {str(e)}", exc_info=True)
                 return render_template('error.html', error=str(e)), 500
 
         logger.info("Application creation completed")
@@ -106,8 +120,8 @@ def create_app():
 if __name__ == '__main__':
     try:
         app = create_app()
-        # Always serve on port 5000 for Replit
-        logger.info("Starting Flask server on port 5000")
+        # Explicitly bind to all interfaces
+        logger.info("Starting Flask server on 0.0.0.0:5000")
         app.run(host='0.0.0.0', port=5000, debug=True)
     except Exception as e:
         logger.critical(f"Failed to start server: {str(e)}", exc_info=True)
