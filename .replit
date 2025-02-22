@@ -4,7 +4,7 @@ modules = ["python-3.11", "nodejs-20", "python3", "postgresql-16"]
 channel = "stable-24_05"
 
 [workflows]
-runButton = "Project"
+runButton = "Flask Server"
 
 [[workflows.workflow]]
 name = "Project"
@@ -27,12 +27,16 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "pkill -f 'python app.py' || true && ENVIRONMENT=development SECRET_KEY=dev_secret_key DEBUG=true python app.py"
+args = "ENVIRONMENT=development SECRET_KEY=dev_secret_key DEBUG=true python app.py"
 waitForPort = 5000
 
 [deployment]
 run = ["sh", "-c", "pkill -f 'python app.py' || true && ENVIRONMENT=development SECRET_KEY=dev_secret_key DEBUG=true python app.py"]
 deploymentTarget = "gce"
+
+[[ports]]
+localPort = 80
+externalPort = 3000
 
 [[ports]]
 localPort = 3000
