@@ -25,25 +25,25 @@
             <!-- RSI Analysis -->
             <div class="bg-black bg-opacity-50 p-4 rounded">
                 <h4 class="text-orange-500 font-semibold mb-2">RSI Analysis</h4>
-                <p class="text-sm">Value: {{ '{:,.1f}'.format(technical_indicators.rsi.value) }}</p>
-                <p class="text-sm">Trend: {{ technical_indicators.rsi.trend }}</p>
-                <p class="text-sm">Strength: {{ '{:,.1f}%'.format(technical_indicators.rsi.strength * 100) }}</p>
+                <p class="text-sm">Value: {{ "{:.1f}".format(technical_indicators.rsi.value) if technical_indicators and technical_indicators.rsi else "50.0" }}</p>
+                <p class="text-sm">Trend: {{ technical_indicators.rsi.trend if technical_indicators and technical_indicators.rsi else "Neutral" }}</p>
+                <p class="text-sm">Strength: {{ "{:.1f}%".format(technical_indicators.rsi.strength * 100) if technical_indicators and technical_indicators.rsi and technical_indicators.rsi.strength else "50.0%" }}</p>
             </div>
 
             <!-- MACD Analysis -->
             <div class="bg-black bg-opacity-50 p-4 rounded">
                 <h4 class="text-orange-500 font-semibold mb-2">MACD Analysis</h4>
-                <p class="text-sm">Signal: {{ technical_indicators.macd.signal }}</p>
-                <p class="text-sm">Crossover: {{ technical_indicators.macd.crossover }}</p>
-                <p class="text-sm">Strength: {{ '{:,.1f}%'.format(technical_indicators.macd.trend_strength * 100) }}</p>
+                <p class="text-sm">Signal: {{ technical_indicators.macd.signal if technical_indicators and technical_indicators.macd else "Neutral" }}</p>
+                <p class="text-sm">Crossover: {{ technical_indicators.macd.crossover if technical_indicators and technical_indicators.macd else "None" }}</p>
+                <p class="text-sm">Strength: {{ "{:.1f}%".format(technical_indicators.macd.trend_strength * 100) if technical_indicators and technical_indicators.macd and technical_indicators.macd.trend_strength else "0.0%" }}</p>
             </div>
 
             <!-- Overall Trend -->
             <div class="bg-black bg-opacity-50 p-4 rounded">
                 <h4 class="text-orange-500 font-semibold mb-2">Overall Trend</h4>
-                <p class="text-sm">Direction: {{ trend_direction }}</p>
-                <p class="text-sm">Signal: {{ signal }}</p>
-                <p class="text-sm">Strength: {{ '{:,.1f}%'.format(signal_strength) }}</p>
+                <p class="text-sm">Direction: {{ trend_direction if trend_direction else "Neutral" }}</p>
+                <p class="text-sm">Signal: {{ signal if signal else "Neutral" }}</p>
+                <p class="text-sm">Strength: {{ "{:.1f}%".format(signal_strength) if signal_strength else "0.0%" }}</p>
             </div>
         </div>
     </div>
@@ -64,7 +64,7 @@
             {% for level_name, level_value in fibonacci_levels.levels.items() %}
             <div class="bg-black bg-opacity-50 p-4 rounded">
                 <h4 class="text-orange-500 font-semibold mb-2">{{ level_name }}</h4>
-                <p class="text-sm">${{ '{:,.2f}'.format(level_value) }}</p>
+                <p class="text-sm">${{ "{:,.2f}".format(level_value) }}</p>
                 {% if fibonacci_levels.current_position == level_name %}
                 <p class="text-sm text-orange-500">Current Level</p>
                 {% endif %}
@@ -93,25 +93,25 @@
             <!-- Support Level 1 -->
             <div class="bg-black bg-opacity-50 p-4 rounded">
                 <h4 class="text-orange-500 font-semibold mb-2">Support 1</h4>
-                <p class="text-sm">${{ '{:,.2f}'.format(price_levels.support_1) }}</p>
+                <p class="text-sm">${{ "{:.2f}".format(price_levels.support_1) if price_levels and price_levels.support_1 else "0.00" }}</p>
             </div>
 
             <!-- Support Level 2 -->
             <div class="bg-black bg-opacity-50 p-4 rounded">
                 <h4 class="text-orange-500 font-semibold mb-2">Support 2</h4>
-                <p class="text-sm">${{ '{:,.2f}'.format(price_levels.support_2) }}</p>
+                <p class="text-sm">${{ "{:.2f}".format(price_levels.support_2) if price_levels and price_levels.support_2 else "0.00" }}</p>
             </div>
 
             <!-- Resistance Level 1 -->
             <div class="bg-black bg-opacity-50 p-4 rounded">
                 <h4 class="text-orange-500 font-semibold mb-2">Resistance 1</h4>
-                <p class="text-sm">${{ '{:,.2f}'.format(price_levels.resistance_1) }}</p>
+                <p class="text-sm">${{ "{:.2f}".format(price_levels.resistance_1) if price_levels and price_levels.resistance_1 else "0.00" }}</p>
             </div>
 
             <!-- Resistance Level 2 -->
             <div class="bg-black bg-opacity-50 p-4 rounded">
                 <h4 class="text-orange-500 font-semibold mb-2">Resistance 2</h4>
-                <p class="text-sm">${{ '{:,.2f}'.format(price_levels.resistance_2) }}</p>
+                <p class="text-sm">${{ "{:.2f}".format(price_levels.resistance_2) if price_levels and price_levels.resistance_2 else "0.00" }}</p>
             </div>
         </div>
     </div>
@@ -131,41 +131,42 @@
             <!-- 24h Range -->
             <div class="bg-black bg-opacity-50 p-4 rounded">
                 <h4 class="text-orange-500 font-semibold mb-2">24h Range</h4>
-                <p class="text-sm">High: ${{ '{:,.2f}'.format(price_ranges.day.high) }}</p>
-                <p class="text-sm">Low: ${{ '{:,.2f}'.format(price_ranges.day.low) }}</p>
+                <p class="text-sm">High: ${{ "{:,.2f}".format(price_ranges.day.high) }}</p>
+                <p class="text-sm">Low: ${{ "{:,.2f}".format(price_ranges.day.low) }}</p>
             </div>
 
             <!-- 7d Range -->
             <div class="bg-black bg-opacity-50 p-4 rounded">
                 <h4 class="text-orange-500 font-semibold mb-2">7 Day Range</h4>
-                <p class="text-sm">High: ${{ '{:,.2f}'.format(price_ranges.week.high) }}</p>
-                <p class="text-sm">Low: ${{ '{:,.2f}'.format(price_ranges.week.low) }}</p>
+                <p class="text-sm">High: ${{ "{:,.2f}".format(price_ranges.week.high) }}</p>
+                <p class="text-sm">Low: ${{ "{:,.2f}".format(price_ranges.week.low) }}</p>
             </div>
 
             <!-- 30d Range -->
             <div class="bg-black bg-opacity-50 p-4 rounded">
                 <h4 class="text-orange-500 font-semibold mb-2">30 Day Range</h4>
-                <p class="text-sm">High: ${{ '{:,.2f}'.format(price_ranges.month.high) }}</p>
-                <p class="text-sm">Low: ${{ '{:,.2f}'.format(price_ranges.month.low) }}</p>
+                <p class="text-sm">High: ${{ "{:,.2f}".format(price_ranges.month.high) }}</p>
+                <p class="text-sm">Low: ${{ "{:,.2f}".format(price_ranges.month.low) }}</p>
             </div>
 
             <!-- 90d Range -->
             <div class="bg-black bg-opacity-50 p-4 rounded">
                 <h4 class="text-orange-500 font-semibold mb-2">90 Day Range</h4>
-                <p class="text-sm">High: ${{ '{:,.2f}'.format(price_ranges.quarter.high) }}</p>
-                <p class="text-sm">Low: ${{ '{:,.2f}'.format(price_ranges.quarter.low) }}</p>
+                <p class="text-sm">High: ${{ "{:,.2f}".format(price_ranges.quarter.high) }}</p>
+                <p class="text-sm">Low: ${{ "{:,.2f}".format(price_ranges.quarter.low) }}</p>
             </div>
 
             <!-- 365d Range -->
             <div class="bg-black bg-opacity-50 p-4 rounded">
                 <h4 class="text-orange-500 font-semibold mb-2">365 Day Range</h4>
-                <p class="text-sm">High: ${{ '{:,.2f}'.format(price_ranges.year.high) }}</p>
-                <p class="text-sm">Low: ${{ '{:,.2f}'.format(price_ranges.year.low) }}</p>
+                <p class="text-sm">High: ${{ "{:,.2f}".format(price_ranges.year.high) }}</p>
+                <p class="text-sm">Low: ${{ "{:,.2f}".format(price_ranges.year.low) }}</p>
             </div>
         </div>
     </div>
 
     <!-- ML Predictions Section -->
+    {% if ml_predictions and ml_predictions.next_day %}
     <div class="mb-6">
         <div class="flex items-center mb-3">
             <h3 class="text-orange-500 font-semibold">AI Predictions</h3>
@@ -177,33 +178,32 @@
             </div>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {% if ml_predictions and ml_predictions.next_day %}
             <div class="bg-black bg-opacity-50 p-4 rounded">
                 <h4 class="text-orange-500 font-semibold mb-2">ML Model Prediction</h4>
-                <p class="text-sm">Random Forest: ${{ '{:,.2f}'.format(ml_predictions.next_day.rf_prediction) }}</p>
-                <p class="text-sm">Prophet: ${{ '{:,.2f}'.format(ml_predictions.next_day.prophet_prediction) }}</p>
+                <p class="text-sm">Random Forest: ${{ "{:.2f}".format(ml_predictions.next_day.rf_prediction) }}</p>
+                <p class="text-sm">Prophet: ${{ "{:.2f}".format(ml_predictions.next_day.prophet_prediction) }}</p>
             </div>
             <div class="bg-black bg-opacity-50 p-4 rounded">
                 <h4 class="text-orange-500 font-semibold mb-2">Combined Prediction</h4>
-                <p class="text-sm">Price: ${{ '{:,.2f}'.format(ml_predictions.next_day.combined_prediction) }}</p>
-                <p class="text-sm">Confidence: {{ '{:,.1f}%'.format(confidence_score) }}</p>
+                <p class="text-sm">Price: ${{ "{:.2f}".format(ml_predictions.next_day.combined_prediction) }}</p>
+                <p class="text-sm">Confidence: {{ "{:.1f}%".format(confidence_score) if confidence_score else "0.0%" }}</p>
             </div>
             <div class="bg-black bg-opacity-50 p-4 rounded">
                 <h4 class="text-orange-500 font-semibold mb-2">Prediction Range</h4>
-                <p class="text-sm">Upper: ${{ '{:,.2f}'.format(ml_predictions.next_day.upper_bound) }}</p>
-                <p class="text-sm">Lower: ${{ '{:,.2f}'.format(ml_predictions.next_day.lower_bound) }}</p>
+                <p class="text-sm">Upper: ${{ "{:.2f}".format(ml_predictions.next_day.upper_bound) }}</p>
+                <p class="text-sm">Lower: ${{ "{:.2f}".format(ml_predictions.next_day.lower_bound) }}</p>
             </div>
             <div class="bg-black bg-opacity-50 p-4 rounded">
                 <h4 class="text-orange-500 font-semibold mb-2">Optimal Trading Levels</h4>
-                <p class="text-sm">Entry: ${{ '{:,.2f}'.format(trading_levels.optimal_entry) }}</p>
-                <p class="text-sm">Exit: ${{ '{:,.2f}'.format(trading_levels.optimal_exit) }}</p>
-                <p class="text-sm">Stop Loss: ${{ '{:,.2f}'.format(trading_levels.stop_loss) }}</p>
+                <p class="text-sm">Entry: ${{ "{:.2f}".format(trading_levels.optimal_entry) if trading_levels and trading_levels.optimal_entry else "0.00" }}</p>
+                <p class="text-sm">Exit: ${{ "{:.2f}".format(trading_levels.optimal_exit) if trading_levels and trading_levels.optimal_exit else "0.00" }}</p>
+                <p class="text-sm">Stop Loss: ${{ "{:.2f}".format(trading_levels.stop_loss) if trading_levels and trading_levels.stop_loss else "0.00" }}</p>
             </div>
-            {% else %}
-            <div class="col-span-4 text-center p-4">
-                <p class="text-gray-400">Enter a token symbol to view price predictions and analysis</p>
-            </div>
-            {% endif %}
         </div>
     </div>
+    {% else %}
+    <div class="col-span-4 text-center p-4">
+        <p class="text-gray-400">Enter a token symbol to view price predictions and analysis</p>
+    </div>
+    {% endif %}
 </div>

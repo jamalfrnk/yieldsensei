@@ -6,23 +6,23 @@
         <div class="space-y-2">
             <div class="flex justify-between items-center p-2 hover:bg-gray-800 rounded transition-colors duration-200">
                 <span>Resistance 2:</span>
-                <span class="text-red-500">${{ "{:,.2f}"|format(price_levels.resistance_2|default(0.0, true)) }}</span>
+                <span class="text-red-500">${{ "{:.2f}".format(price_levels.resistance_2) if price_levels and price_levels.resistance_2 else "0.00" }}</span>
             </div>
             <div class="flex justify-between items-center p-2 hover:bg-gray-800 rounded transition-colors duration-200">
                 <span>Resistance 1:</span>
-                <span class="text-red-400">${{ "{:,.2f}"|format(price_levels.resistance_1|default(0.0, true)) }}</span>
+                <span class="text-red-400">${{ "{:.2f}".format(price_levels.resistance_1) if price_levels and price_levels.resistance_1 else "0.00" }}</span>
             </div>
             <div class="flex justify-between items-center p-2 hover:bg-gray-800 rounded transition-colors duration-200">
                 <span>Current Price:</span>
-                <span class="text-white">${{ "{:,.2f}"|format(price|default(0.0, true)) }}</span>
+                <span class="text-white">${{ "{:.2f}".format(price) if price else "0.00" }}</span>
             </div>
             <div class="flex justify-between items-center p-2 hover:bg-gray-800 rounded transition-colors duration-200">
                 <span>Support 1:</span>
-                <span class="text-green-400">${{ "{:,.2f}"|format(price_levels.support_1|default(0.0, true)) }}</span>
+                <span class="text-green-400">${{ "{:.2f}".format(price_levels.support_1) if price_levels and price_levels.support_1 else "0.00" }}</span>
             </div>
             <div class="flex justify-between items-center p-2 hover:bg-gray-800 rounded transition-colors duration-200">
                 <span>Support 2:</span>
-                <span class="text-green-500">${{ "{:,.2f}"|format(price_levels.support_2|default(0.0, true)) }}</span>
+                <span class="text-green-500">${{ "{:.2f}".format(price_levels.support_2) if price_levels and price_levels.support_2 else "0.00" }}</span>
             </div>
         </div>
     </div>
@@ -42,20 +42,20 @@
             <!-- DCA Strategy -->
             <div class="bg-black bg-opacity-50 p-3 rounded">
                 <h3 class="text-orange-500 font-semibold mb-2">DCA Strategy:</h3>
-                <p class="text-sm whitespace-pre-line mb-2">{{ dca_recommendation|default('Split your investment into multiple portions and invest gradually over time.', true) }}</p>
+                <p class="text-sm whitespace-pre-line mb-2">{{ dca_recommendation if dca_recommendation else 'Split your investment into multiple portions and invest gradually over time.' }}</p>
             </div>
 
             <!-- Entry Strategy -->
             <div class="bg-black bg-opacity-50 p-3 rounded">
                 <h3 class="text-orange-500 font-semibold mb-2">Entry Strategy:</h3>
-                <p class="text-sm">Optimal Entry: ${{ "{:,.2f}"|format(trading_levels.optimal_entry|default(0.0, true)) }}</p>
-                <p class="text-sm">Stop Loss: ${{ "{:,.2f}"|format(trading_levels.stop_loss|default(0.0, true)) }}</p>
+                <p class="text-sm">Optimal Entry: ${{ "{:.2f}".format(trading_levels.optimal_entry) if trading_levels and trading_levels.optimal_entry else "0.00" }}</p>
+                <p class="text-sm">Stop Loss: ${{ "{:.2f}".format(trading_levels.stop_loss) if trading_levels and trading_levels.stop_loss else "0.00" }}</p>
             </div>
 
             <!-- Exit Strategy -->
             <div class="bg-black bg-opacity-50 p-3 rounded">
                 <h3 class="text-orange-500 font-semibold mb-2">Exit Strategy:</h3>
-                <p class="text-sm">Take Profit: ${{ "{:,.2f}"|format(trading_levels.optimal_exit|default(0.0, true)) }}</p>
+                <p class="text-sm">Take Profit: ${{ "{:.2f}".format(trading_levels.optimal_exit) if trading_levels and trading_levels.optimal_exit else "0.00" }}</p>
             </div>
         </div>
     </div>
