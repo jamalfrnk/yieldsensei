@@ -61,18 +61,30 @@ def get_command_suggestion(error_message: str) -> str:
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Send a message when the command /start is issued."""
-    await update.message.reply_text(
-        "Welcome to Yield Sensei! 🚀\n\n"
-        "I'm your DeFi assistant, ready to help you with:\n"
-        "• Real-time crypto prices 💰\n"
-        "• Market data and analysis 📊\n"
-        "• DEX pair information 🔍\n\n"
-        f"Use /help to see all available commands."
-    )
+    try:
+        logger.info(f"Start command received from user: {update.effective_user.id}")
+        await update.message.reply_text(
+            "Welcome to Yield Sensei! 🚀\n\n"
+            "I'm your DeFi assistant, ready to help you with:\n"
+            "• Real-time crypto prices 💰\n"
+            "• Market data and analysis 📊\n"
+            "• DEX pair information 🔍\n\n"
+            f"Use /help to see all available commands."
+        )
+        logger.info(f"Start command response sent successfully to user: {update.effective_user.id}")
+    except Exception as e:
+        logger.error(f"Error in start_command: {str(e)}", exc_info=True)
+        await update.message.reply_text("An error occurred. Please try again later.")
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Send a message when the command /help is issued."""
-    await update.message.reply_text(HELP_TEXT)
+    try:
+        logger.info(f"Help command received from user: {update.effective_user.id}")
+        await update.message.reply_text(HELP_TEXT)
+        logger.info(f"Help command response sent successfully to user: {update.effective_user.id}")
+    except Exception as e:
+        logger.error(f"Error in help_command: {str(e)}", exc_info=True)
+        await update.message.reply_text("An error occurred. Please try again later.")
 
 # Update the rate limit error messages
 RATE_LIMIT_MESSAGES = {
@@ -114,27 +126,32 @@ async def price_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     token = context.args[0].lower()
     try:
+        logger.info(f"Fetching price data for token: {token}")
         price_data = await get_token_price(token)
-        change = price_data['usd_24h_change']
+
+        if not price_data or not isinstance(price_data, dict):
+            raise ValueError("Invalid price data received")
+
+        change = price_data.get('usd_24h_change', 0.0)
+        price = price_data.get('usd', 0.0)
         change_emoji = "🟢" if change >= 0 else "🔴"
 
+        message = (
+            f"💰 {token.upper()} Price Analysis\n\n"
+            f"Current Price: ${price:,.2f}\n"
+            f"24h Change: {change_emoji} {abs(change):.2f}%\n\n"
+            f"Use @{BOT_USERNAME} /market {token} for more details"
+        )
+
         try:
-            await update.message.reply_text(
-                f"💰 {token.upper()} Price Analysis\n\n"
-                f"Current Price: ${price_data['usd']:,.2f}\n"
-                f"24h Change: {change_emoji} {abs(change):.2f}%\n\n"
-                f"Use @{BOT_USERNAME} /market {token} for more details"
-            )
+            await update.message.reply_text(message)
+            logger.info(f"Successfully sent price data for {token}")
         except Exception:
-            await context.bot.send_message(
-                chat_id=update.effective_chat.id,
-                text=f"💰 {token.upper()} Price Analysis\n\n"
-                f"Current Price: ${price_data['usd']:,.2f}\n"
-                f"24h Change: {change_emoji} {abs(change):.2f}%\n\n"
-                f"Use @{BOT_USERNAME} /market {token} for more details"
-            )
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=message)
+
     except Exception as e:
         error_message = f"Error getting price: {str(e)}"
+        logger.error(f"Price command failed: {str(e)}", exc_info=True)
         try:
             await update.message.reply_text(error_message)
         except Exception:
@@ -156,37 +173,40 @@ async def market_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     token = context.args[0].lower()
     try:
+        logger.info(f"Fetching market data for token: {token}")
         market_data = await get_token_market_data(token)
 
-        # Format large numbers
-        market_cap = f"${market_data['market_cap']:,.0f}"
-        volume = f"${market_data['total_volume']:,.0f}"
+        if not market_data or not isinstance(market_data, dict):
+            raise ValueError("Invalid market data received")
+
+        # Format large numbers with safe gets
+        market_cap = f"${market_data.get('market_cap', 0):,.0f}"
+        volume = f"${market_data.get('total_volume', 0):,.0f}"
+        market_cap_rank = market_data.get('market_cap_rank', 'N/A')
+        high_24h = market_data.get('high_24h', 0)
+        low_24h = market_data.get('low_24h', 0)
+        price_change = market_data.get('price_change_percentage_24h', 0)
+
+        message = (
+            f"📊 {token.upper()} Market Data\n\n"
+            f"Market Cap: {market_cap}\n"
+            f"Rank: #{market_cap_rank}\n"
+            f"24h Volume: {volume}\n"
+            f"24h High: ${high_24h:,.2f}\n"
+            f"24h Low: ${low_24h:,.2f}\n"
+            f"24h Change: {price_change:.2f}%\n\n"
+            f"Use @{BOT_USERNAME} /dexinfo <token_address> for DEX details"
+        )
 
         try:
-            await update.message.reply_text(
-                f"📊 {token.upper()} Market Data\n\n"
-                f"Market Cap: {market_cap}\n"
-                f"Rank: #{market_data['market_cap_rank']}\n"
-                f"24h Volume: {volume}\n"
-                f"24h High: ${market_data['high_24h']:,.2f}\n"
-                f"24h Low: ${market_data['low_24h']:,.2f}\n"
-                f"24h Change: {market_data['price_change_percentage_24h']:.2f}%\n\n"
-                f"Use @{BOT_USERNAME} /dexinfo <token_address> for DEX details"
-            )
+            await update.message.reply_text(message)
+            logger.info(f"Successfully sent market data for {token}")
         except Exception:
-            await context.bot.send_message(
-                chat_id=update.effective_chat.id,
-                text=f"📊 {token.upper()} Market Data\n\n"
-                f"Market Cap: {market_cap}\n"
-                f"Rank: #{market_data['market_cap_rank']}\n"
-                f"24h Volume: {volume}\n"
-                f"24h High: ${market_data['high_24h']:,.2f}\n"
-                f"24h Low: ${market_data['low_24h']:,.2f}\n"
-                f"24h Change: {market_data['price_change_percentage_24h']:.2f}%\n\n"
-                f"Use @{BOT_USERNAME} /dexinfo <token_address> for DEX details"
-            )
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=message)
+
     except Exception as e:
         error_message = f"Error getting market data: {str(e)}"
+        logger.error(f"Market command failed: {str(e)}", exc_info=True)
         try:
             await update.message.reply_text(error_message)
         except Exception:
@@ -197,20 +217,22 @@ async def market_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def dexinfo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Get token information from DEXScreener."""
     if not context.args:
+        help_message = f"🔍 Please provide a token address. Example: @{BOT_USERNAME} /dexinfo <address>"
+        logger.info("DEX info command called without arguments")
         try:
-            await update.message.reply_text(f"🔍 Please provide a token address. Example: @{BOT_USERNAME} /dexinfo <address>")
+            await update.message.reply_text(help_message)
         except Exception:
-            await context.bot.send_message(
-                chat_id=update.effective_chat.id,
-                text=f"🔍 Please provide a token address. Example: @{BOT_USERNAME} /dexinfo <address>"
-            )
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=help_message)
         return
 
     token_address = context.args[0]
     try:
+        logger.info(f"Fetching DEX data for address: {token_address}")
         data = await get_token_pairs(token_address)
-        if data is None:
+
+        if not data or not isinstance(data, dict):
             error_message = "❌ Failed to fetch token data"
+            logger.error(f"Invalid response format for token address: {token_address}")
             try:
                 await update.message.reply_text(error_message)
             except Exception:
@@ -219,6 +241,7 @@ async def dexinfo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         if "error" in data:
             error_message = f"❌ {data['error']}"
+            logger.error(f"API error for token address {token_address}: {data['error']}")
             try:
                 await update.message.reply_text(error_message)
             except Exception:
@@ -227,41 +250,50 @@ async def dexinfo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         pairs = data.get("pairs", [])
         if not pairs:
+            error_message = "❌ No DEX pairs found for this token."
+            logger.warning(f"No pairs found for token address: {token_address}")
             try:
-                await update.message.reply_text("❌ No DEX pairs found for this token.")
+                await update.message.reply_text(error_message)
             except Exception:
-                await context.bot.send_message(
-                    chat_id=update.effective_chat.id,
-                    text="❌ No DEX pairs found for this token."
-                )
+                await context.bot.send_message(chat_id=update.effective_chat.id, text=error_message)
             return
 
         pair = pairs[0]  # Get the most relevant pair
+
+        # Safely get values with defaults
         price_usd = pair.get("priceUsd", "N/A")
         price_change = pair.get("priceChange", {}).get("h24", "N/A")
         liquidity_usd = pair.get("liquidity", {}).get("usd", 0)
         volume_usd = pair.get("volume", {}).get("h24", 0)
+        chain_id = pair.get("chainId", "N/A")
+        dex_id = pair.get("dexId", "N/A")
+        pair_address = pair.get("pairAddress", "N/A")
 
         change_emoji = "⚪️" if price_change == "N/A" else "🟢" if float(price_change) >= 0 else "🔴"
 
         message = (
             f"🔍 Token DEX Information\n\n"
-            f"⛓️ Chain: {pair.get('chainId', 'N/A')}\n"
-            f"🏦 DEX: {pair.get('dexId', 'N/A')}\n"
+            f"⛓️ Chain: {chain_id}\n"
+            f"🏦 DEX: {dex_id}\n"
             f"💵 Price: ${price_usd}\n"
             f"{change_emoji} 24h Change: {price_change}%\n"
             f"💧 Liquidity: ${liquidity_usd:,.2f}\n"
             f"📊 24h Volume: ${volume_usd:,.2f}\n"
-            f"🔗 Pair Address: {pair.get('pairAddress', 'N/A')}"
+            f"🔗 Pair Address: {pair_address}"
         )
 
+        logger.info(f"Successfully retrieved DEX data for {token_address}")
         try:
             await update.message.reply_text(message)
-        except Exception:
+            logger.info("DEX info message sent successfully")
+        except Exception as e:
+            logger.error(f"Failed to send message via update.message: {str(e)}")
             await context.bot.send_message(chat_id=update.effective_chat.id, text=message)
+            logger.info("DEX info message sent successfully via context.bot")
 
     except Exception as e:
         error_message = f"❌ Error processing request: {str(e)}"
+        logger.error(f"DEX info command failed: {str(e)}", exc_info=True)
         try:
             await update.message.reply_text(error_message)
         except Exception:

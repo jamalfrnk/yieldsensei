@@ -9,9 +9,9 @@ from bot_handlers import (
 )
 from config import TELEGRAM_TOKEN
 
-# Configure logging
+# Configure logging with more detailed format
 logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    format='%(asctime)s - %(name)s - %(levelname)s - [%(funcName)s] %(message)s',
     level=logging.INFO
 )
 logger = logging.getLogger(__name__)
@@ -21,6 +21,8 @@ async def error_handler(update: Update, context):
     try:
         if update:
             logger.error(f'Update "{update}" caused error "{context.error}"')
+            if context.error and hasattr(context.error, '__traceback__'):
+                logger.error(f'Full traceback: {context.error.__traceback__}')
         else:
             logger.error(f'Error occurred: {context.error}')
     except Exception as e:
@@ -32,36 +34,43 @@ def main():
         if not TELEGRAM_TOKEN:
             raise ValueError("No TELEGRAM_TOKEN provided")
 
-        # Create the Application with specific settings to prevent multiple instances
-        application = Application.builder().token(TELEGRAM_TOKEN).concurrent_updates(False).build()
+        logger.info(f"Initializing bot with username: {BOT_USERNAME}")
 
-        # Add command handlers
+        # Create the Application with specific settings
+        application = Application.builder().token(TELEGRAM_TOKEN).concurrent_updates(True).build()
+
+        # Add command handlers with logging
+        logger.info("Registering command handlers...")
         application.add_handler(CommandHandler("start", start_command))
         application.add_handler(CommandHandler("help", help_command))
         application.add_handler(CommandHandler("price", price_command))
         application.add_handler(CommandHandler("market", market_command))
         application.add_handler(CommandHandler("signal", signal_command))
         application.add_handler(CommandHandler("dexinfo", dexinfo_command))
+        logger.info("Command handlers registered successfully")
 
         # Register message handler for non-command messages
         application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+        logger.info("Message handler registered")
 
         # Register error handler
         application.add_error_handler(error_handler)
+        logger.info("Error handler registered")
 
-        logger.info("Starting bot...")
+        logger.info("Starting bot polling...")
         # Use drop_pending_updates to prevent multiple instances from processing the same updates
-        application.run_polling(drop_pending_updates=True)
+        application.run_polling(drop_pending_updates=True, allowed_updates=Update.ALL_TYPES)
 
     except Exception as e:
-        logger.error(f"Critical error: {e}")
+        logger.error(f"Critical error during bot initialization: {e}", exc_info=True)
         sys.exit(1)
 
 if __name__ == '__main__':
     try:
+        logger.info("Bot script started")
         main()
     except KeyboardInterrupt:
         logger.info("Bot stopped by user")
     except Exception as e:
-        logger.error(f"Bot stopped due to error: {e}")
+        logger.error(f"Bot stopped due to error: {e}", exc_info=True)
         sys.exit(1)
