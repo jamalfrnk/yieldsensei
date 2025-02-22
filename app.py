@@ -184,14 +184,31 @@ def create_app():
                 }
             }
 
+            # Default trading levels
+            trading_levels = {
+                'optimal_entry': 0.0,
+                'stop_loss': 0.0,
+                'optimal_exit': 0.0
+            }
+
+            # Default price levels
+            price_levels = {
+                'support_1': 0.0,
+                'support_2': 0.0,
+                'resistance_1': 0.0,
+                'resistance_2': 0.0
+            }
+
             return render_template('dashboard.html',
                 token_symbol='Enter a token',
                 price=0.0,
                 price_change=0.0,
+                rsi=50.0,
                 signal_strength=50.0,
-                signal_description="Neutral",
+                signal_description="Enter a token to view analysis",
                 technical_indicators=technical_indicators,
                 trend_direction='Neutral ⚖️',
+                signal='Neutral',
                 fibonacci_levels=None,
                 price_ranges={
                     'day': {'high': 0.0, 'low': 0.0},
@@ -211,18 +228,8 @@ def create_app():
                 },
                 confidence_score=50.0,
                 historical_data=[],
-                price_levels={
-                    'support_1': 0.0,
-                    'support_2': 0.0,
-                    'resistance_1': 0.0,
-                    'resistance_2': 0.0
-                },
-                trading_levels={
-                    'optimal_entry': 0.0,
-                    'stop_loss': 0.0,
-                    'optimal_exit': 0.0
-                },
-                dca_recommendation="Select a token to view personalized trading recommendations."
+                price_levels=price_levels,
+                trading_levels=trading_levels
             )
         except Exception as e:
             logger.error(f"Dashboard error: {str(e)}")
