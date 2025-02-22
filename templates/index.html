@@ -18,18 +18,18 @@
 {% block content %}
 <div class="min-h-screen">
     <!-- Hero Section -->
-    <header class="bg-gradient-to-r from-orange-600 to-orange-500 py-16">
+    <header class="bg-black bg-opacity-60 py-16 border-b border-orange-500/20">
         <div class="container mx-auto px-4 text-center">
-            <h1 class="text-4xl md:text-5xl font-bold mb-6">Welcome to YieldSensei</h1>
-            <div class="mb-6 flex justify-center">
+            <h1 class="text-4xl md:text-5xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-orange-500 to-orange-400">Welcome to YieldSensei</h1>
+            <div class="mb-6 flex justify-center transform hover:scale-105 transition-transform duration-300">
                 <img src="{{ url_for('static', filename='images/blackyieldsensei.webp') }}" 
                      alt="YieldSensei Master" 
-                     class="w-64 h-64 object-contain rounded-lg shadow-lg"
+                     class="w-64 h-64 object-contain rounded-lg shadow-2xl ring-1 ring-orange-500/20"
                      title="YieldSensei - Your AI Trading Master">
             </div>
-            <p class="text-xl md:text-2xl mb-8">AI-Powered Crypto Intelligence</p>
-            <p class="text-lg md:text-xl mb-8">🚀 Trade Smarter. Analyze Faster. Predict with Confidence.</p>
-            <div class="max-w-3xl mx-auto text-gray-100">
+            <p class="text-xl md:text-2xl mb-8 text-orange-400">AI-Powered Crypto Intelligence</p>
+            <p class="text-lg md:text-xl mb-8 text-gray-300">🚀 Trade Smarter. Analyze Faster. Predict with Confidence.</p>
+            <div class="max-w-3xl mx-auto text-gray-300">
                 <p class="text-lg mb-8">
                     YieldSensei is a next-generation crypto analytics platform that leverages AI-driven insights,
                     real-time market data, and predictive modeling to help traders navigate DeFi with precision.
@@ -39,49 +39,49 @@
     </header>
 
     <!-- How it Works Section -->
-    <section class="py-16 bg-gray-800">
+    <section class="py-16 bg-gray-900">
         <div class="container mx-auto px-4">
             <h2 class="text-3xl font-bold text-center mb-12 text-orange-500">🌟 How YieldSensei Works</h2>
             <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-                <div class="bg-gray-700 rounded-lg p-6 hover:bg-gray-600 transition duration-300">
+                <div class="bg-black bg-opacity-50 rounded-lg p-6 hover:bg-gray-800 transition duration-300 border border-orange-500/20">
                     <h3 class="text-xl font-semibold mb-4 text-orange-400">🔹 Telegram Bot</h3>
-                    <p class="text-gray-200">@YieldSensei_Bot – Instant AI-powered market insights & technical analysis.</p>
+                    <p class="text-gray-300">@YieldSensei_Bot – Instant AI-powered market insights & technical analysis.</p>
                 </div>
-                <div class="bg-gray-700 rounded-lg p-6 hover:bg-gray-600 transition duration-300">
+                <div class="bg-black bg-opacity-50 rounded-lg p-6 hover:bg-gray-800 transition duration-300 border border-orange-500/20">
                     <h3 class="text-xl font-semibold mb-4 text-orange-400">🔹 Web Application</h3>
-                    <p class="text-gray-200">YieldSensei.ai – Interactive dashboard for deep-dive analytics & strategy building.</p>
+                    <p class="text-gray-300">YieldSensei.ai – Interactive dashboard for deep-dive analytics & strategy building.</p>
                 </div>
             </div>
         </div>
     </section>
 
     <!-- Features Section -->
-    <section class="py-16">
+    <section class="py-16 bg-black bg-opacity-50">
         <div class="container mx-auto px-4">
             <h2 class="text-3xl font-bold text-center mb-12 text-orange-500">📊 Key Features</h2>
             <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-                <div class="flex items-start space-x-4">
+                <div class="flex items-start space-x-4 bg-gray-900 bg-opacity-50 p-6 rounded-lg hover:bg-gray-800 transition duration-300">
                     <span class="text-green-500 text-xl">✅</span>
                     <div>
                         <h3 class="text-xl font-semibold mb-2 text-orange-400">Real-Time Market Data</h3>
                         <p class="text-gray-300">Live price tracking, market cap, and volume metrics.</p>
                     </div>
                 </div>
-                <div class="flex items-start space-x-4">
+                <div class="flex items-start space-x-4 bg-gray-900 bg-opacity-50 p-6 rounded-lg hover:bg-gray-800 transition duration-300">
                     <span class="text-green-500 text-xl">✅</span>
                     <div>
                         <h3 class="text-xl font-semibold mb-2 text-orange-400">Smart Technical Analysis</h3>
                         <p class="text-gray-300">AI-driven RSI, MACD, trend forecasting, and support/resistance levels.</p>
                     </div>
                 </div>
-                <div class="flex items-start space-x-4">
+                <div class="flex items-start space-x-4 bg-gray-900 bg-opacity-50 p-6 rounded-lg hover:bg-gray-800 transition duration-300">
                     <span class="text-green-500 text-xl">✅</span>
                     <div>
                         <h3 class="text-xl font-semibold mb-2 text-orange-400">Predictive Modeling</h3>
                         <p class="text-gray-300">Machine learning-powered trade signals and confidence scoring.</p>
                     </div>
                 </div>
-                <div class="flex items-start space-x-4">
+                <div class="flex items-start space-x-4 bg-gray-900 bg-opacity-50 p-6 rounded-lg hover:bg-gray-800 transition duration-300">
                     <span class="text-green-500 text-xl">✅</span>
                     <div>
                         <h3 class="text-xl font-semibold mb-2 text-orange-400">Liquidity & Volume Tracking</h3>
@@ -93,15 +93,17 @@
     </section>
 
     <!-- CTA Section -->
-    <section class="py-16 bg-gradient-to-r from-orange-600 to-orange-500">
+    <section class="py-16 bg-gradient-to-b from-gray-900 to-black">
         <div class="container mx-auto px-4 text-center">
-            <h2 class="text-3xl font-bold mb-8">🔗 Get Started Today!</h2>
-            <p class="text-xl mb-8">Explore AI-Powered Crypto Analytics at YieldSensei.ai 🚀</p>
+            <h2 class="text-3xl font-bold mb-8 text-orange-500">🔗 Get Started Today!</h2>
+            <p class="text-xl mb-8 text-gray-300">Explore AI-Powered Crypto Analytics at YieldSensei.ai 🚀</p>
             <div class="flex justify-center space-x-4">
-                <a href="{{ url_for('dashboard') }}" class="bg-gray-900 text-white px-8 py-3 rounded-lg hover:bg-gray-800 transition duration-300">
+                <a href="{{ url_for('dashboard') }}" 
+                   class="bg-orange-500 text-white px-8 py-3 rounded-lg hover:bg-orange-600 transition duration-300 transform hover:scale-105">
                     Launch Dashboard
                 </a>
-                <a href="https://t.me/yieldsensei_bot" class="bg-white text-gray-900 px-8 py-3 rounded-lg hover:bg-gray-100 transition duration-300">
+                <a href="https://t.me/yieldsensei_bot" 
+                   class="bg-gray-800 text-white px-8 py-3 rounded-lg hover:bg-gray-700 transition duration-300 transform hover:scale-105 border border-orange-500/20">
                     Try Telegram Bot
                 </a>
             </div>
