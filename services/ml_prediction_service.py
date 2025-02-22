@@ -55,21 +55,45 @@ class MLPredictionService:
             raise
 
     def _calculate_rsi(self, prices: pd.Series, window_size: int = 14) -> pd.Series:
-        """Calculate RSI with improved handling of edge cases."""
+        """Calculate RSI with improved error handling and validation."""
         try:
+            if not isinstance(prices, pd.Series):
+                prices = pd.Series(prices)
+
+            if len(prices) < window_size:
+                logger.warning(f"Insufficient data for RSI calculation. Need at least {window_size} points.")
+                return pd.Series([50] * len(prices))  # Return neutral RSI
+
+            # Calculate price changes
             delta = prices.diff()
-            gain = (delta.where(delta > 0, 0)).rolling(window=window_size, min_periods=1).mean()
-            loss = (-delta.where(delta < 0, 0)).rolling(window=window_size, min_periods=1).mean()
+
+            # Separate gains and losses
+            gain = delta.copy()
+            loss = delta.copy()
+            gain[gain < 0] = 0
+            loss[loss > 0] = 0
+            loss = abs(loss)
+
+            # Calculate average gain and loss
+            avg_gain = gain.rolling(window=window_size, min_periods=1).mean()
+            avg_loss = loss.rolling(window=window_size, min_periods=1).mean()
 
             # Handle division by zero
-            rs = gain / loss.replace(0, float('inf'))
+            rs = pd.Series(index=prices.index)
+            rs = avg_gain / avg_loss.replace(0, float('inf'))
+
+            # Calculate RSI
             rsi = 100 - (100 / (1 + rs))
 
-            # Clean up outliers
-            rsi = rsi.clip(0, 100)
-            return rsi.fillna(50)  # Neutral RSI for any remaining NaN
+            # Clean up outliers and invalid values
+            rsi = rsi.clip(0, 100)  # Ensure RSI stays within [0, 100]
+            rsi = rsi.fillna(50)  # Fill any remaining NaN with neutral RSI
+
+            logger.debug(f"RSI calculation completed successfully. Shape: {rsi.shape}")
+            return rsi
+
         except Exception as e:
-            logger.error(f"RSI calculation error: {str(e)}")
+            logger.error(f"Error in RSI calculation: {str(e)}", exc_info=True)
             return pd.Series([50] * len(prices))  # Return neutral RSI on error
 
     def _calculate_macd(self, prices: pd.Series) -> pd.Series:
