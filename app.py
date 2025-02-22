@@ -1,6 +1,7 @@
 import os
 from flask import Flask, render_template, request, jsonify, redirect
 import asyncio
+import threading
 from services.technical_analysis import get_signal_analysis
 from services.coingecko_service import get_token_price, get_token_market_data
 from services.ml_prediction_service import ml_service
@@ -13,7 +14,6 @@ from flask_limiter.util import get_remote_address
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from models import db, User
-from waitress import serve
 
 # Configure logging
 logging.basicConfig(
@@ -26,220 +26,187 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Thread-local storage for event loops
+thread_local = threading.local()
+
+def get_event_loop():
+    """Get or create an event loop for the current thread."""
+    if not hasattr(thread_local, "loop"):
+        thread_local.loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(thread_local.loop)
+    return thread_local.loop
+
 def run_async(coro):
-    """Utility function to run async code in sync context."""
+    """Utility function to run async code in sync context with proper error handling."""
     try:
-        loop = asyncio.get_event_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-    return loop.run_until_complete(coro)
-
-def create_app():
-    app = Flask(__name__)
-
-    # Determine environment
-    is_production = os.environ.get('FLASK_ENV') == 'production'
-    logger.info(f"Application environment: {'production' if is_production else 'development'}")
-
-    try:
-        # Initialize basic Flask configuration first
-        app.config.update(
-            ENV='production' if is_production else 'development',
-            DEBUG=not is_production
-        )
-
-        # Initialize core extensions
-        logger.info("Initializing core extensions")
-        CORS(app)
-        Compress(app)
-        logger.info("Core extensions initialized successfully")
-
-        # Initialize database configuration
-        logger.info("Configuring database connection")
-        database_url = os.environ.get('DATABASE_URL')
-        if not database_url:
-            logger.error("DATABASE_URL environment variable is not set")
-            raise RuntimeError("DATABASE_URL environment variable must be set")
-
-        # Convert heroku postgres URL if necessary
-        if database_url.startswith("postgres://"):
-            database_url = database_url.replace("postgres://", "postgresql://", 1)
-
-        # Configure SQLAlchemy
-        app.config.update(
-            SQLALCHEMY_DATABASE_URI=database_url,
-            SQLALCHEMY_TRACK_MODIFICATIONS=False
-        )
-
-        # Initialize database after configuration
-        logger.info("Initializing database")
-        db.init_app(app)
-        logger.info("Database initialized successfully")
-
-        # Production-specific configuration
-        if is_production:
-            logger.info("Applying production-specific configuration")
-            app.config.update(
-                SESSION_COOKIE_SECURE=True,
-                SESSION_COOKIE_HTTPONLY=True,
-                PERMANENT_SESSION_LIFETIME=timedelta(days=1)
-            )
-
-            # Configure CORS for production
-            CORS(app, resources={
-                r"/*": {
-                    "origins": ["https://yieldsensei.ai", "https://www.yieldsensei.ai"],
-                    "methods": ["GET", "POST", "OPTIONS"],
-                    "allow_headers": ["Content-Type", "Authorization"]
-                }
-            })
-
-        # Security headers
-        csp = {
-            'default-src': ["'self'"],
-            'script-src': ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
-            'style-src': ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://fonts.googleapis.com"],
-            'img-src': ["'self'", "data:", "https://cdn.jsdelivr.net"],
-            'font-src': ["'self'", "https://fonts.gstatic.com", "https://cdn.jsdelivr.net"],
-            'connect-src': ["'self'", "https://api.coingecko.com"]
-        }
-
-        if is_production:
-            logger.info("Adding production CSP rules")
-            for directive in csp:
-                csp[directive].extend([
-                    "https://*.yieldsensei.ai",
-                    "https://www.yieldsensei.ai"
-                ])
-
-        Talisman(app,
-            force_https=is_production,
-            strict_transport_security=is_production,
-            session_cookie_secure=is_production,
-            content_security_policy=csp
-        )
-
-        # Try to configure rate limiting without blocking startup
-        try:
-            redis_url = os.environ.get('REDIS_URL')
-            logger.info("Attempting to configure rate limiting")
-            if redis_url:
-                limiter = Limiter(
-                    app=app,
-                    key_func=get_remote_address,
-                    default_limits=["200 per hour", "50 per minute"],
-                    storage_uri=redis_url
-                )
-                logger.info("Rate limiting configured successfully")
-            else:
-                logger.warning("No Redis URL configured, skipping rate limiting")
-        except Exception as e:
-            logger.error(f"Failed to configure rate limiting: {str(e)}")
-            logger.info("Continuing without rate limiting")
-
-        @app.before_request
-        def before_request():
-            if is_production and not request.is_secure:
-                url = request.url.replace('http://', 'https://', 1)
-                return redirect(url, code=301)
-
-        @app.route('/')
-        def index():
-            return render_template('index.html')
-
-        @app.route('/dashboard')
-        def dashboard():
-            """Dashboard route handler with price analysis."""
-            try:
-                # Get token from query params if provided
-                token = request.args.get('token', None)
-                data = DEFAULT_DATA.copy()
-
-                if token:
-                    # Fetch token price and market data
-                    try:
-                        price_data = run_async(get_token_price(token))
-                        market_data = run_async(get_token_market_data(token))
-
-                        if price_data and market_data:
-                            # Update price ranges with actual data
-                            data.update({
-                                'token_symbol': token.upper(),
-                                'price': price_data.get('usd', 0.0),
-                                'price_change': price_data.get('usd_24h_change', 0.0),
-                                'price_ranges': {
-                                    'day': {
-                                        'high': market_data.get('high_24h', 0.0),
-                                        'low': market_data.get('low_24h', 0.0)
-                                    },
-                                    'week': {
-                                        'high': market_data.get('high_7d', 0.0),
-                                        'low': market_data.get('low_7d', 0.0)
-                                    },
-                                    'month': {
-                                        'high': market_data.get('high_30d', 0.0),
-                                        'low': market_data.get('low_30d', 0.0)
-                                    },
-                                    'quarter': {
-                                        'high': market_data.get('high_90d', 0.0),
-                                        'low': market_data.get('low_90d', 0.0)
-                                    },
-                                    'year': {
-                                        'high': market_data.get('high_365d', 0.0),
-                                        'low': market_data.get('low_365d', 0.0)
-                                    }
-                                }
-                            })
-
-                            # Get additional analysis data
-                            signal_data = run_async(get_signal_analysis(token))
-                            if signal_data:
-                                data.update({
-                                    'signal_strength': signal_data.get('signal_strength', 0),
-                                    'signal_description': signal_data.get('signal', 'Neutral'),
-                                    'trend_direction': signal_data.get('trend_direction', 'Neutral ⚖️'),
-                                    'rsi': signal_data.get('rsi', 50),
-                                })
-
-                            # Get ML predictions if available
-                            try:
-                                predictions = run_async(ml_service.get_predictions(token))
-                                if predictions:
-                                    data['predictions'] = predictions
-                                    data['confidence_score'] = predictions.get('confidence', 0)
-                            except Exception as e:
-                                logger.error(f"Failed to get predictions: {str(e)}")
-
-                    except Exception as e:
-                        logger.error(f"Error fetching data: {str(e)}")
-                        return render_template('dashboard.html', error=str(e), **DEFAULT_DATA)
-
-                return render_template('dashboard.html', **data)
-
-            except Exception as e:
-                logger.error(f"Dashboard error: {str(e)}", exc_info=True)
-                return render_template('dashboard.html', error=str(e), **DEFAULT_DATA)
-
-        # Add error handlers
-        @app.errorhandler(500)
-        def internal_error(error):
-            logger.error(f"Internal Server Error: {str(error)}")
-            return render_template('error.html', error=str(error)), 500
-
-        @app.errorhandler(404)
-        def not_found_error(error):
-            logger.error(f"Page Not Found: {request.url}")
-            return render_template('error.html', error="Page not found"), 404
-
-        logger.info("Application configured successfully")
-        return app
-
+        loop = get_event_loop()
+        return loop.run_until_complete(coro)
     except Exception as e:
-        logger.error(f"Failed to create application: {str(e)}", exc_info=True)
+        logger.error(f"Error in async operation: {str(e)}", exc_info=True)
         raise
 
-# Default data for the dashboard
+def create_app():
+    """Application factory function."""
+    app = Flask(__name__)
+
+    # Set development mode
+    app.config.update(
+        ENV='development',
+        DEBUG=True
+    )
+
+    # Initialize core extensions
+    logger.info("Initializing core extensions")
+    CORS(app)
+    Compress(app)
+    logger.info("Core extensions initialized successfully")
+
+    # Initialize database configuration
+    logger.info("Configuring database connection")
+    database_url = os.environ.get('DATABASE_URL')
+    if not database_url:
+        logger.error("DATABASE_URL environment variable is not set")
+        raise RuntimeError("DATABASE_URL environment variable must be set")
+
+    # Convert heroku postgres URL if necessary
+    if database_url.startswith("postgres://"):
+        database_url = database_url.replace("postgres://", "postgresql://", 1)
+
+    # Configure SQLAlchemy
+    app.config.update(
+        SQLALCHEMY_DATABASE_URI=database_url,
+        SQLALCHEMY_TRACK_MODIFICATIONS=False
+    )
+
+    # Initialize database
+    logger.info("Initializing database")
+    db.init_app(app)
+    logger.info("Database initialized successfully")
+
+    # Basic security headers
+    csp = {
+        'default-src': ["'self'"],
+        'script-src': ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
+        'style-src': ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://fonts.googleapis.com"],
+        'img-src': ["'self'", "data:", "https://cdn.jsdelivr.net"],
+        'font-src': ["'self'", "https://fonts.gstatic.com", "https://cdn.jsdelivr.net"],
+        'connect-src': ["'self'", "https://api.coingecko.com"]
+    }
+
+    Talisman(app,
+        force_https=False,  # Disabled for development
+        strict_transport_security=False,
+        session_cookie_secure=False,
+        content_security_policy=csp
+    )
+
+    # Health check endpoint
+    @app.route('/health')
+    def health_check():
+        return 'OK', 200
+
+    @app.route('/')
+    def index():
+        return render_template('index.html')
+
+    @app.route('/dashboard')
+    def dashboard():
+        """Dashboard route handler with price analysis."""
+        try:
+            # Get token from query params if provided
+            token = request.args.get('token', None)
+            data = DEFAULT_DATA.copy()
+
+            if token:
+                try:
+                    logger.info(f"Fetching data for token: {token}")
+
+                    # Fetch token price and market data
+                    price_data = run_async(get_token_price(token))
+                    logger.info(f"Price data received for {token}")
+
+                    market_data = run_async(get_token_market_data(token))
+                    logger.info(f"Market data received for {token}")
+
+                    if price_data and market_data:
+                        # Update price ranges with actual data
+                        data.update({
+                            'token_symbol': token.upper(),
+                            'price': price_data.get('usd', 0.0),
+                            'price_change': price_data.get('usd_24h_change', 0.0),
+                            'price_ranges': {
+                                'day': {
+                                    'high': market_data.get('high_24h', 0.0),
+                                    'low': market_data.get('low_24h', 0.0)
+                                },
+                                'week': {
+                                    'high': market_data.get('high_7d', 0.0),
+                                    'low': market_data.get('low_7d', 0.0)
+                                },
+                                'month': {
+                                    'high': market_data.get('high_30d', 0.0),
+                                    'low': market_data.get('low_30d', 0.0)
+                                },
+                                'quarter': {
+                                    'high': market_data.get('high_90d', 0.0),
+                                    'low': market_data.get('low_90d', 0.0)
+                                },
+                                'year': {
+                                    'high': market_data.get('high_365d', 0.0),
+                                    'low': market_data.get('low_365d', 0.0)
+                                }
+                            }
+                        })
+                        logger.info(f"Price ranges updated for {token}")
+
+                        # Get additional analysis data
+                        signal_data = run_async(get_signal_analysis(token))
+                        if signal_data:
+                            data.update({
+                                'signal_strength': signal_data.get('signal_strength', 0),
+                                'signal_description': signal_data.get('signal', 'Neutral'),
+                                'trend_direction': signal_data.get('trend_direction', 'Neutral ⚖️'),
+                                'rsi': signal_data.get('rsi', 50),
+                            })
+                            logger.info(f"Signal analysis completed for {token}")
+
+                        # Get ML predictions if available
+                        try:
+                            predictions = run_async(ml_service.get_predictions(token))
+                            if predictions:
+                                data['predictions'] = predictions
+                                data['confidence_score'] = predictions.get('confidence', 0)
+                                logger.info(f"ML predictions received for {token}")
+                        except Exception as e:
+                            logger.error(f"Failed to get predictions for {token}: {str(e)}")
+
+                except Exception as e:
+                    error_msg = f"Error fetching data for {token}: {str(e)}"
+                    logger.error(error_msg)
+                    return render_template('dashboard.html', error=error_msg, **DEFAULT_DATA)
+
+            return render_template('dashboard.html', **data)
+
+        except Exception as e:
+            error_msg = f"Dashboard error: {str(e)}"
+            logger.error(error_msg, exc_info=True)
+            return render_template('dashboard.html', error=error_msg, **DEFAULT_DATA)
+
+    # Add error handlers
+    @app.errorhandler(500)
+    def internal_error(error):
+        logger.error(f"Internal Server Error: {str(error)}")
+        return render_template('error.html', error=str(error)), 500
+
+    @app.errorhandler(404)
+    def not_found_error(error):
+        logger.error(f"Page Not Found: {request.url}")
+        return render_template('error.html', error="Page not found"), 404
+
+    logger.info("Application configured successfully")
+    return app
+
+# Default data structure remains unchanged
 DEFAULT_DATA = {
     'token_symbol': 'Enter a token',
     'price': 0.0,
@@ -276,13 +243,8 @@ if __name__ == '__main__':
         port = int(os.environ.get('PORT', 3000))
         host = '0.0.0.0'
 
-        logger.info(f"Starting server on {host}:{port}")
-        if os.environ.get('FLASK_ENV') == 'production':
-            logger.info("Using production server (waitress)")
-            serve(app, host=host, port=port, threads=4)
-        else:
-            logger.info("Using development server (Flask)")
-            app.run(host=host, port=port, debug=True)
+        logger.info(f"Starting development server on {host}:{port}")
+        app.run(host=host, port=port, debug=True)
 
     except Exception as e:
         logger.error(f"Critical error during server startup: {str(e)}", exc_info=True)
