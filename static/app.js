@@ -41,6 +41,17 @@ a {
 a:hover {
   text-decoration: underline;
 }
+.notification {
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+}
+.notification.info {
+    background-color: lightgreen;
+}
+.notification.error {
+    background-color: lightcoral;
+}
 
 </style>
 </head>
@@ -72,8 +83,8 @@ a:hover {
     </div>
 </div>
 
-
 <script>
+// YieldSensei Web App JavaScript
 document.addEventListener('DOMContentLoaded', function() {
     // Handle bot command forms
     document.querySelectorAll('.command-form').forEach(form => {
@@ -93,13 +104,26 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 const data = await response.json();
                 // Display result in a notification or modal
-                alert(data.message);
+                showNotification(data.message);
             } catch (error) {
                 console.error('Error:', error);
-                alert('Failed to process command. Please try again.');
+                showNotification('Failed to process command. Please try again.', 'error');
             }
         });
     });
+
+    // Notification handler
+    function showNotification(message, type = 'info') {
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        notification.textContent = message;
+        document.body.appendChild(notification);
+
+        // Remove notification after 3 seconds
+        setTimeout(() => {
+            notification.remove();
+        }, 3000);
+    }
 });
 </script>
 </body>

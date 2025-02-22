@@ -53,15 +53,19 @@ DEFAULT_DATA = {
 def create_app():
     app = Flask(__name__)
 
-    # Configure SQLAlchemy
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///app.db')
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    db.init_app(app)
+    # Configure SQLAlchemy with proper URL handling
+    database_url = os.environ.get('DATABASE_URL')
+    if database_url and database_url.startswith("postgres://"):
+        database_url = database_url.replace("postgres://", "postgresql://", 1)
 
-    # Enable CORS
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url or 'sqlite:///app.db'
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+    # Initialize extensions
+    db.init_app(app)
     CORS(app)
 
-    # Security headers
+    # Security headers with adjusted CSP
     Talisman(app,
         content_security_policy={
             'default-src': ["'self'", "'unsafe-inline'", "'unsafe-eval'", 'cdn.jsdelivr.net', '*'],
@@ -141,7 +145,6 @@ def create_app():
             error_message = f"Error analyzing token: {str(e)}"
             return render_template('dashboard.html', error=error_message, **DEFAULT_DATA)
 
-
     @app.template_filter('price_color')
     def price_color_filter(value):
         """Return CSS class based on price change value."""
@@ -176,7 +179,6 @@ with app.app_context():
 if __name__ == '__main__':
     try:
         logger.info("Starting Flask server...")
-        port = int(os.environ.get('PORT', 3000))
-        app.run(host='0.0.0.0', port=port, debug=True)
+        app.run(host='0.0.0.0', port=3000, debug=True)
     except Exception as e:
         logger.error(f"Failed to start server: {str(e)}")
