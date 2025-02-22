@@ -170,14 +170,29 @@ def create_app():
     @limiter.limit("100 per hour")
     def dashboard():
         try:
+            # Initialize default technical indicators structure
+            technical_indicators = {
+                'rsi': {
+                    'value': 50.0,
+                    'trend': 'Neutral',
+                    'strength': 0.5
+                },
+                'macd': {
+                    'signal': 'Neutral',
+                    'crossover': 'None',
+                    'trend_strength': 0.5
+                }
+            }
+
             return render_template('dashboard.html',
                 token_symbol='Enter a token',
                 price=0.0,
                 price_change=0.0,
                 signal_strength=50.0,
                 signal_description="Neutral",
-                rsi=50.0,
+                technical_indicators=technical_indicators,
                 trend_direction='Neutral ⚖️',
+                fibonacci_levels=None,
                 price_ranges={
                     'day': {'high': 0.0, 'low': 0.0},
                     'week': {'high': 0.0, 'low': 0.0},
@@ -185,29 +200,28 @@ def create_app():
                     'quarter': {'high': 0.0, 'low': 0.0},
                     'year': {'high': 0.0, 'low': 0.0}
                 },
-                predictions={
+                ml_predictions={
                     'next_day': {
                         'rf_prediction': 0.0,
                         'prophet_prediction': 0.0,
+                        'combined_prediction': 0.0,
                         'upper_bound': 0.0,
                         'lower_bound': 0.0
-                    },
-                    'forecast': {
-                        'dates': [],
-                        'values': [],
-                        'lower_bounds': [],
-                        'upper_bounds': []
                     }
                 },
                 confidence_score=50.0,
                 historical_data=[],
-                support_1=0.0,
-                support_2=0.0,
-                resistance_1=0.0,
-                resistance_2=0.0,
-                optimal_entry=0.0,
-                stop_loss=0.0,
-                optimal_exit=0.0,
+                price_levels={
+                    'support_1': 0.0,
+                    'support_2': 0.0,
+                    'resistance_1': 0.0,
+                    'resistance_2': 0.0
+                },
+                trading_levels={
+                    'optimal_entry': 0.0,
+                    'stop_loss': 0.0,
+                    'optimal_exit': 0.0
+                },
                 dca_recommendation="Select a token to view personalized trading recommendations."
             )
         except Exception as e:
@@ -235,59 +249,58 @@ def create_app():
                 # Get technical analysis data with proper await
                 analysis_data = await get_signal_analysis(token)
 
+                # Structure technical indicators data
+                technical_indicators = {
+                    'rsi': {
+                        'value': analysis_data['rsi'],
+                        'trend': 'Bullish' if analysis_data['rsi'] > 50 else 'Bearish',
+                        'strength': abs(analysis_data['rsi'] - 50) / 50
+                    },
+                    'macd': {
+                        'signal': analysis_data.get('macd_signal', 'Neutral'),
+                        'crossover': analysis_data.get('macd_crossover', 'None'),
+                        'trend_strength': analysis_data.get('macd_trend_strength', 0.5)
+                    }
+                }
+
                 return render_template('dashboard.html',
                     token_symbol=token_data["token_symbol"],
                     price=token_data["price"],
                     price_change=token_data["price_change"],
                     signal_strength=analysis_data['signal_strength'],
                     signal_description=analysis_data['signal'],
-                    rsi=analysis_data['rsi'],
+                    technical_indicators=technical_indicators,
                     trend_direction=analysis_data['trend_direction'],
+                    fibonacci_levels=analysis_data.get('fibonacci_levels'),
                     price_ranges=token_data["price_ranges"],
-                    predictions=analysis_data.get('ml_predictions', {
+                    ml_predictions=analysis_data.get('ml_predictions', {
                         'next_day': {
                             'rf_prediction': token_data["price"] * 1.01,
                             'prophet_prediction': token_data["price"] * 1.02,
+                            'combined_prediction': token_data["price"] * 1.015,
                             'upper_bound': token_data["price"] * 1.05,
                             'lower_bound': token_data["price"] * 0.95
                         }
                     }),
-                    confidence_score=analysis_data['confidence_score'],
+                    confidence_score=analysis_data.get('confidence_score', 50.0),
                     historical_data=token_data.get("historical_data", []),
-                    support_1=analysis_data['support_1'],
-                    support_2=analysis_data['support_2'],
-                    resistance_1=analysis_data['resistance_1'],
-                    resistance_2=analysis_data['resistance_2'],
-                    optimal_entry=analysis_data['optimal_entry'],
-                    stop_loss=analysis_data['stop_loss'],
-                    optimal_exit=analysis_data['optimal_exit'],
+                    price_levels=analysis_data.get('price_levels', {
+                        'support_1': token_data["price"] * 0.95,
+                        'support_2': token_data["price"] * 0.90,
+                        'resistance_1': token_data["price"] * 1.05,
+                        'resistance_2': token_data["price"] * 1.10
+                    }),
+                    trading_levels=analysis_data.get('trading_levels', {
+                        'optimal_entry': token_data["price"] * 0.98,
+                        'stop_loss': token_data["price"] * 0.93,
+                        'optimal_exit': token_data["price"] * 1.07
+                    }),
                     dca_recommendation=analysis_data.get('dca_recommendation', 
                         f"Consider entering {token.upper()} at ${token_data['price']*0.98:,.2f}")
                 )
             except Exception as e:
                 logger.error(f"Error in technical analysis: {str(e)}")
-                # Fall back to basic data if technical analysis fails
-                return render_template('dashboard.html',
-                    token_symbol=token_data["token_symbol"],
-                    price=token_data["price"],
-                    price_change=token_data["price_change"],
-                    signal_strength=50.0,
-                    signal_description="Technical analysis unavailable",
-                    rsi=50.0,
-                    trend_direction='Neutral ⚖️',
-                    price_ranges=token_data["price_ranges"],
-                    predictions={},
-                    confidence_score=0.0,
-                    historical_data=token_data.get("historical_data", []),
-                    support_1=token_data["price"] * 0.95,
-                    support_2=token_data["price"] * 0.90,
-                    resistance_1=token_data["price"] * 1.05,
-                    resistance_2=token_data["price"] * 1.10,
-                    optimal_entry=token_data["price"] * 0.98,
-                    stop_loss=token_data["price"] * 0.93,
-                    optimal_exit=token_data["price"] * 1.07,
-                    dca_recommendation=f"Basic analysis for {token.upper()}"
-                )
+                return render_template('error.html', error=str(e)), 500
 
         except Exception as e:
             logger.error(f"Search error: {str(e)}")
