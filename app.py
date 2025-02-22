@@ -84,26 +84,28 @@ def create_app():
                     "• Consider increasing position size on dips"
                 )
 
-                return render_template('dashboard.html',
-                    token_symbol='Enter a token',
-                    price=100.0,
-                    price_change=0.0,
-                    signal_strength=50.0,
-                    signal_description="Enter a token to view signal analysis",
-                    technical_indicators=technical_indicators,
-                    trend_direction='Neutral ⚖️',
-                    signal='Neutral',
-                    price_ranges=price_ranges,
-                    ml_predictions=ml_predictions,
-                    confidence_score=50.0,
-                    price_levels=price_levels,
-                    trading_levels=trading_levels,
-                    dca_recommendation=dca_recommendation,
-                    fibonacci_levels=None
-                )
+                context = {
+                    'token_symbol': 'Enter a token',
+                    'price': 100.0,
+                    'price_change': 0.0,
+                    'signal_strength': 50.0,
+                    'signal_description': "Enter a token to view signal analysis",
+                    'technical_indicators': technical_indicators,
+                    'trend_direction': 'Neutral ⚖️',
+                    'signal': 'Neutral',
+                    'price_ranges': price_ranges,
+                    'ml_predictions': ml_predictions,
+                    'confidence_score': 50.0,
+                    'price_levels': price_levels,
+                    'trading_levels': trading_levels,
+                    'dca_recommendation': dca_recommendation,
+                    'fibonacci_levels': None
+                }
+
+                return render_template('dashboard.html', **context)
             except Exception as e:
-                logger.error(f"Error rendering index: {str(e)}")
-                return str(e), 500
+                logger.error(f"Error rendering index: {str(e)}", exc_info=True)
+                return render_template('error.html', error=str(e)), 500
 
         @app.route('/test')
         def test():
@@ -120,10 +122,9 @@ if __name__ == '__main__':
     try:
         logger.info("Creating application instance")
         app = create_app()
-        # Always use port 5000 as specified in .replit configuration
-        port = int(os.environ.get('PORT', 80))
-        logger.info(f"Starting Flask server on port {port}")
-        app.run(host='0.0.0.0', port=port, debug=True)
+        # ALWAYS use port 5000 as required by Replit
+        logger.info("Starting Flask server on port 5000")
+        app.run(host='0.0.0.0', port=5000, debug=True)
     except Exception as e:
         logger.critical(f"Failed to start server: {str(e)}", exc_info=True)
         raise

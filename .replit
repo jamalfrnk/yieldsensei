@@ -4,7 +4,7 @@ modules = ["python-3.11", "nodejs-20", "python3", "postgresql-16"]
 channel = "stable-24_05"
 
 [workflows]
-runButton = "Flask Server"
+runButton = "Project"
 
 [[workflows.workflow]]
 name = "Project"
@@ -14,6 +14,10 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "workflow.run"
 args = "Flask Server"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Telegram Bot"
 
 [[workflows.workflow]]
 name = "Flask Server"
@@ -27,8 +31,22 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "ENVIRONMENT=development SECRET_KEY=dev_secret_key DEBUG=true python app.py"
+args = "python app.py"
 waitForPort = 5000
+
+[[workflows.workflow]]
+name = "Telegram Bot"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python main.py"
 
 [deployment]
 run = ["sh", "-c", "pkill -f 'python app.py' || true && ENVIRONMENT=development SECRET_KEY=dev_secret_key DEBUG=true python app.py"]
