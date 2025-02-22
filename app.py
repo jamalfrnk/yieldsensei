@@ -175,7 +175,38 @@ def create_app():
                 signal_strength=50.0,
                 signal_description="Neutral",
                 rsi=50.0,
-                trend_direction='Neutral ⚖️'
+                trend_direction='Neutral ⚖️',
+                price_ranges={
+                    'day': {'high': 0.0, 'low': 0.0},
+                    'week': {'high': 0.0, 'low': 0.0},
+                    'month': {'high': 0.0, 'low': 0.0},
+                    'quarter': {'high': 0.0, 'low': 0.0},
+                    'year': {'high': 0.0, 'low': 0.0}
+                },
+                predictions={
+                    'next_day': {
+                        'rf_prediction': 0.0,
+                        'prophet_prediction': 0.0,
+                        'upper_bound': 0.0,
+                        'lower_bound': 0.0
+                    },
+                    'forecast': {
+                        'dates': [],
+                        'values': [],
+                        'lower_bounds': [],
+                        'upper_bounds': []
+                    }
+                },
+                confidence_score=50.0,
+                historical_data=[],
+                support_1=0.0,
+                support_2=0.0,
+                resistance_1=0.0,
+                resistance_2=0.0,
+                optimal_entry=0.0,
+                stop_loss=0.0,
+                optimal_exit=0.0,
+                dca_recommendation="Select a token to view personalized trading recommendations."
             )
         except Exception as e:
             logger.error(f"Dashboard error: {str(e)}")
