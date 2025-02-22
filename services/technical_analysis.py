@@ -52,7 +52,7 @@ def calculate_rsi(prices, periods=14, ema_alpha=None):
     try:
         if len(prices) < periods + 1:
             logger.warning("Insufficient data for RSI calculation")
-            return 50.0
+            return 50.0, "Neutral", 0.5  # Return neutral values for insufficient data
 
         price_series = pd.Series(prices)
         returns = price_series.diff()
@@ -75,16 +75,16 @@ def calculate_rsi(prices, periods=14, ema_alpha=None):
         rsi = rsi.clip(0, 100)  # Ensure RSI is between 0 and 100
 
         # Calculate RSI trend
-        rsi_trend = "Overbought" if rsi.iloc[-1] > 70 else "Oversold" if rsi.iloc[-1] < 30 else "Neutral"
-        rsi_strength = abs(50 - rsi.iloc[-1]) / 50  # 0 to 1 scale
+        rsi_value = float(rsi.iloc[-1])
+        rsi_trend = "Overbought" if rsi_value > 70 else "Oversold" if rsi_value < 30 else "Neutral"
+        rsi_strength = min(abs(50 - rsi_value) / 50, 1.0)  # Ensure strength is between 0 and 1
 
-        latest_rsi = float(rsi.iloc[-1])
-        logger.info(f"Calculated RSI: {latest_rsi}, Trend: {rsi_trend}")
-        return latest_rsi, rsi_trend, rsi_strength
+        logger.info(f"Calculated RSI: {rsi_value}, Trend: {rsi_trend}")
+        return rsi_value, rsi_trend, rsi_strength
 
     except Exception as e:
         logger.error(f"RSI calculation error: {str(e)}")
-        return 50.0, "Neutral", 0.0
+        return 50.0, "Neutral", 0.5  # Return neutral values on error
 
 def calculate_macd(prices, fast_period=12, slow_period=26, signal_period=9):
     """Calculate MACD with comprehensive analysis."""
