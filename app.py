@@ -154,7 +154,7 @@ if __name__ == '__main__':
     try:
         logger.info("Creating application instance")
         app = create_app()
-        port = int(os.environ.get('PORT', 8080))
+        port = int(os.environ.get('PORT', 3000))  # Changed default port to 3000
         logger.info(f"Starting production server on port {port}")
         serve(app, host='0.0.0.0', port=port)
     except Exception as e:
