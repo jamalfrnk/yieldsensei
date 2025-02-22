@@ -14,11 +14,16 @@ def get_token_data(token_symbol: str) -> Optional[Dict[str, Any]]:
         # Get token id from symbol
         search_url = f"{COINGECKO_API_URL}/search"
         search_response = requests.get(search_url, params={"query": token_symbol})
+
+        if search_response.status_code == 429:
+            logger.error("Rate limit exceeded for CoinGecko API")
+            raise Exception("API rate limit reached. Please try again in a minute.")
+
         search_data = search_response.json()
 
         if not search_data.get("coins"):
             logger.warning(f"No token found for symbol: {token_symbol}")
-            return None
+            raise Exception(f"Token '{token_symbol}' not found. Please check the symbol and try again.")
 
         token_id = search_data["coins"][0]["id"]
         logger.info(f"Found token ID: {token_id} for symbol: {token_symbol}")
@@ -34,14 +39,17 @@ def get_token_data(token_symbol: str) -> Optional[Dict[str, Any]]:
         }
 
         ohlc_response = requests.get(ohlc_url, params=params)
+        if ohlc_response.status_code == 429:
+            logger.error("Rate limit exceeded for CoinGecko API")
+            raise Exception("API rate limit reached. Please try again in a minute.")
         if ohlc_response.status_code != 200:
             logger.error(f"Failed to fetch OHLC data: {ohlc_response.text}")
-            return None
+            raise Exception(f"Unable to fetch price data for {token_symbol}. Please try again.")
 
         ohlc_data = ohlc_response.json()
         if not isinstance(ohlc_data, list):
             logger.error(f"Invalid OHLC data format: {ohlc_data}")
-            return None
+            raise Exception(f"Invalid price data received for {token_symbol}.")
 
         # Get market data
         market_url = f"{COINGECKO_API_URL}/coins/{token_id}"
@@ -54,49 +62,60 @@ def get_token_data(token_symbol: str) -> Optional[Dict[str, Any]]:
         }
 
         market_response = requests.get(market_url, params=market_params)
+        if market_response.status_code == 429:
+            logger.error("Rate limit exceeded for CoinGecko API")
+            raise Exception("API rate limit reached. Please try again in a minute.")
         if market_response.status_code != 200:
             logger.error(f"Failed to fetch market data: {market_response.text}")
-            return None
+            raise Exception(f"Unable to fetch market data for {token_symbol}. Please try again.")
 
         market_data = market_response.json()
         if not market_data.get("market_data"):
             logger.error("Market data not found in response")
-            return None
+            raise Exception(f"Market data unavailable for {token_symbol}.")
 
-        # Ensure we have exactly 90 days of data
+        # Process historical data with validation
         historical_data = []
         current_date = start_date
         day_index = 0
 
         while current_date <= end_date and day_index < len(ohlc_data):
-            timestamp, open_price, high, low, close = ohlc_data[day_index]
-            data_date = datetime.fromtimestamp(timestamp/1000)
+            try:
+                timestamp, open_price, high, low, close = ohlc_data[day_index]
+                data_date = datetime.fromtimestamp(timestamp/1000)
 
-            if data_date.date() == current_date.date():
-                if all(isinstance(x, (int, float)) for x in [open_price, high, low, close]):
-                    historical_data.append({
-                        'time': data_date.strftime("%Y-%m-%d"),
-                        'open': float(open_price),
-                        'high': float(high),
-                        'low': float(low),
-                        'close': float(close)
-                    })
-                current_date += timedelta(days=1)
+                if data_date.date() == current_date.date():
+                    if all(isinstance(x, (int, float)) for x in [open_price, high, low, close]):
+                        historical_data.append({
+                            'time': data_date.strftime("%Y-%m-%d"),
+                            'open': float(open_price),
+                            'high': float(high),
+                            'low': float(low),
+                            'close': float(close)
+                        })
+                    current_date += timedelta(days=1)
+                    day_index += 1
+                elif data_date.date() > current_date.date():
+                    # Fill missing data with previous day's close
+                    if historical_data:
+                        previous_close = float(historical_data[-1]['close'])
+                        historical_data.append({
+                            'time': current_date.strftime("%Y-%m-%d"),
+                            'open': previous_close,
+                            'high': previous_close,
+                            'low': previous_close,
+                            'close': previous_close
+                        })
+                    current_date += timedelta(days=1)
+                else:
+                    day_index += 1
+            except (ValueError, IndexError) as e:
+                logger.error(f"Error processing historical data point: {str(e)}")
                 day_index += 1
-            elif data_date.date() > current_date.date():
-                # Fill missing data with previous day's close
-                if historical_data:
-                    previous_close = float(historical_data[-1]['close'])
-                    historical_data.append({
-                        'time': current_date.strftime("%Y-%m-%d"),
-                        'open': previous_close,
-                        'high': previous_close,
-                        'low': previous_close,
-                        'close': previous_close
-                    })
-                current_date += timedelta(days=1)
-            else:
-                day_index += 1
+                continue
+
+        if not historical_data:
+            raise Exception(f"No valid historical data available for {token_symbol}.")
 
         # Calculate ranges from OHLC data with null checks
         def get_range_from_ohlc(data_slice):
@@ -148,6 +167,9 @@ def get_token_data(token_symbol: str) -> Optional[Dict[str, Any]]:
             "historical_data": historical_data
         }
 
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Network error: {str(e)}")
+        raise Exception("Network error occurred. Please check your connection and try again.")
     except Exception as e:
-        logger.error(f"Error fetching token data: {str(e)}", exc_info=True)
-        return None
+        logger.error(f"Error fetching token data: {str(e)}")
+        raise
