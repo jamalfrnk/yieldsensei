@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, login_required
 from models import db, User
@@ -210,6 +210,60 @@ def create_app():
             )
         except Exception as e:
             logger.error(f"Dashboard error: {str(e)}")
+            return render_template('error.html', error=str(e)), 500
+
+    @app.route('/search')
+    @login_required
+    @limiter.limit("100 per hour")
+    def search():
+        try:
+            token = request.args.get('token', '').lower()
+            if not token:
+                return redirect(url_for('dashboard'))
+
+            # For now, return placeholder data - we'll integrate real data fetching later
+            return render_template('dashboard.html',
+                token_symbol=token.upper(),
+                price=0.0,
+                price_change=0.0,
+                signal_strength=50.0,
+                signal_description="Loading analysis...",
+                rsi=50.0,
+                trend_direction='Analyzing ⚖️',
+                price_ranges={
+                    'day': {'high': 0.0, 'low': 0.0},
+                    'week': {'high': 0.0, 'low': 0.0},
+                    'month': {'high': 0.0, 'low': 0.0},
+                    'quarter': {'high': 0.0, 'low': 0.0},
+                    'year': {'high': 0.0, 'low': 0.0}
+                },
+                predictions={
+                    'next_day': {
+                        'rf_prediction': 0.0,
+                        'prophet_prediction': 0.0,
+                        'upper_bound': 0.0,
+                        'lower_bound': 0.0
+                    },
+                    'forecast': {
+                        'dates': [],
+                        'values': [],
+                        'lower_bounds': [],
+                        'upper_bounds': []
+                    }
+                },
+                confidence_score=50.0,
+                historical_data=[],
+                support_1=0.0,
+                support_2=0.0,
+                resistance_1=0.0,
+                resistance_2=0.0,
+                optimal_entry=0.0,
+                stop_loss=0.0,
+                optimal_exit=0.0,
+                dca_recommendation=f"Analysis for {token.upper()} is loading..."
+            )
+        except Exception as e:
+            logger.error(f"Search error: {str(e)}")
             return render_template('error.html', error=str(e)), 500
 
     # Error handlers
