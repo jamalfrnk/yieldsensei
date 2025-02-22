@@ -267,17 +267,17 @@ def create_app():
                 # Get technical analysis data with proper await
                 analysis_data = await get_signal_analysis(token)
 
-                # Structure technical indicators data
+                # Extract RSI and other technical indicators from analysis_data
                 technical_indicators = {
                     'rsi': {
-                        'value': analysis_data['rsi'],
-                        'trend': 'Bullish' if analysis_data['rsi'] > 50 else 'Bearish',
-                        'strength': abs(analysis_data['rsi'] - 50) / 50
+                        'value': analysis_data.get('technical_indicators', {}).get('rsi', {}).get('value', 50.0),
+                        'trend': analysis_data.get('technical_indicators', {}).get('rsi', {}).get('trend', 'Neutral'),
+                        'strength': analysis_data.get('technical_indicators', {}).get('rsi', {}).get('strength', 0.5)
                     },
                     'macd': {
-                        'signal': analysis_data.get('macd_signal', 'Neutral'),
-                        'crossover': analysis_data.get('macd_crossover', 'None'),
-                        'trend_strength': analysis_data.get('macd_trend_strength', 0.5)
+                        'signal': analysis_data.get('technical_indicators', {}).get('macd', {}).get('signal', 'Neutral'),
+                        'crossover': analysis_data.get('technical_indicators', {}).get('macd', {}).get('crossover', 'None'),
+                        'trend_strength': analysis_data.get('technical_indicators', {}).get('macd', {}).get('trend_strength', 0.5)
                     }
                 }
 
@@ -285,10 +285,10 @@ def create_app():
                     token_symbol=token_data["token_symbol"],
                     price=token_data["price"],
                     price_change=token_data["price_change"],
-                    signal_strength=analysis_data['signal_strength'],
-                    signal_description=analysis_data['signal'],
+                    signal_strength=analysis_data.get('signal_strength', 50.0),
+                    signal_description=analysis_data.get('signal', 'Neutral'),
                     technical_indicators=technical_indicators,
-                    trend_direction=analysis_data['trend_direction'],
+                    trend_direction=analysis_data.get('trend_direction', 'Neutral ⚖️'),
                     fibonacci_levels=analysis_data.get('fibonacci_levels'),
                     price_ranges=token_data["price_ranges"],
                     ml_predictions=analysis_data.get('ml_predictions', {

@@ -228,25 +228,27 @@ async def get_signal_analysis(token_id: str):
             signal_strength=signal_strength
         )
 
+        # Structure technical indicators data
+        technical_indicators = {
+            'rsi': {
+                'value': current_rsi,
+                'trend': rsi_trend,
+                'strength': rsi_strength
+            },
+            'macd': {
+                'signal': "Bullish 📈" if is_macd_bullish else "Bearish 📉",
+                'crossover': macd_crossover,
+                'trend_strength': macd_trend_strength
+            }
+        }
+
         # Build comprehensive response
         result = {
             'signal': get_signal_type(signal_strength),
             'signal_strength': abs(signal_strength),
             'trend_direction': "Bullish 📈" if signal_strength > 0 else "Bearish 📉" if signal_strength < 0 else "Neutral ⚖️",
             'current_price': current_price,
-            'technical_indicators': {
-                'rsi': {
-                    'value': current_rsi,
-                    'trend': rsi_trend,
-                    'strength': rsi_strength
-                },
-                'macd': {
-                    'signal': "Bullish 📈" if is_macd_bullish else "Bearish 📉",
-                    'strength': macd_strength,
-                    'crossover': macd_crossover,
-                    'trend_strength': macd_trend_strength
-                }
-            },
+            'technical_indicators': technical_indicators,
             'fibonacci_levels': fib_levels,
             'price_levels': levels,
             'trading_levels': optimal_levels
