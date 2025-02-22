@@ -22,16 +22,15 @@ def get_token_data(token_symbol: str) -> Optional[Dict[str, Any]]:
 
         token_id = search_data["coins"][0]["id"]
 
-        # Get detailed token data with market data and sparkline - now 90 days
-        price_url = f"{COINGECKO_API_URL}/coins/{token_id}/market_chart"
+        # Get detailed token data with market data and sparkline - now 90 days with OHLC
+        price_url = f"{COINGECKO_API_URL}/coins/{token_id}/ohlc"
         params = {
             "vs_currency": "usd",
-            "days": "90",  # Changed from 30 to 90 days
-            "interval": "daily"
+            "days": "90"  # 90 days of OHLC data
         }
 
         response = requests.get(price_url, params=params)
-        chart_data = response.json()
+        ohlc_data = response.json()
 
         # Get current price and other market data
         price_url = f"{COINGECKO_API_URL}/coins/{token_id}"
@@ -52,16 +51,28 @@ def get_token_data(token_symbol: str) -> Optional[Dict[str, Any]]:
 
         market_data = data["market_data"]
 
-        # Format historical data for Chart.js - full 90 days
+        # Format OHLC data for Chart.js
         historical_data = []
-        if "prices" in chart_data:
+        if ohlc_data:
             historical_data = [
-                [
-                    datetime.fromtimestamp(timestamp/1000).strftime("%Y-%m-%d"),
-                    price
-                ]
-                for timestamp, price in chart_data["prices"]
+                {
+                    'time': datetime.fromtimestamp(timestamp/1000).strftime("%Y-%m-%d"),
+                    'open': open_price,
+                    'high': high,
+                    'low': low,
+                    'close': close
+                }
+                for timestamp, open_price, high, low, close in ohlc_data
             ]
+
+        # Calculate price ranges from OHLC data
+        def get_range_from_ohlc(data_slice):
+            if not data_slice:
+                return {'high': market_data['high_24h']['usd'], 'low': market_data['low_24h']['usd']}
+            return {
+                'high': max(point['high'] for point in data_slice),
+                'low': min(point['low'] for point in data_slice)
+            }
 
         return {
             "token_symbol": data["symbol"].upper(),
@@ -76,18 +87,9 @@ def get_token_data(token_symbol: str) -> Optional[Dict[str, Any]]:
                     "high": market_data["high_24h"]["usd"],
                     "low": market_data["low_24h"]["usd"]
                 },
-                "week": {
-                    "high": max(price for _, price in historical_data[-7:]) if historical_data else market_data["high_24h"]["usd"],
-                    "low": min(price for _, price in historical_data[-7:]) if historical_data else market_data["low_24h"]["usd"]
-                },
-                "month": {
-                    "high": max(price for _, price in historical_data[-30:]) if historical_data else market_data["high_24h"]["usd"],
-                    "low": min(price for _, price in historical_data[-30:]) if historical_data else market_data["low_24h"]["usd"]
-                },
-                "quarter": {
-                    "high": max(price for _, price in historical_data) if historical_data else market_data["ath"]["usd"],
-                    "low": min(price for _, price in historical_data) if historical_data else market_data["atl"]["usd"]
-                },
+                "week": get_range_from_ohlc(historical_data[-7:]),
+                "month": get_range_from_ohlc(historical_data[-30:]),
+                "quarter": get_range_from_ohlc(historical_data),
                 "year": {
                     "high": market_data["ath"]["usd"],
                     "low": market_data["atl"]["usd"]

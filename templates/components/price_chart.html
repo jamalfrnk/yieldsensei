@@ -6,6 +6,7 @@
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial@0.1.1/dist/chartjs-chart-financial.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const priceCtx = document.getElementById('priceChart').getContext('2d');
@@ -17,30 +18,34 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
 
-    // Prepare historical data with better date formatting
-    const labels = historicalData.map(d => {
-        const date = new Date(d[0]);
-        return date.toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric'
-        });
-    });
-    const prices = historicalData.map(d => d[1]);
+    // Prepare candlestick data
+    const candlestickData = historicalData.map(d => ({
+        x: new Date(d.time),
+        o: d.open,
+        h: d.high,
+        l: d.low,
+        c: d.close
+    }));
 
-    // Create the price chart with enhanced configuration
+    // Create the candlestick chart with enhanced configuration
     window.priceChart = new Chart(priceCtx, {
-        type: 'line',
+        type: 'candlestick',
         data: {
-            labels: labels,
             datasets: [{
                 label: '90-Day Price History',
-                data: prices,
-                borderColor: 'rgb(249, 115, 22)',
-                backgroundColor: 'rgba(249, 115, 22, 0.1)',
-                tension: 0.4,
-                fill: true,
-                pointRadius: 0, // Hide points for cleaner look with many data points
-                pointHitRadius: 10 // Keep hover detection
+                data: candlestickData,
+                color: {
+                    up: '#10B981',   // Green for up candles
+                    down: '#EF4444', // Red for down candles
+                },
+                borderColor: {
+                    up: '#10B981',
+                    down: '#EF4444',
+                },
+                backgroundColor: {
+                    up: 'rgba(16, 185, 129, 0.1)',    // Transparent green
+                    down: 'rgba(239, 68, 68, 0.1)',    // Transparent red
+                }
             }]
         },
         options: {
@@ -51,8 +56,29 @@ document.addEventListener('DOMContentLoaded', function() {
                 mode: 'index'
             },
             scales: {
+                x: {
+                    type: 'time',
+                    time: {
+                        unit: 'day',
+                        displayFormats: {
+                            day: 'MMM d'
+                        }
+                    },
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)',
+                        drawBorder: false,
+                        display: false
+                    },
+                    ticks: {
+                        color: '#FFF',
+                        maxRotation: 45,
+                        minRotation: 45,
+                        autoSkip: true,
+                        maxTicksLimit: 12
+                    }
+                },
                 y: {
-                    beginAtZero: false,
+                    position: 'right',
                     grid: {
                         color: 'rgba(255, 255, 255, 0.1)',
                         drawBorder: false
@@ -60,22 +86,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     ticks: {
                         color: '#FFF',
                         callback: function(value) {
-                            return '$' + value.toLocaleString();
+                            return '$' + value.toLocaleString(undefined, {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2
+                            });
                         }
-                    }
-                },
-                x: {
-                    grid: {
-                        color: 'rgba(255, 255, 255, 0.1)',
-                        drawBorder: false,
-                        display: false // Hide vertical grid lines for cleaner look
-                    },
-                    ticks: {
-                        color: '#FFF',
-                        maxRotation: 45,
-                        minRotation: 45,
-                        autoSkip: true,
-                        maxTicksLimit: 12 // Show approximately one tick per week
                     }
                 }
             },
@@ -94,18 +109,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     titleColor: '#F97316',
                     bodyColor: '#FFFFFF',
                     padding: 12,
-                    displayColors: true,
                     callbacks: {
                         label: function(context) {
-                            let label = context.dataset.label || '';
-                            if (label) {
-                                label += ': ';
-                            }
-                            label += '$' + context.parsed.y.toLocaleString(undefined, {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2
-                            });
-                            return label;
+                            const data = context.raw;
+                            return [
+                                `Open: $${data.o.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+                                `High: $${data.h.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+                                `Low: $${data.l.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+                                `Close: $${data.c.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                            ];
                         }
                     }
                 }
