@@ -1,18 +1,15 @@
 import aiohttp
 import asyncio
-from config import get_config
+from config import COINGECKO_BASE_URL, ERROR_INVALID_TOKEN
 import logging
 import os
 
 # Configure logging
 logger = logging.getLogger(__name__)
 
-# Get configuration
-config = get_config()
-
 # Get API key from environment
 COINGECKO_API_KEY = os.environ.get('COINGECKO_API_KEY')
-BASE_URL = "https://pro-api.coingecko.com/api/v3" if COINGECKO_API_KEY else config.COINGECKO_BASE_URL
+BASE_URL = "https://pro-api.coingecko.com/api/v3" if COINGECKO_API_KEY else COINGECKO_BASE_URL
 
 async def retry_with_backoff(func, *args, max_retries=3):
     """Retry a function with exponential backoff."""
@@ -45,7 +42,7 @@ async def get_token_price(input_token: str):
                 async with session.get(url, params=params, headers=headers) as response:
                     if response.status == 404:
                         logger.error(f"Token not found: {token_id}")
-                        raise ValueError(config.ERROR_INVALID_TOKEN)
+                        raise ValueError(ERROR_INVALID_TOKEN)
                     elif response.status == 429:
                         logger.error("Rate limit exceeded")
                         raise Exception("Rate limit exceeded. Please try again later.")
@@ -59,11 +56,11 @@ async def get_token_price(input_token: str):
                     if isinstance(data, dict) and 'status' in data and 'error_code' in data['status']:
                         if data['status']['error_code'] == 429:
                             raise Exception("Rate limit exceeded")
-                        raise ValueError(data['status'].get('error_message', config.ERROR_INVALID_TOKEN))
+                        raise ValueError(data['status'].get('error_message', ERROR_INVALID_TOKEN))
 
                     if token_id not in data:
                         logger.error(f"Token {token_id} not in response data")
-                        raise ValueError(config.ERROR_INVALID_TOKEN)
+                        raise ValueError(ERROR_INVALID_TOKEN)
 
                     return {
                         "usd": data[token_id]["usd"],
@@ -73,6 +70,7 @@ async def get_token_price(input_token: str):
                 logger.error(f"API request failed: {str(e)}")
                 raise Exception(f"Failed to fetch price data: {str(e)}")
 
+    # Normalize token ID and apply mapping
     token_id = input_token.lower().strip()
     token_map = {
         'btc': 'bitcoin',
@@ -114,7 +112,7 @@ async def get_token_market_data(input_token: str):
                 async with session.get(url, params=params, headers=headers) as response:
                     if response.status == 404:
                         logger.error(f"Token not found: {token_id}")
-                        raise ValueError(config.ERROR_INVALID_TOKEN)
+                        raise ValueError(ERROR_INVALID_TOKEN)
                     elif response.status == 429:
                         logger.error("Rate limit exceeded")
                         raise Exception("Rate limit exceeded")
@@ -128,7 +126,7 @@ async def get_token_market_data(input_token: str):
                     if isinstance(data, dict) and 'status' in data and 'error_code' in data['status']:
                         if data['status']['error_code'] == 429:
                             raise Exception("Rate limit exceeded")
-                        raise ValueError(data['status'].get('error_message', config.ERROR_INVALID_TOKEN))
+                        raise ValueError(data['status'].get('error_message', ERROR_INVALID_TOKEN))
 
                     market_data = data["market_data"]
 
@@ -143,7 +141,7 @@ async def get_token_market_data(input_token: str):
                 async with session.get(history_url, params=history_params, headers=headers) as history_response:
                     if history_response.status == 404:
                         logger.error(f"Historical data not found for token: {token_id}")
-                        raise ValueError(config.ERROR_INVALID_TOKEN)
+                        raise ValueError(ERROR_INVALID_TOKEN)
                     elif history_response.status == 429:
                         logger.error("Rate limit exceeded")
                         raise Exception("Rate limit exceeded")
@@ -171,6 +169,7 @@ async def get_token_market_data(input_token: str):
                 logger.error(f"Invalid market data format: {str(e)}")
                 raise Exception(f"Invalid market data format: {str(e)}")
 
+    # Normalize token ID and apply mapping
     token_id = input_token.lower().strip()
     token_map = {
         'btc': 'bitcoin',
