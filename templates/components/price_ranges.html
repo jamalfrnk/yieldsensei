@@ -1,11 +1,117 @@
 <!-- ML Predictions and Price Analysis -->
 <div class="bg-gray-900 rounded-lg p-6">
     <div class="flex items-center mb-4">
-        <h2 class="text-xl font-bold text-orange-500">Price Analysis & Predictions</h2>
+        <h2 class="text-xl font-bold text-orange-500">Comprehensive Price Analysis</h2>
         <div class="ml-2 group relative">
             <span class="cursor-help text-orange-500">ⓘ</span>
             <div class="opacity-0 bg-black text-white text-sm rounded-lg py-2 px-3 absolute z-10 bottom-full mb-2 -left-1/2 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 w-64">
-                Comprehensive price analysis combining historical data, technical indicators, and AI-powered predictions to help inform trading decisions.
+                Comprehensive analysis combining historical data, technical indicators, Fibonacci levels, and AI-powered predictions.
+            </div>
+        </div>
+    </div>
+
+    <!-- Technical Indicators -->
+    <div class="mb-6">
+        <div class="flex items-center mb-3">
+            <h3 class="text-orange-500 font-semibold">Technical Indicators</h3>
+            <div class="ml-2 group relative">
+                <span class="cursor-help text-orange-500">ⓘ</span>
+                <div class="opacity-0 bg-black text-white text-sm rounded-lg py-2 px-3 absolute z-10 bottom-full mb-2 -left-1/2 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 w-64">
+                    Key technical indicators including RSI, MACD, and trend analysis.
+                </div>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- RSI Analysis -->
+            <div class="bg-black bg-opacity-50 p-4 rounded">
+                <h4 class="text-orange-500 font-semibold mb-2">RSI Analysis</h4>
+                <p class="text-sm">Value: {{ '{:,.1f}'.format(technical_indicators.rsi.value) }}</p>
+                <p class="text-sm">Trend: {{ technical_indicators.rsi.trend }}</p>
+                <p class="text-sm">Strength: {{ '{:,.1f}%'.format(technical_indicators.rsi.strength * 100) }}</p>
+            </div>
+
+            <!-- MACD Analysis -->
+            <div class="bg-black bg-opacity-50 p-4 rounded">
+                <h4 class="text-orange-500 font-semibold mb-2">MACD Analysis</h4>
+                <p class="text-sm">Signal: {{ technical_indicators.macd.signal }}</p>
+                <p class="text-sm">Crossover: {{ technical_indicators.macd.crossover }}</p>
+                <p class="text-sm">Strength: {{ '{:,.1f}%'.format(technical_indicators.macd.trend_strength * 100) }}</p>
+            </div>
+
+            <!-- Overall Trend -->
+            <div class="bg-black bg-opacity-50 p-4 rounded">
+                <h4 class="text-orange-500 font-semibold mb-2">Overall Trend</h4>
+                <p class="text-sm">Direction: {{ trend_direction }}</p>
+                <p class="text-sm">Signal: {{ signal }}</p>
+                <p class="text-sm">Strength: {{ '{:,.1f}%'.format(signal_strength) }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fibonacci Levels -->
+    <div class="mb-6">
+        <div class="flex items-center mb-3">
+            <h3 class="text-orange-500 font-semibold">Fibonacci Levels</h3>
+            <div class="ml-2 group relative">
+                <span class="cursor-help text-orange-500">ⓘ</span>
+                <div class="opacity-0 bg-black text-white text-sm rounded-lg py-2 px-3 absolute z-10 bottom-full mb-2 -left-1/2 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 w-64">
+                    Fibonacci retracement and extension levels for identifying potential support and resistance zones.
+                </div>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% if fibonacci_levels %}
+            {% for level_name, level_value in fibonacci_levels.levels.items() %}
+            <div class="bg-black bg-opacity-50 p-4 rounded">
+                <h4 class="text-orange-500 font-semibold mb-2">{{ level_name }}</h4>
+                <p class="text-sm">${{ '{:,.2f}'.format(level_value) }}</p>
+                {% if fibonacci_levels.current_position == level_name %}
+                <p class="text-sm text-orange-500">Current Level</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="col-span-3 text-center p-4">
+                <p class="text-gray-400">Fibonacci levels not available</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Support & Resistance Levels -->
+    <div class="mb-6">
+        <div class="flex items-center mb-3">
+            <h3 class="text-orange-500 font-semibold">Price Levels</h3>
+            <div class="ml-2 group relative">
+                <span class="cursor-help text-orange-500">ⓘ</span>
+                <div class="opacity-0 bg-black text-white text-sm rounded-lg py-2 px-3 absolute z-10 bottom-full mb-2 -left-1/2 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 w-64">
+                    Key support and resistance levels derived from price action and technical analysis.
+                </div>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Support Level 1 -->
+            <div class="bg-black bg-opacity-50 p-4 rounded">
+                <h4 class="text-orange-500 font-semibold mb-2">Support 1</h4>
+                <p class="text-sm">${{ '{:,.2f}'.format(price_levels.support_1) }}</p>
+            </div>
+
+            <!-- Support Level 2 -->
+            <div class="bg-black bg-opacity-50 p-4 rounded">
+                <h4 class="text-orange-500 font-semibold mb-2">Support 2</h4>
+                <p class="text-sm">${{ '{:,.2f}'.format(price_levels.support_2) }}</p>
+            </div>
+
+            <!-- Resistance Level 1 -->
+            <div class="bg-black bg-opacity-50 p-4 rounded">
+                <h4 class="text-orange-500 font-semibold mb-2">Resistance 1</h4>
+                <p class="text-sm">${{ '{:,.2f}'.format(price_levels.resistance_1) }}</p>
+            </div>
+
+            <!-- Resistance Level 2 -->
+            <div class="bg-black bg-opacity-50 p-4 rounded">
+                <h4 class="text-orange-500 font-semibold mb-2">Resistance 2</h4>
+                <p class="text-sm">${{ '{:,.2f}'.format(price_levels.resistance_2) }}</p>
             </div>
         </div>
     </div>
@@ -60,64 +166,44 @@
     </div>
 
     <!-- ML Predictions Section -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {% if predictions and predictions.next_day %}
-        <div class="bg-black bg-opacity-50 p-4 rounded">
-            <div class="flex items-center mb-2">
-                <h3 class="text-orange-500 font-semibold">Next Day Prediction</h3>
-                <div class="ml-2 group relative">
-                    <span class="cursor-help text-orange-500">ⓘ</span>
-                    <div class="opacity-0 bg-black text-white text-sm rounded-lg py-2 px-3 absolute z-10 bottom-full mb-2 -left-1/2 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 w-64">
-                        Price predictions for the next 24 hours using both machine learning models (RF) and Facebook Prophet for time series forecasting.
-                    </div>
+    <div class="mb-6">
+        <div class="flex items-center mb-3">
+            <h3 class="text-orange-500 font-semibold">AI Predictions</h3>
+            <div class="ml-2 group relative">
+                <span class="cursor-help text-orange-500">ⓘ</span>
+                <div class="opacity-0 bg-black text-white text-sm rounded-lg py-2 px-3 absolute z-10 bottom-full mb-2 -left-1/2 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 w-64">
+                    Price predictions using advanced machine learning models and Facebook Prophet for time series forecasting.
                 </div>
             </div>
-            <p class="text-sm">ML Prediction: ${{ '{:,.2f}'.format(predictions.next_day.rf_prediction) }}</p>
-            <p class="text-sm">Prophet Prediction: ${{ '{:,.2f}'.format(predictions.next_day.prophet_prediction) }}</p>
         </div>
-        <div class="bg-black bg-opacity-50 p-4 rounded">
-            <div class="flex items-center mb-2">
-                <h3 class="text-orange-500 font-semibold">Confidence Range</h3>
-                <div class="ml-2 group relative">
-                    <span class="cursor-help text-orange-500">ⓘ</span>
-                    <div class="opacity-0 bg-black text-white text-sm rounded-lg py-2 px-3 absolute z-10 bottom-full mb-2 -left-1/2 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 w-64">
-                        Expected price range for the next 24 hours. The wider the range, the higher the uncertainty in the prediction.
-                    </div>
-                </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {% if ml_predictions and ml_predictions.next_day %}
+            <div class="bg-black bg-opacity-50 p-4 rounded">
+                <h4 class="text-orange-500 font-semibold mb-2">ML Model Prediction</h4>
+                <p class="text-sm">Random Forest: ${{ '{:,.2f}'.format(ml_predictions.next_day.rf_prediction) }}</p>
+                <p class="text-sm">Prophet: ${{ '{:,.2f}'.format(ml_predictions.next_day.prophet_prediction) }}</p>
             </div>
-            <p class="text-sm">Upper: ${{ '{:,.2f}'.format(predictions.next_day.upper_bound) }}</p>
-            <p class="text-sm">Lower: ${{ '{:,.2f}'.format(predictions.next_day.lower_bound) }}</p>
-        </div>
-        <div class="bg-black bg-opacity-50 p-4 rounded">
-            <div class="flex items-center mb-2">
-                <h3 class="text-orange-500 font-semibold">Prediction Confidence</h3>
-                <div class="ml-2 group relative">
-                    <span class="cursor-help text-orange-500">ⓘ</span>
-                    <div class="opacity-0 bg-black text-white text-sm rounded-lg py-2 px-3 absolute z-10 bottom-full mb-2 -left-1/2 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 w-64">
-                        Confidence score indicates how reliable the predictions are, based on model agreement and historical accuracy. Higher scores suggest more reliable predictions.
-                    </div>
-                </div>
+            <div class="bg-black bg-opacity-50 p-4 rounded">
+                <h4 class="text-orange-500 font-semibold mb-2">Combined Prediction</h4>
+                <p class="text-sm">Price: ${{ '{:,.2f}'.format(ml_predictions.next_day.combined_prediction) }}</p>
+                <p class="text-sm">Confidence: {{ '{:,.1f}%'.format(confidence_score) }}</p>
             </div>
-            <p class="text-sm">Score: {{ '{:,.1f}'.format(confidence_score) }}%</p>
-            <p class="text-sm text-gray-400">Based on model agreement and range</p>
-        </div>
-        <div class="bg-black bg-opacity-50 p-4 rounded">
-            <div class="flex items-center mb-2">
-                <h3 class="text-orange-500 font-semibold">Current Analysis</h3>
-                <div class="ml-2 group relative">
-                    <span class="cursor-help text-orange-500">ⓘ</span>
-                    <div class="opacity-0 bg-black text-white text-sm rounded-lg py-2 px-3 absolute z-10 bottom-full mb-2 -left-1/2 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 w-64">
-                        Technical indicators showing current market strength. Signal Strength above 60% suggests strong trend, while RSI helps identify overbought/oversold conditions.
-                    </div>
-                </div>
+            <div class="bg-black bg-opacity-50 p-4 rounded">
+                <h4 class="text-orange-500 font-semibold mb-2">Prediction Range</h4>
+                <p class="text-sm">Upper: ${{ '{:,.2f}'.format(ml_predictions.next_day.upper_bound) }}</p>
+                <p class="text-sm">Lower: ${{ '{:,.2f}'.format(ml_predictions.next_day.lower_bound) }}</p>
             </div>
-            <p class="text-sm">Signal Strength: {{ '{:,.1f}'.format(signal_strength) }}%</p>
-            <p class="text-sm">RSI: {{ '{:,.1f}'.format(rsi) }}</p>
+            <div class="bg-black bg-opacity-50 p-4 rounded">
+                <h4 class="text-orange-500 font-semibold mb-2">Optimal Trading Levels</h4>
+                <p class="text-sm">Entry: ${{ '{:,.2f}'.format(trading_levels.optimal_entry) }}</p>
+                <p class="text-sm">Exit: ${{ '{:,.2f}'.format(trading_levels.optimal_exit) }}</p>
+                <p class="text-sm">Stop Loss: ${{ '{:,.2f}'.format(trading_levels.stop_loss) }}</p>
+            </div>
+            {% else %}
+            <div class="col-span-4 text-center p-4">
+                <p class="text-gray-400">Enter a token symbol to view price predictions and analysis</p>
+            </div>
+            {% endif %}
         </div>
-        {% else %}
-        <div class="col-span-4 text-center p-4">
-            <p class="text-gray-400">Enter a token symbol to view price predictions and analysis</p>
-        </div>
-        {% endif %}
     </div>
 </div>
