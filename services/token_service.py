@@ -22,12 +22,11 @@ def get_token_data(token_symbol: str) -> Optional[Dict[str, Any]]:
 
         token_id = search_data["coins"][0]["id"]
 
-        # Get detailed token data with market data and sparkline
+        # Get detailed token data with market data and sparkline - now 90 days
         price_url = f"{COINGECKO_API_URL}/coins/{token_id}/market_chart"
-        current_time = datetime.now()
         params = {
             "vs_currency": "usd",
-            "days": "30",
+            "days": "90",  # Changed from 30 to 90 days
             "interval": "daily"
         }
 
@@ -53,7 +52,7 @@ def get_token_data(token_symbol: str) -> Optional[Dict[str, Any]]:
 
         market_data = data["market_data"]
 
-        # Format historical data for Chart.js
+        # Format historical data for Chart.js - full 90 days
         historical_data = []
         if "prices" in chart_data:
             historical_data = [
@@ -82,12 +81,12 @@ def get_token_data(token_symbol: str) -> Optional[Dict[str, Any]]:
                     "low": min(price for _, price in historical_data[-7:]) if historical_data else market_data["low_24h"]["usd"]
                 },
                 "month": {
-                    "high": max(price for _, price in historical_data) if historical_data else market_data["high_24h"]["usd"],
-                    "low": min(price for _, price in historical_data) if historical_data else market_data["low_24h"]["usd"]
+                    "high": max(price for _, price in historical_data[-30:]) if historical_data else market_data["high_24h"]["usd"],
+                    "low": min(price for _, price in historical_data[-30:]) if historical_data else market_data["low_24h"]["usd"]
                 },
                 "quarter": {
-                    "high": market_data["ath"]["usd"],
-                    "low": market_data["atl"]["usd"]
+                    "high": max(price for _, price in historical_data) if historical_data else market_data["ath"]["usd"],
+                    "low": min(price for _, price in historical_data) if historical_data else market_data["atl"]["usd"]
                 },
                 "year": {
                     "high": market_data["ath"]["usd"],

@@ -1,6 +1,6 @@
 <!-- Price Chart -->
 <div class="bg-gray-900 rounded-lg p-4">
-    <h2 class="text-xl font-bold text-orange-500 mb-4">Price History & Predictions</h2>
+    <h2 class="text-xl font-bold text-orange-500 mb-4">90-Day Price History</h2>
     <div class="relative" style="height: 400px;">
         <canvas id="priceChart"></canvas>
     </div>
@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
 
-    // Prepare historical data
+    // Prepare historical data with better date formatting
     const labels = historicalData.map(d => {
         const date = new Date(d[0]);
         return date.toLocaleDateString('en-US', {
@@ -27,18 +27,20 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     const prices = historicalData.map(d => d[1]);
 
-    // Create the price chart
+    // Create the price chart with enhanced configuration
     window.priceChart = new Chart(priceCtx, {
         type: 'line',
         data: {
             labels: labels,
             datasets: [{
-                label: 'Historical Price',
+                label: '90-Day Price History',
                 data: prices,
                 borderColor: 'rgb(249, 115, 22)',
                 backgroundColor: 'rgba(249, 115, 22, 0.1)',
                 tension: 0.4,
-                fill: true
+                fill: true,
+                pointRadius: 0, // Hide points for cleaner look with many data points
+                pointHitRadius: 10 // Keep hover detection
             }]
         },
         options: {
@@ -52,7 +54,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 y: {
                     beginAtZero: false,
                     grid: {
-                        color: 'rgba(255, 255, 255, 0.1)'
+                        color: 'rgba(255, 255, 255, 0.1)',
+                        drawBorder: false
                     },
                     ticks: {
                         color: '#FFF',
@@ -63,12 +66,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 },
                 x: {
                     grid: {
-                        color: 'rgba(255, 255, 255, 0.1)'
+                        color: 'rgba(255, 255, 255, 0.1)',
+                        drawBorder: false,
+                        display: false // Hide vertical grid lines for cleaner look
                     },
                     ticks: {
                         color: '#FFF',
                         maxRotation: 45,
-                        minRotation: 45
+                        minRotation: 45,
+                        autoSkip: true,
+                        maxTicksLimit: 12 // Show approximately one tick per week
                     }
                 }
             },
@@ -76,7 +83,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 legend: {
                     display: true,
                     labels: {
-                        color: '#FFF'
+                        color: '#FFF',
+                        font: {
+                            size: 12
+                        }
                     }
                 },
                 tooltip: {
@@ -91,7 +101,10 @@ document.addEventListener('DOMContentLoaded', function() {
                             if (label) {
                                 label += ': ';
                             }
-                            label += '$' + context.parsed.y.toLocaleString();
+                            label += '$' + context.parsed.y.toLocaleString(undefined, {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2
+                            });
                             return label;
                         }
                     }
