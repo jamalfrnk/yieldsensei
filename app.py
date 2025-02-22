@@ -15,6 +15,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from models import db, User
+from auth import auth as auth_blueprint
 
 # Configure logging
 logging.basicConfig(
@@ -83,6 +84,8 @@ def create_app():
     # Initialize database
     logger.info("Initializing database")
     db.init_app(app)
+    with app.app_context():
+        db.create_all()  # Create tables if they don't exist
     logger.info("Database initialized successfully")
 
     # Initialize Flask-Login
@@ -94,6 +97,9 @@ def create_app():
     @login_manager.user_loader
     def load_user(user_id):
         return User.query.get(int(user_id))
+
+    # Register blueprints
+    app.register_blueprint(auth_blueprint)
 
     # Basic security headers
     csp = {
@@ -112,7 +118,7 @@ def create_app():
         content_security_policy=csp
     )
 
-    # Routes remain unchanged except for adding login_required where needed
+    # Routes
     @app.route('/health')
     def health_check():
         return 'OK', 200
@@ -219,7 +225,7 @@ def create_app():
     logger.info("Application configured successfully")
     return app
 
-# Default data structure remains unchanged
+# Default data structure
 DEFAULT_DATA = {
     'token_symbol': 'Enter a token',
     'price': 0.0,
@@ -257,7 +263,7 @@ if __name__ == '__main__':
         host = '0.0.0.0'
 
         logger.info(f"Starting development server on {host}:{port}")
-        app.run(host=host, port=port, debug=True)
+        app.run(host=host, port=port)
 
     except Exception as e:
         logger.error(f"Critical error during server startup: {str(e)}", exc_info=True)
