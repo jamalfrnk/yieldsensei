@@ -73,64 +73,76 @@ def get_token_data(token_symbol: str) -> Optional[Dict[str, Any]]:
             data_date = datetime.fromtimestamp(timestamp/1000)
 
             if data_date.date() == current_date.date():
-                historical_data.append({
-                    'time': data_date.strftime("%Y-%m-%d"),
-                    'open': open_price,
-                    'high': high,
-                    'low': low,
-                    'close': close
-                })
+                if all(isinstance(x, (int, float)) for x in [open_price, high, low, close]):
+                    historical_data.append({
+                        'time': data_date.strftime("%Y-%m-%d"),
+                        'open': float(open_price),
+                        'high': float(high),
+                        'low': float(low),
+                        'close': float(close)
+                    })
                 current_date += timedelta(days=1)
                 day_index += 1
             elif data_date.date() > current_date.date():
-                # Fill missing data with previous day's close or None
-                previous_close = historical_data[-1]['close'] if historical_data else None
-                historical_data.append({
-                    'time': current_date.strftime("%Y-%m-%d"),
-                    'open': previous_close,
-                    'high': previous_close,
-                    'low': previous_close,
-                    'close': previous_close
-                })
+                # Fill missing data with previous day's close
+                if historical_data:
+                    previous_close = float(historical_data[-1]['close'])
+                    historical_data.append({
+                        'time': current_date.strftime("%Y-%m-%d"),
+                        'open': previous_close,
+                        'high': previous_close,
+                        'low': previous_close,
+                        'close': previous_close
+                    })
                 current_date += timedelta(days=1)
             else:
                 day_index += 1
 
-        # Calculate ranges from OHLC data
+        # Calculate ranges from OHLC data with null checks
         def get_range_from_ohlc(data_slice):
             if not data_slice:
                 return {
-                    'high': market_data['market_data']['high_24h']['usd'],
-                    'low': market_data['market_data']['low_24h']['usd']
+                    'high': float(market_data['market_data']['high_24h']['usd']),
+                    'low': float(market_data['market_data']['low_24h']['usd'])
                 }
+
+            valid_points = [point for point in data_slice 
+                          if isinstance(point['high'], (int, float)) 
+                          and isinstance(point['low'], (int, float))]
+
+            if not valid_points:
+                return {
+                    'high': float(market_data['market_data']['high_24h']['usd']),
+                    'low': float(market_data['market_data']['low_24h']['usd'])
+                }
+
             return {
-                'high': max(point['high'] for point in data_slice),
-                'low': min(point['low'] for point in data_slice)
+                'high': max(float(point['high']) for point in valid_points),
+                'low': min(float(point['low']) for point in valid_points)
             }
 
         market_data_section = market_data["market_data"]
-
         logger.info(f"Successfully processed {len(historical_data)} days of price data for {token_symbol}")
 
         return {
             "token_symbol": market_data["symbol"].upper(),
-            "price": market_data_section["current_price"]["usd"],
-            "price_change": market_data_section["price_change_percentage_24h"],
-            "market_cap": market_data_section["market_cap"]["usd"],
-            "volume": market_data_section["total_volume"]["usd"],
-            "high_24h": market_data_section["high_24h"]["usd"],
-            "low_24h": market_data_section["low_24h"]["usd"],
+            "price": float(market_data_section["current_price"]["usd"]),
+            "price_change": float(market_data_section["price_change_percentage_24h"] or 0),
+            "market_cap": float(market_data_section["market_cap"]["usd"]),
+            "volume": float(market_data_section["total_volume"]["usd"]),
+            "high_24h": float(market_data_section["high_24h"]["usd"]),
+            "low_24h": float(market_data_section["low_24h"]["usd"]),
             "price_ranges": {
                 "day": {
-                    "high": market_data_section["high_24h"]["usd"],
-                    "low": market_data_section["low_24h"]["usd"]
+                    "high": float(market_data_section["high_24h"]["usd"]),
+                    "low": float(market_data_section["low_24h"]["usd"])
                 },
                 "week": get_range_from_ohlc(historical_data[-7:]),
                 "month": get_range_from_ohlc(historical_data[-30:]),
                 "quarter": get_range_from_ohlc(historical_data),
                 "year": {
-                    "high": market_data_section["ath"]["usd"],
-                    "low": market_data_section["atl"]["usd"]
+                    "high": float(market_data_section["ath"]["usd"]),
+                    "low": float(market_data_section["atl"]["usd"])
                 }
             },
             "historical_data": historical_data
