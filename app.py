@@ -15,7 +15,7 @@ from flask_cors import CORS
 from models import db, User
 from waitress import serve
 
-# Configure logging with more detailed format
+# Configure logging
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO,
@@ -26,11 +26,14 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Set default environment variables if not present
-os.environ['FLASK_ENV'] = os.environ.get('FLASK_ENV', 'development')
-os.environ['REDIS_URL'] = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
-
-logger.info(f"Starting application in {os.environ['FLASK_ENV']} mode")
+def run_async(coro):
+    """Utility function to run async code in sync context."""
+    try:
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+    return loop.run_until_complete(coro)
 
 def create_app():
     app = Flask(__name__)
@@ -146,8 +149,77 @@ def create_app():
             return render_template('index.html')
 
         @app.route('/dashboard')
-        async def dashboard():
-            return render_template('dashboard.html', **DEFAULT_DATA)
+        def dashboard():
+            """Dashboard route handler with price analysis."""
+            try:
+                # Get token from query params if provided
+                token = request.args.get('token', None)
+                data = DEFAULT_DATA.copy()
+
+                if token:
+                    # Fetch token price and market data
+                    try:
+                        price_data = run_async(get_token_price(token))
+                        market_data = run_async(get_token_market_data(token))
+
+                        if price_data and market_data:
+                            # Update price ranges with actual data
+                            data.update({
+                                'token_symbol': token.upper(),
+                                'price': price_data.get('usd', 0.0),
+                                'price_change': price_data.get('usd_24h_change', 0.0),
+                                'price_ranges': {
+                                    'day': {
+                                        'high': market_data.get('high_24h', 0.0),
+                                        'low': market_data.get('low_24h', 0.0)
+                                    },
+                                    'week': {
+                                        'high': market_data.get('high_7d', 0.0),
+                                        'low': market_data.get('low_7d', 0.0)
+                                    },
+                                    'month': {
+                                        'high': market_data.get('high_30d', 0.0),
+                                        'low': market_data.get('low_30d', 0.0)
+                                    },
+                                    'quarter': {
+                                        'high': market_data.get('high_90d', 0.0),
+                                        'low': market_data.get('low_90d', 0.0)
+                                    },
+                                    'year': {
+                                        'high': market_data.get('high_365d', 0.0),
+                                        'low': market_data.get('low_365d', 0.0)
+                                    }
+                                }
+                            })
+
+                            # Get additional analysis data
+                            signal_data = run_async(get_signal_analysis(token))
+                            if signal_data:
+                                data.update({
+                                    'signal_strength': signal_data.get('signal_strength', 0),
+                                    'signal_description': signal_data.get('signal', 'Neutral'),
+                                    'trend_direction': signal_data.get('trend_direction', 'Neutral ⚖️'),
+                                    'rsi': signal_data.get('rsi', 50),
+                                })
+
+                            # Get ML predictions if available
+                            try:
+                                predictions = run_async(ml_service.get_predictions(token))
+                                if predictions:
+                                    data['predictions'] = predictions
+                                    data['confidence_score'] = predictions.get('confidence', 0)
+                            except Exception as e:
+                                logger.error(f"Failed to get predictions: {str(e)}")
+
+                    except Exception as e:
+                        logger.error(f"Error fetching data: {str(e)}")
+                        return render_template('dashboard.html', error=str(e), **DEFAULT_DATA)
+
+                return render_template('dashboard.html', **data)
+
+            except Exception as e:
+                logger.error(f"Dashboard error: {str(e)}", exc_info=True)
+                return render_template('dashboard.html', error=str(e), **DEFAULT_DATA)
 
         # Add error handlers
         @app.errorhandler(500)
