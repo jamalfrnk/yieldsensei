@@ -99,7 +99,7 @@ def create_app():
                     price_levels=price_levels,
                     trading_levels=trading_levels,
                     dca_recommendation=dca_recommendation,
-                    fibonacci_levels=None  # Added missing template variable
+                    fibonacci_levels=None
                 )
             except Exception as e:
                 logger.error(f"Error rendering index: {str(e)}")
@@ -120,8 +120,9 @@ if __name__ == '__main__':
     try:
         logger.info("Creating application instance")
         app = create_app()
-        port = 3000  # Changed port to 3000
-        logger.info(f"Starting server on port {port}")
+        # Always use port 5000 as specified in .replit configuration
+        port = int(os.environ.get('PORT', 5000))
+        logger.info(f"Starting Flask server on port {port}")
         app.run(host='0.0.0.0', port=port, debug=True)
     except Exception as e:
         logger.critical(f"Failed to start server: {str(e)}", exc_info=True)

@@ -378,7 +378,7 @@ def calculate_support_resistance(prices):
         # Convert prices to numpy array and sort
         sorted_prices = np.sort(prices)
         price_range = sorted_prices[-1] - sorted_prices[0]
-        current_price = prices[-1]
+        current_price = prices[-1]  # Define current_price at the start
 
         # Dynamic clustering threshold based on price volatility
         volatility = np.std(prices) / np.mean(prices)
@@ -452,7 +452,7 @@ def calculate_support_resistance(prices):
         }
     except Exception as e:
         logger.error(f"Support/Resistance calculation error: {str(e)}")
-        # Fallback to simple percentage-based levels
+        # Use current_price which is now defined outside try block
         return {
             "support_1": current_price * 0.95,
             "support_2": current_price * 0.90,
