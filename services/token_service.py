@@ -23,7 +23,10 @@ def get_token_data(token_symbol: str) -> Optional[Dict[str, Any]]:
         token_id = search_data["coins"][0]["id"]
         logger.info(f"Found token ID: {token_id} for symbol: {token_symbol}")
 
-        # Get OHLC data
+        # Get OHLC data for exactly 90 days
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=90)
+
         ohlc_url = f"{COINGECKO_API_URL}/coins/{token_id}/ohlc"
         params = {
             "vs_currency": "usd",
@@ -60,17 +63,38 @@ def get_token_data(token_symbol: str) -> Optional[Dict[str, Any]]:
             logger.error("Market data not found in response")
             return None
 
-        # Format OHLC data for Chart.js
-        historical_data = [
-            {
-                'time': datetime.fromtimestamp(timestamp/1000).strftime("%Y-%m-%d"),
-                'open': open_price,
-                'high': high,
-                'low': low,
-                'close': close
-            }
-            for timestamp, open_price, high, low, close in ohlc_data
-        ]
+        # Ensure we have exactly 90 days of data
+        historical_data = []
+        current_date = start_date
+        day_index = 0
+
+        while current_date <= end_date and day_index < len(ohlc_data):
+            timestamp, open_price, high, low, close = ohlc_data[day_index]
+            data_date = datetime.fromtimestamp(timestamp/1000)
+
+            if data_date.date() == current_date.date():
+                historical_data.append({
+                    'time': data_date.strftime("%Y-%m-%d"),
+                    'open': open_price,
+                    'high': high,
+                    'low': low,
+                    'close': close
+                })
+                current_date += timedelta(days=1)
+                day_index += 1
+            elif data_date.date() > current_date.date():
+                # Fill missing data with previous day's close or None
+                previous_close = historical_data[-1]['close'] if historical_data else None
+                historical_data.append({
+                    'time': current_date.strftime("%Y-%m-%d"),
+                    'open': previous_close,
+                    'high': previous_close,
+                    'low': previous_close,
+                    'close': previous_close
+                })
+                current_date += timedelta(days=1)
+            else:
+                day_index += 1
 
         # Calculate ranges from OHLC data
         def get_range_from_ohlc(data_slice):
@@ -85,6 +109,8 @@ def get_token_data(token_symbol: str) -> Optional[Dict[str, Any]]:
             }
 
         market_data_section = market_data["market_data"]
+
+        logger.info(f"Successfully processed {len(historical_data)} days of price data for {token_symbol}")
 
         return {
             "token_symbol": market_data["symbol"].upper(),
