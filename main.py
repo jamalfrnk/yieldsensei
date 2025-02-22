@@ -20,7 +20,11 @@ from config import TELEGRAM_TOKEN
 # Configure logging with more detailed format
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - [%(funcName)s] %(message)s',
-    level=logging.INFO
+    level=logging.INFO,
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler('yieldsensei.log')
+    ]
 )
 logger = logging.getLogger(__name__)
 

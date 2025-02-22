@@ -39,55 +39,6 @@ Example usage:
 ⚠️ All predictions are AI-powered estimates. Always DYOR!
 """
 
-def is_contract_address(input_str: str) -> bool:
-    """Check if the input looks like a contract address."""
-    # Basic validation for common address formats (ETH, SOL, etc.)
-    return len(input_str) >= 32 and not input_str.isdigit()
-
-def get_command_suggestion(error_message: str) -> str:
-    """Get a helpful command suggestion based on the error."""
-    suggestions = {
-        "not found in our database": "Try using a valid token symbol (e.g., '/signal btc') or contract address (e.g., '/signal 7GCihgDB8fe6KNjn2MYtkzZcRjQy3t9GHdC8uHYmW2hr')",
-        "Unable to fetch market data": "The API is temporarily unavailable. Please try again in a few minutes",
-        "Unable to process market data": "There might be an issue with the token data. Try using a different token or wait a few minutes",
-        "No price data available": "This token might be too new or not actively traded. Try using a more established token",
-        "Network connectivity issue": "Connection issues detected. Please try again in a few moments",
-        "Invalid or unsupported contract": "Make sure you're using a valid contract address or try using the token symbol instead"
-    }
-
-    for error_pattern, suggestion in suggestions.items():
-        if error_pattern.lower() in error_message.lower():
-            return f"💡 Suggestion: {suggestion}"
-
-    return "💡 Suggestion: Make sure you're using the correct command format. Type /help to see examples"
-
-async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Send a message when the command /start is issued."""
-    try:
-        logger.info(f"Start command received from user: {update.effective_user.id}")
-        await update.message.reply_text(
-            "Welcome to Yield Sensei! 🚀\n\n"
-            "I'm your DeFi assistant, ready to help you with:\n"
-            "• Real-time crypto prices 💰\n"
-            "• Market data and analysis 📊\n"
-            "• DEX pair information 🔍\n\n"
-            f"Use /help to see all available commands."
-        )
-        logger.info(f"Start command response sent successfully to user: {update.effective_user.id}")
-    except Exception as e:
-        logger.error(f"Error in start_command: {str(e)}", exc_info=True)
-        await update.message.reply_text("An error occurred. Please try again later.")
-
-async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Send a message when the command /help is issued."""
-    try:
-        logger.info(f"Help command received from user: {update.effective_user.id}")
-        await update.message.reply_text(HELP_TEXT)
-        logger.info(f"Help command response sent successfully to user: {update.effective_user.id}")
-    except Exception as e:
-        logger.error(f"Error in help_command: {str(e)}", exc_info=True)
-        await update.message.reply_text("An error occurred. Please try again later.")
-
 # Update the rate limit error messages
 RATE_LIMIT_MESSAGES = {
     "default": "🚦 Trading cooldown in effect! Please wait {wait_time} before your next request.\n\n💡 Tip: Use this time to review your trading strategy or check our documentation.",
@@ -393,3 +344,52 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(suggestion)
     except Exception:
         await context.bot.send_message(chat_id=update.effective_chat.id, text=suggestion)
+
+def is_contract_address(input_str: str) -> bool:
+    """Check if the input looks like a contract address."""
+    # Basic validation for common address formats (ETH, SOL, etc.)
+    return len(input_str) >= 32 and not input_str.isdigit()
+
+def get_command_suggestion(error_message: str) -> str:
+    """Get a helpful command suggestion based on the error."""
+    suggestions = {
+        "not found in our database": "Try using a valid token symbol (e.g., '/signal btc') or contract address (e.g., '/signal 7GCihgDB8fe6KNjn2MYtkzZcRjQy3t9GHdC8uHYmW2hr')",
+        "Unable to fetch market data": "The API is temporarily unavailable. Please try again in a few minutes",
+        "Unable to process market data": "There might be an issue with the token data. Try using a different token or wait a few minutes",
+        "No price data available": "This token might be too new or not actively traded. Try using a more established token",
+        "Network connectivity issue": "Connection issues detected. Please try again in a few moments",
+        "Invalid or unsupported contract": "Make sure you're using a valid contract address or try using the token symbol instead"
+    }
+
+    for error_pattern, suggestion in suggestions.items():
+        if error_pattern.lower() in error_message.lower():
+            return f"💡 Suggestion: {suggestion}"
+
+    return "💡 Suggestion: Make sure you're using the correct command format. Type /help to see examples"
+
+async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Send a message when the command /start is issued."""
+    try:
+        logger.info(f"Start command received from user: {update.effective_user.id}")
+        await update.message.reply_text(
+            "Welcome to Yield Sensei! 🚀\n\n"
+            "I'm your DeFi assistant, ready to help you with:\n"
+            "• Real-time crypto prices 💰\n"
+            "• Market data and analysis 📊\n"
+            "• DEX pair information 🔍\n\n"
+            f"Use /help to see all available commands."
+        )
+        logger.info(f"Start command response sent successfully to user: {update.effective_user.id}")
+    except Exception as e:
+        logger.error(f"Error in start_command: {str(e)}", exc_info=True)
+        await update.message.reply_text("An error occurred. Please try again later.")
+
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Send a message when the command /help is issued."""
+    try:
+        logger.info(f"Help command received from user: {update.effective_user.id}")
+        await update.message.reply_text(HELP_TEXT)
+        logger.info(f"Help command response sent successfully to user: {update.effective_user.id}")
+    except Exception as e:
+        logger.error(f"Error in help_command: {str(e)}", exc_info=True)
+        await update.message.reply_text("An error occurred. Please try again later.")

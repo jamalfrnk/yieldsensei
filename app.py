@@ -16,6 +16,7 @@ from flask_cors import CORS
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from models import db, User
 from auth import auth as auth_blueprint
+from waitress import serve
 
 # Configure logging
 logging.basicConfig(
@@ -49,18 +50,33 @@ def run_async(coro):
 
 def create_app():
     """Application factory function."""
+    logger.info("Starting application creation process")
     app = Flask(__name__)
 
-    # Set development mode
+    # Set production configurations
     app.config.update(
-        ENV='development',
-        DEBUG=True,
-        SECRET_KEY=os.environ.get('SECRET_KEY', 'dev-key-change-in-production')
+        ENV='production',
+        DEBUG=False,
+        TESTING=False,
+        SECRET_KEY=os.environ.get('SECRET_KEY', 'dev-key-change-in-production'),
+        PERMANENT_SESSION_LIFETIME=timedelta(days=31),
+        SESSION_COOKIE_HTTPONLY=True,
+        SESSION_COOKIE_SAMESITE='Lax'
     )
+    logger.info("Application configurations set")
+
+    # Initialize rate limiter
+    limiter = Limiter(
+        app=app,
+        key_func=get_remote_address,
+        default_limits=["200 per day", "50 per hour"],
+        storage_uri="memory://"
+    )
+    logger.info("Rate limiter initialized")
 
     # Initialize core extensions
     logger.info("Initializing core extensions")
-    CORS(app)
+    CORS(app, resources={r"/api/*": {"origins": "*"}})
     Compress(app)
     logger.info("Core extensions initialized successfully")
 
@@ -78,15 +94,24 @@ def create_app():
     # Configure SQLAlchemy
     app.config.update(
         SQLALCHEMY_DATABASE_URI=database_url,
-        SQLALCHEMY_TRACK_MODIFICATIONS=False
+        SQLALCHEMY_TRACK_MODIFICATIONS=False,
+        SQLALCHEMY_ENGINE_OPTIONS={
+            'pool_size': 10,
+            'max_overflow': 20,
+            'pool_recycle': 1800,
+        }
     )
 
     # Initialize database
     logger.info("Initializing database")
-    db.init_app(app)
-    with app.app_context():
-        db.create_all()  # Create tables if they don't exist
-    logger.info("Database initialized successfully")
+    try:
+        db.init_app(app)
+        with app.app_context():
+            db.create_all()
+        logger.info("Database initialized successfully")
+    except Exception as e:
+        logger.error(f"Database initialization failed: {str(e)}")
+        raise
 
     # Initialize Flask-Login
     login_manager = LoginManager()
@@ -101,7 +126,7 @@ def create_app():
     # Register blueprints
     app.register_blueprint(auth_blueprint)
 
-    # Basic security headers
+    # Security headers - Talisman configuration
     csp = {
         'default-src': ["'self'"],
         'script-src': ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
@@ -113,15 +138,43 @@ def create_app():
 
     Talisman(app,
         force_https=False,  # Disabled for development
-        strict_transport_security=False,
-        session_cookie_secure=False,
+        strict_transport_security=True,
+        session_cookie_secure=True,
         content_security_policy=csp
     )
+    logger.info("Security configurations applied")
 
-    # Routes
+    # Basic test route
+    @app.route('/test')
+    def test():
+        """Simple test endpoint to verify server is responding."""
+        return jsonify({
+            'status': 'ok',
+            'message': 'Server is running',
+            'timestamp': datetime.utcnow().isoformat()
+        })
+
+    # Health check endpoint
     @app.route('/health')
+    @limiter.limit("5 per minute")
     def health_check():
-        return 'OK', 200
+        """Basic health check endpoint."""
+        try:
+            # Test database connection
+            with app.app_context():
+                db.session.execute('SELECT 1')
+            return jsonify({
+                'status': 'healthy',
+                'database': 'connected',
+                'timestamp': datetime.utcnow().isoformat()
+            }), 200
+        except Exception as e:
+            logger.error(f"Health check failed: {str(e)}")
+            return jsonify({
+                'status': 'unhealthy',
+                'error': str(e),
+                'timestamp': datetime.utcnow().isoformat()
+            }), 500
 
     @app.route('/')
     def index():
@@ -129,6 +182,7 @@ def create_app():
 
     @app.route('/dashboard')
     @login_required
+    @limiter.limit("30 per minute")
     def dashboard():
         """Dashboard route handler with price analysis."""
         try:
@@ -148,7 +202,6 @@ def create_app():
                     logger.info(f"Market data received for {token}")
 
                     if price_data and market_data:
-                        # Update price ranges with actual data
                         data.update({
                             'token_symbol': token.upper(),
                             'price': price_data.get('usd', 0.0),
@@ -205,17 +258,20 @@ def create_app():
                     return render_template('dashboard.html', error=error_msg, **DEFAULT_DATA)
 
             return render_template('dashboard.html', **data)
-
         except Exception as e:
             error_msg = f"Dashboard error: {str(e)}"
             logger.error(error_msg, exc_info=True)
-            return render_template('dashboard.html', error=error_msg, **DEFAULT_DATA)
+            return render_template('error.html', error=error_msg), 500
 
-    # Add error handlers
+    # Error handlers
+    @app.errorhandler(429)
+    def ratelimit_handler(e):
+        return render_template('error.html', error="Rate limit exceeded. Please try again later."), 429
+
     @app.errorhandler(500)
     def internal_error(error):
         logger.error(f"Internal Server Error: {str(error)}")
-        return render_template('error.html', error=str(error)), 500
+        return render_template('error.html', error="An internal error occurred. Please try again later."), 500
 
     @app.errorhandler(404)
     def not_found_error(error):
@@ -259,11 +315,13 @@ if __name__ == '__main__':
         logger.info("Creating application instance")
         app = create_app()
 
-        port = int(os.environ.get('PORT', 3000))
+        port = int(os.environ.get('PORT', 8080))
         host = '0.0.0.0'
 
-        logger.info(f"Starting development server on {host}:{port}")
-        app.run(host=host, port=port)
+        logger.info(f"Starting production server on {host}:{port}")
+
+        # Simplified Waitress configuration for debugging
+        serve(app, host=host, port=port)
 
     except Exception as e:
         logger.error(f"Critical error during server startup: {str(e)}", exc_info=True)
