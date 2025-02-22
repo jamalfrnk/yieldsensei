@@ -11,8 +11,27 @@ name = "Project"
 mode = "parallel"
 author = "agent"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Flask Server"
+
+[[workflows.workflow]]
+name = "Flask Server"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pkill -f 'python app.py' || true && ENVIRONMENT=development SECRET_KEY=dev_secret_key DEBUG=true python app.py"
+waitForPort = 5000
+
 [deployment]
-run = ["sh", "-c", "ENVIRONMENT=development SECRET_KEY=dev_secret_key DEBUG=true python app.py"]
+run = ["sh", "-c", "pkill -f 'python app.py' || true && ENVIRONMENT=development SECRET_KEY=dev_secret_key DEBUG=true python app.py"]
 deploymentTarget = "gce"
 
 [[ports]]
