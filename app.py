@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, redirect
 import asyncio
 from services.technical_analysis import get_signal_analysis
 from services.coingecko_service import get_token_price, get_token_market_data
@@ -13,11 +13,13 @@ from flask_limiter.util import get_remote_address
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from models import db, User
+from waitress import serve
 
 # Configure logging with more detailed format
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
+    level=logging.INFO,
+    filename='yieldsensei.log'
 )
 logger = logging.getLogger(__name__)
 
@@ -53,62 +55,102 @@ DEFAULT_DATA = {
 def create_app():
     app = Flask(__name__)
 
-    # Configure SQLAlchemy with proper URL handling
+    # Determine environment
+    is_production = os.environ.get('FLASK_ENV') == 'production'
+
+    # Base configuration
+    app.config['ENV'] = 'production' if is_production else 'development'
+    app.config['DEBUG'] = not is_production
+
+    # Database configuration
     database_url = os.environ.get('DATABASE_URL')
     if database_url and database_url.startswith("postgres://"):
         database_url = database_url.replace("postgres://", "postgresql://", 1)
 
-    app.config['SQLALCHEMY_DATABASE_URI'] = database_url or 'sqlite:///app.db'
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+    # Production-specific configuration
+    if is_production:
+        app.config['SERVER_NAME'] = 'yieldsensei.ai'
+        app.config['SESSION_COOKIE_SECURE'] = True
+        app.config['SESSION_COOKIE_HTTPONLY'] = True
+        app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=1)
 
     # Initialize extensions
     db.init_app(app)
-    CORS(app)
 
-    # Security headers with adjusted CSP
+    # Configure CORS
+    if is_production:
+        CORS(app, resources={
+            r"/*": {
+                "origins": ["https://yieldsensei.ai", "https://www.yieldsensei.ai"],
+                "methods": ["GET", "POST", "OPTIONS"],
+                "allow_headers": ["Content-Type", "Authorization"]
+            }
+        })
+    else:
+        CORS(app)
+
+    # Security headers
+    csp = {
+        'default-src': ["'self'"],
+        'script-src': ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
+        'style-src': ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://fonts.googleapis.com"],
+        'img-src': ["'self'", "data:", "https://cdn.jsdelivr.net"],
+        'font-src': ["'self'", "https://fonts.gstatic.com", "https://cdn.jsdelivr.net"],
+        'connect-src': ["'self'", "https://api.coingecko.com"]
+    }
+
+    if is_production:
+        # Add production-specific CSP rules
+        for directive in csp:
+            csp[directive].extend([
+                "https://*.yieldsensei.ai",
+                "https://www.yieldsensei.ai"
+            ])
+
     Talisman(app,
-        content_security_policy={
-            'default-src': ["'self'", "'unsafe-inline'", "'unsafe-eval'", 'cdn.jsdelivr.net', '*'],
-            'script-src': ["'self'", "'unsafe-inline'", "'unsafe-eval'", 'cdn.jsdelivr.net'],
-            'style-src': ["'self'", "'unsafe-inline'", 'cdn.jsdelivr.net'],
-            'img-src': ["'self'", 'data:', 'cdn.jsdelivr.net', '*'],
-            'font-src': ["'self'", 'cdn.jsdelivr.net'],
-            'connect-src': ["'self'", '*']
-        },
-        force_https=False
+        force_https=is_production,
+        strict_transport_security=is_production,
+        session_cookie_secure=is_production,
+        content_security_policy=csp
     )
 
     # Enable compression
     Compress(app)
 
     # Configure rate limiting
+    redis_url = os.environ.get('REDIS_URL')
     limiter = Limiter(
         app=app,
         key_func=get_remote_address,
-        default_limits=["150 per minute"]
+        default_limits=["200 per hour", "50 per minute"],
+        storage_uri=redis_url if redis_url else None
     )
+
+    @app.before_request
+    def before_request():
+        if is_production and not request.is_secure:
+            url = request.url.replace('http://', 'https://', 1)
+            return redirect(url, code=301)
 
     @app.route('/')
     @limiter.exempt
     def index():
-        """Render the landing page."""
         return render_template('index.html')
 
     @app.route('/dashboard')
     @limiter.exempt
     async def dashboard():
-        """Render the main dashboard."""
         return render_template('dashboard.html', **DEFAULT_DATA)
 
     @app.route('/search')
-    @limiter.limit("200 per minute")
+    @limiter.limit("200 per hour")
     async def search():
-        """Handle token search and analysis."""
         token = request.args.get('token', 'bitcoin').lower()
         try:
             logger.info(f"Processing search request for token: {token}")
-
-            # Get market data and signal analysis
             price_data = await get_token_price(token)
             signal_data = await get_signal_analysis(token)
             market_data = await get_token_market_data(token)
@@ -116,9 +158,6 @@ def create_app():
             if not market_data or not price_data or not signal_data:
                 raise ValueError("Unable to fetch complete market data for the token")
 
-            logger.info(f"Retrieved data for {token}: Price=${price_data['usd']}, Signal strength={signal_data['signal_strength']}")
-
-            # Calculate template data
             template_data = {
                 'token_symbol': token.upper(),
                 'price': float(price_data['usd']),
@@ -137,7 +176,6 @@ def create_app():
                 'dca_recommendation': signal_data['dca_recommendation']
             }
 
-            logger.info(f"Successfully processed data for {token}")
             return render_template('dashboard.html', **template_data)
 
         except Exception as e:
@@ -147,7 +185,6 @@ def create_app():
 
     @app.template_filter('price_color')
     def price_color_filter(value):
-        """Return CSS class based on price change value."""
         try:
             value = float(value)
             return 'text-green-500' if value >= 0 else 'text-red-500'
@@ -159,26 +196,14 @@ def create_app():
 # Create and configure the application
 app = create_app()
 
-# Initialize database
-with app.app_context():
-    try:
-        db.create_all()
-        # Create default user if none exists
-        if not User.query.first():
-            default_user = User(
-                username="default_user",
-                email="default@example.com",
-                points=0
-            )
-            db.session.add(default_user)
-            db.session.commit()
-            logger.info("Created default user")
-    except Exception as e:
-        logger.error(f"Database initialization error: {str(e)}")
-
 if __name__ == '__main__':
     try:
-        logger.info("Starting Flask server...")
-        app.run(host='0.0.0.0', port=3000, debug=True)
+        port = int(os.environ.get('PORT', 3000))
+        if os.environ.get('FLASK_ENV') == 'production':
+            logger.info("Starting production server...")
+            serve(app, host='0.0.0.0', port=port, threads=4)
+        else:
+            logger.info("Starting development server...")
+            app.run(host='0.0.0.0', port=port, debug=True)
     except Exception as e:
         logger.error(f"Failed to start server: {str(e)}")
