@@ -1,117 +1,103 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>YieldSensei</title>
-<style>
-body {
-    font-family: sans-serif;
-    margin: 0;
-    padding: 0;
-    background-color: #fff; /* White background */
-    color: #333; /* Dark text */
-}
-
-.hero {
-    background-color: #FFA500; /* Orange background */
-    color: #fff; /* White text */
-    padding: 2em 0;
-    text-align: center;
-}
-
-.cta-buttons {
-    margin-top: 1em;
-}
-
-.primary-btn {
-    background-color: #000; /* Black button */
-    color: #fff;
-    padding: 1em 2em;
-    text-decoration: none;
-    margin-right: 1em;
-}
-
-.secondary-btn {
-    background-color: #fff; /* White button */
-    color: #000;
-    padding: 1em 2em;
-    text-decoration: none;
-    border: 1px solid #000;
-}
-
-.bot-interface {
-    padding: 2em;
-    text-align: center;
-}
-
-.command-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    grid-gap: 1em;
-}
-
-.command-box {
-    background-color: #fff;
-    padding: 1em;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
-}
-
-.command-form input[type="text"] {
-    width: 100%;
-    padding: 0.5em;
-    margin-bottom: 0.5em;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-}
-
-.command-form button {
-    background-color: #000; /* Black button */
-    color: #fff;
-    padding: 0.5em 1em;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YieldSensei - AI-Powered Crypto Intelligence</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
 </head>
-<body>
-    <main>
-        <section class="hero">
-            <h2>AI-Powered DeFi Analysis</h2>
-            <p>Your personal Sensei for crypto market insights</p>
-            <div class="cta-buttons">
-                <a href="https://t.me/yieldsensei_bot" class="primary-btn">Start Trading</a>
-                <a href="#features" class="secondary-btn">Learn More</a>
+<body class="bg-gray-900 text-white">
+    <div class="min-h-screen">
+        <!-- Hero Section -->
+        <header class="bg-gradient-to-r from-orange-600 to-orange-500 py-16">
+            <div class="container mx-auto px-4 text-center">
+                <h1 class="text-4xl md:text-5xl font-bold mb-6">Welcome to YieldSensei</h1>
+                <p class="text-xl md:text-2xl mb-8">AI-Powered Crypto Intelligence</p>
+                <p class="text-lg md:text-xl mb-8">🚀 Trade Smarter. Analyze Faster. Predict with Confidence.</p>
+                <div class="max-w-3xl mx-auto text-gray-100">
+                    <p class="text-lg mb-8">
+                        YieldSensei is a next-generation crypto analytics platform that leverages AI-driven insights,
+                        real-time market data, and predictive modeling to help traders navigate DeFi with precision.
+                    </p>
+                </div>
+            </div>
+        </header>
+
+        <!-- How it Works Section -->
+        <section class="py-16 bg-gray-800">
+            <div class="container mx-auto px-4">
+                <h2 class="text-3xl font-bold text-center mb-12 text-orange-500">🌟 How YieldSensei Works</h2>
+                <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                    <div class="bg-gray-700 rounded-lg p-6 hover:bg-gray-600 transition duration-300">
+                        <h3 class="text-xl font-semibold mb-4 text-orange-400">🔹 Telegram Bot</h3>
+                        <p class="text-gray-200">@YieldSensei_Bot – Instant AI-powered market insights & technical analysis.</p>
+                    </div>
+                    <div class="bg-gray-700 rounded-lg p-6 hover:bg-gray-600 transition duration-300">
+                        <h3 class="text-xl font-semibold mb-4 text-orange-400">🔹 Web Application</h3>
+                        <p class="text-gray-200">YieldSensei.ai – Interactive dashboard for deep-dive analytics & strategy building.</p>
+                    </div>
+                </div>
             </div>
         </section>
 
-        <section class="bot-interface">
-            <h3>YieldSensei Commands</h3>
-            <div class="command-grid">
-                <div class="command-box">
-                    <h4>/price &lt;token&gt;</h4>
-                    <p>Get current price and 24h change</p>
-                    <form class="command-form" data-command="price">
-                        <input type="text" placeholder="Enter token (e.g., btc)" required>
-                        <button type="submit">Get Price</button>
-                    </form>
-                </div>
-                <div class="command-box">
-                    <h4>/signal &lt;token&gt;</h4>
-                    <p>Get trading signals and analysis</p>
-                    <form class="command-form" data-command="signal">
-                        <input type="text" placeholder="Enter token or address" required>
-                        <button type="submit">Get Signals</button>
-                    </form>
+        <!-- Features Section -->
+        <section class="py-16">
+            <div class="container mx-auto px-4">
+                <h2 class="text-3xl font-bold text-center mb-12 text-orange-500">📊 Key Features</h2>
+                <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                    <div class="flex items-start space-x-4">
+                        <span class="text-green-500 text-xl">✅</span>
+                        <div>
+                            <h3 class="text-xl font-semibold mb-2 text-orange-400">Real-Time Market Data</h3>
+                            <p class="text-gray-300">Live price tracking, market cap, and volume metrics.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start space-x-4">
+                        <span class="text-green-500 text-xl">✅</span>
+                        <div>
+                            <h3 class="text-xl font-semibold mb-2 text-orange-400">Smart Technical Analysis</h3>
+                            <p class="text-gray-300">AI-driven RSI, MACD, trend forecasting, and support/resistance levels.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start space-x-4">
+                        <span class="text-green-500 text-xl">✅</span>
+                        <div>
+                            <h3 class="text-xl font-semibold mb-2 text-orange-400">Predictive Modeling</h3>
+                            <p class="text-gray-300">Machine learning-powered trade signals and confidence scoring.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start space-x-4">
+                        <span class="text-green-500 text-xl">✅</span>
+                        <div>
+                            <h3 class="text-xl font-semibold mb-2 text-orange-400">Liquidity & Volume Tracking</h3>
+                            <p class="text-gray-300">Identify DeFi opportunities and market trends in real time.</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
-    </main>
-    <script>
-        // Add Javascript functionality here for bot interaction (fetch calls, etc.)  This would need to be expanded upon significantly.
-    </script>
+
+        <!-- CTA Section -->
+        <section class="py-16 bg-gradient-to-r from-orange-600 to-orange-500">
+            <div class="container mx-auto px-4 text-center">
+                <h2 class="text-3xl font-bold mb-8">🔗 Get Started Today!</h2>
+                <p class="text-xl mb-8">Explore AI-Powered Crypto Analytics at YieldSensei.ai 🚀</p>
+                <div class="flex justify-center space-x-4">
+                    <a href="/dashboard" class="bg-gray-900 text-white px-8 py-3 rounded-lg hover:bg-gray-800 transition duration-300">
+                        Launch Dashboard
+                    </a>
+                    <a href="https://t.me/yieldsensei_bot" class="bg-white text-gray-900 px-8 py-3 rounded-lg hover:bg-gray-100 transition duration-300">
+                        Try Telegram Bot
+                    </a>
+                </div>
+            </div>
+        </section>
+    </div>
 </body>
 </html>

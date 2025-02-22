@@ -53,19 +53,13 @@ DEFAULT_DATA = {
 def create_app():
     app = Flask(__name__)
 
-    # Enable CORS with proper configuration
-    CORS(app, resources={
-        r"/api/*": {
-            "origins": "*",
-            "methods": ["GET", "POST"],
-            "allow_headers": ["Content-Type"]
-        }
-    })
-
     # Configure SQLAlchemy
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///app.db')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     db.init_app(app)
+
+    # Enable CORS
+    CORS(app)
 
     # Security headers
     Talisman(app,
@@ -87,124 +81,21 @@ def create_app():
     limiter = Limiter(
         app=app,
         key_func=get_remote_address,
-        default_limits=["150 per minute"]  # Increased from 200 per hour to 150 per minute
+        default_limits=["150 per minute"]
     )
 
     @app.route('/')
     @limiter.exempt
-    async def index():
+    def index():
+        """Render the landing page."""
+        return render_template('index.html')
+
+    @app.route('/dashboard')
+    @limiter.exempt
+    async def dashboard():
         """Render the main dashboard."""
-        logger.info("Rendering index page")
         return render_template('dashboard.html', **DEFAULT_DATA)
 
-    @app.route('/search')
-    @limiter.limit("200 per minute")  # Increased limit for crypto asset queries
-    async def search():
-        """Handle token search and analysis."""
-        token = request.args.get('token', 'bitcoin').lower()
-        try:
-            logger.info(f"Processing search request for token: {token}")
-
-            # Get market data and signal analysis
-            price_data = await get_token_price(token)
-            signal_data = await get_signal_analysis(token)
-            market_data = await get_token_market_data(token)
-
-            if not market_data or not price_data or not signal_data:
-                raise ValueError("Unable to fetch complete market data for the token")
-
-            logger.info(f"Retrieved data for {token}: Price=${price_data['usd']}, Signal strength={signal_data['signal_strength']}")
-
-            # Extract historical price data and calculate price ranges
-            historical_prices = []
-            price_ranges = {
-                'day': {'high': 0.0, 'low': float('inf')},
-                'week': {'high': 0.0, 'low': float('inf')},
-                'month': {'high': 0.0, 'low': float('inf')},
-                'quarter': {'high': 0.0, 'low': float('inf')},
-                'year': {'high': 0.0, 'low': float('inf')}
-            }
-
-            if 'prices' in market_data and market_data['prices']:
-                historical_prices = market_data['prices']
-                logger.info(f"Found {len(historical_prices)} historical price points")
-
-                # Calculate price ranges for different periods
-                now = datetime.utcnow()
-                for timestamp, price in historical_prices:
-                    price_date = datetime.fromtimestamp(timestamp/1000)
-                    time_diff = now - price_date
-
-                    # Update ranges based on time period
-                    if time_diff <= timedelta(days=1):
-                        price_ranges['day']['high'] = max(price_ranges['day']['high'], price)
-                        price_ranges['day']['low'] = min(price_ranges['day']['low'], price)
-
-                    if time_diff <= timedelta(days=7):
-                        price_ranges['week']['high'] = max(price_ranges['week']['high'], price)
-                        price_ranges['week']['low'] = min(price_ranges['week']['low'], price)
-
-                    if time_diff <= timedelta(days=30):
-                        price_ranges['month']['high'] = max(price_ranges['month']['high'], price)
-                        price_ranges['month']['low'] = min(price_ranges['month']['low'], price)
-
-                    if time_diff <= timedelta(days=90):
-                        price_ranges['quarter']['high'] = max(price_ranges['quarter']['high'], price)
-                        price_ranges['quarter']['low'] = min(price_ranges['quarter']['low'], price)
-
-                    if time_diff <= timedelta(days=365):
-                        price_ranges['year']['high'] = max(price_ranges['year']['high'], price)
-                        price_ranges['year']['low'] = min(price_ranges['year']['low'], price)
-
-                # Replace infinity with current price for periods with no data
-                for period in price_ranges:
-                    if price_ranges[period]['low'] == float('inf'):
-                        price_ranges[period]['low'] = float(price_data['usd'])
-                        price_ranges[period]['high'] = float(price_data['usd'])
-
-                try:
-                    # Get price predictions
-                    price_values = [price[1] for price in historical_prices]
-                    predictions = await ml_service.predict_price(price_values, token)
-                    logger.info("Generated ML predictions successfully")
-
-                    # Calculate all necessary template data
-                    template_data = {
-                        'token_symbol': token.upper(),
-                        'price': float(price_data['usd']),
-                        'price_change': float(price_data['usd_24h_change']),
-                        'signal_strength': float(signal_data['signal_strength']),
-                        'signal_description': signal_data['signal'],
-                        'trend_direction': signal_data['trend_direction'],
-                        'rsi': float(signal_data['rsi']),
-                        'support_1': float(signal_data['support_1'].replace('$', '').replace(',', '')),
-                        'support_2': float(signal_data['support_2'].replace('$', '').replace(',', '')),
-                        'resistance_1': float(signal_data['resistance_1'].replace('$', '').replace(',', '')),
-                        'resistance_2': float(signal_data['resistance_2'].replace('$', '').replace(',', '')),
-                        'optimal_entry': float(signal_data['optimal_entry']),
-                        'optimal_exit': float(signal_data['optimal_exit']),
-                        'stop_loss': float(signal_data['stop_loss']),
-                        'dca_recommendation': signal_data['dca_recommendation'],
-                        'historical_data': historical_prices,
-                        'predictions': predictions,
-                        'confidence_score': predictions.get('confidence_score', 0) if predictions else 0,
-                        'price_ranges': price_ranges
-                    }
-
-                    logger.info(f"Successfully processed data for {token}")
-                    return render_template('dashboard.html', **template_data)
-
-                except Exception as e:
-                    logger.error(f"Error processing data: {str(e)}")
-                    raise ValueError(f"Error processing data: {str(e)}")
-            else:
-                logger.warning("No historical prices found in market data")
-                raise ValueError("No historical price data available")
-
-        except Exception as e:
-            logger.error(f"Error processing search request: {str(e)}")
-            error_message = f"Error analyzing token: {str(e)}"
-            return render_template('dashboard.html', error=error_message, **DEFAULT_DATA)
 
     @app.template_filter('price_color')
     def price_color_filter(value):
@@ -239,9 +130,8 @@ with app.app_context():
 
 if __name__ == '__main__':
     try:
-        logger.info("Starting Flask server in production mode...")
+        logger.info("Starting Flask server...")
         port = int(os.environ.get('PORT', 3000))
-        from waitress import serve
-        serve(app, host='0.0.0.0', port=port)
+        app.run(host='0.0.0.0', port=port, debug=True)
     except Exception as e:
         logger.error(f"Failed to start server: {str(e)}")
