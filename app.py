@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template, request, jsonify, redirect
+from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
 import asyncio
 import threading
 from services.technical_analysis import get_signal_analysis
@@ -13,6 +13,7 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from models import db, User
 
 # Configure logging
@@ -52,7 +53,8 @@ def create_app():
     # Set development mode
     app.config.update(
         ENV='development',
-        DEBUG=True
+        DEBUG=True,
+        SECRET_KEY=os.environ.get('SECRET_KEY', 'dev-key-change-in-production')
     )
 
     # Initialize core extensions
@@ -83,6 +85,16 @@ def create_app():
     db.init_app(app)
     logger.info("Database initialized successfully")
 
+    # Initialize Flask-Login
+    login_manager = LoginManager()
+    login_manager.init_app(app)
+    login_manager.login_view = 'auth.login'
+    login_manager.login_message_category = 'info'
+
+    @login_manager.user_loader
+    def load_user(user_id):
+        return User.query.get(int(user_id))
+
     # Basic security headers
     csp = {
         'default-src': ["'self'"],
@@ -100,7 +112,7 @@ def create_app():
         content_security_policy=csp
     )
 
-    # Health check endpoint
+    # Routes remain unchanged except for adding login_required where needed
     @app.route('/health')
     def health_check():
         return 'OK', 200
@@ -110,6 +122,7 @@ def create_app():
         return render_template('index.html')
 
     @app.route('/dashboard')
+    @login_required
     def dashboard():
         """Dashboard route handler with price analysis."""
         try:
