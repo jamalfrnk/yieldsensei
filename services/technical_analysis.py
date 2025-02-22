@@ -18,7 +18,7 @@ async def get_historical_prices(token_id: str):
             url = f"{COINGECKO_BASE_URL}/coins/{token_id}/market_chart"
             params = {
                 "vs_currency": "usd",
-                "days": "30",
+                "days": "90",  # Changed from 30 to 90 days
                 "interval": "daily"
             }
             logger.debug(f"Making API request to: {url}")
