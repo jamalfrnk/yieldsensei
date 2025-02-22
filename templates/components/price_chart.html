@@ -10,10 +10,10 @@
 document.addEventListener('DOMContentLoaded', function() {
     const priceCtx = document.getElementById('priceChart').getContext('2d');
     const historicalData = {{ historical_data|tojson if historical_data else '[]' }};
-    const support1 = {{ support_1|tojson }};
-    const support2 = {{ support_2|tojson }};
-    const resistance1 = {{ resistance_1|tojson }};
-    const resistance2 = {{ resistance_2|tojson }};
+    const support1 = {{ support_1|default(0.0, true)|tojson }};
+    const support2 = {{ support_2|default(0.0, true)|tojson }};
+    const resistance1 = {{ resistance_1|default(0.0, true)|tojson }};
+    const resistance2 = {{ resistance_2|default(0.0, true)|tojson }};
 
     if (!historicalData.length) {
         console.log('No historical data available');

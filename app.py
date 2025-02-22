@@ -229,7 +229,12 @@ def create_app():
                 confidence_score=50.0,
                 historical_data=[],
                 price_levels=price_levels,
-                trading_levels=trading_levels
+                trading_levels=trading_levels,
+                # Add individual price level variables for the chart
+                support_1=price_levels['support_1'],
+                support_2=price_levels['support_2'],
+                resistance_1=price_levels['resistance_1'],
+                resistance_2=price_levels['resistance_2']
             )
         except Exception as e:
             logger.error(f"Dashboard error: {str(e)}")
