@@ -2,17 +2,24 @@ import os
 import logging
 from flask import Flask, render_template
 from flask_sqlalchemy import SQLAlchemy
+from flask_login import LoginManager
 
 # Configure logging
 logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    format='%(asctime)s - %(name)s - %(levelname)s - [%(funcName)s] %(message)s',
     level=logging.INFO,
     handlers=[logging.StreamHandler()]
 )
 logger = logging.getLogger(__name__)
 
-# Initialize database
+# Initialize extensions
 db = SQLAlchemy()
+login_manager = LoginManager()
+
+@login_manager.user_loader
+def load_user(user_id):
+    from models import User  # Import here to avoid circular import
+    return User.query.get(int(user_id))
 
 def create_app():
     """Application factory function."""
@@ -24,16 +31,26 @@ def create_app():
         app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev_secret_key')
         app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-        # Database configuration if URL is provided
+        # Database configuration
         database_url = os.environ.get('DATABASE_URL')
         if database_url:
             if database_url.startswith("postgres://"):
                 database_url = database_url.replace("postgres://", "postgresql://", 1)
             app.config['SQLALCHEMY_DATABASE_URI'] = database_url
-            db.init_app(app)
-            with app.app_context():
-                db.create_all()
-                logger.info("Database initialized")
+
+        # Initialize extensions with app
+        db.init_app(app)
+        login_manager.init_app(app)
+        login_manager.login_view = 'auth.login'
+
+        # Create database tables
+        with app.app_context():
+            db.create_all()
+            logger.info("Database initialized")
+
+        # Register blueprints
+        from auth import auth as auth_blueprint
+        app.register_blueprint(auth_blueprint)
 
         @app.route('/')
         def index():
