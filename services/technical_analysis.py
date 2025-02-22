@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import aiohttp
 import os
+import asyncio
 from config import COINGECKO_BASE_URL
 from services.ml_prediction_service import ml_service
 
