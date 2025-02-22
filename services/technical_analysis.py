@@ -207,7 +207,7 @@ async def get_signal_analysis(token_id: str):
             logger.warning(f"ML prediction failed: {str(e)}")
             ml_predictions = None
 
-        # Calculate overall signal strength
+        # Calculate signal strength
         signal_strength = calculate_enhanced_signal_strength(
             current_price=current_price,
             current_rsi=current_rsi,
@@ -248,17 +248,8 @@ async def get_signal_analysis(token_id: str):
                 }
             },
             'fibonacci_levels': fib_levels,
-            'price_levels': {
-                'support_1': levels['support_1'],
-                'support_2': levels['support_2'],
-                'resistance_1': levels['resistance_1'],
-                'resistance_2': levels['resistance_2']
-            },
-            'trading_levels': {
-                'optimal_entry': optimal_levels['optimal_entry'],
-                'optimal_exit': optimal_levels['optimal_exit'],
-                'stop_loss': optimal_levels['stop_loss']
-            }
+            'price_levels': levels,
+            'trading_levels': optimal_levels
         }
 
         # Add ML predictions if available
@@ -267,32 +258,15 @@ async def get_signal_analysis(token_id: str):
                 'ml_predictions': ml_predictions,
                 'confidence_score': ml_predictions['confidence_score']
             })
-        else:
-            result.update({
-                'ml_predictions': {
-                    'next_day': {
-                        'rf_prediction': current_price * 1.01,
-                        'prophet_prediction': current_price * 1.02,
-                        'combined_prediction': current_price * 1.015,
-                        'upper_bound': current_price * 1.05,
-                        'lower_bound': current_price * 0.95
-                    }
-                },
-                'confidence_score': 75.0
-            })
 
-        logger.info("Successfully generated comprehensive signal analysis")
+        logger.info("Successfully generated signal analysis")
         return result
 
     except Exception as e:
         logger.error(f"Failed to generate signal analysis: {str(e)}")
         raise
 
-def calculate_enhanced_signal_strength(
-    current_price, current_rsi, is_macd_bullish, macd_strength,
-    levels, ml_predictions, rsi_trend, rsi_strength,
-    macd_crossover, macd_trend_strength
-):
+def calculate_enhanced_signal_strength(current_price, current_rsi, is_macd_bullish, macd_strength, levels, ml_predictions, rsi_trend, rsi_strength, macd_crossover, macd_trend_strength):
     """Calculate enhanced signal strength incorporating multiple indicators."""
     try:
         signal_strength = 0
@@ -411,247 +385,6 @@ def calculate_optimal_levels(current_price, levels, signal_strength):
             'stop_loss': current_price * 0.95
         }
 
-async def get_signal_analysis(token_id: str):
-    """Generate detailed trading signal analysis with enhanced error handling."""
-    logger.info(f"Starting signal analysis for token: {token_id}")
-    try:
-        prices = await get_historical_prices(token_id)
-        if len(prices) < 90:
-            logger.warning(f"Insufficient historical data: only {len(prices)} days available")
-            raise ValueError("Insufficient historical data available for analysis")
-
-        current_price = prices[-1]
-        logger.info(f"Current price: ${current_price:,.2f}")
-
-        # Calculate technical indicators with error handling
-        current_rsi = calculate_rsi(prices)
-        is_macd_bullish, macd_strength = calculate_macd(prices)
-
-        # Calculate support/resistance levels
-        try:
-            levels = calculate_support_resistance(prices)
-        except Exception as e:
-            logger.error(f"Error calculating support/resistance: {str(e)}")
-            levels = {
-                'support_1': current_price * 0.95,
-                'support_2': current_price * 0.90,
-                'resistance_1': current_price * 1.05,
-                'resistance_2': current_price * 1.10
-            }
-
-        # Calculate optimal trading levels
-        optimal_levels = calculate_optimal_levels(
-            current_price=current_price,
-            levels=levels,
-            signal_strength=0  # Initial neutral signal
-        )
-
-        # Get ML predictions
-        try:
-            ml_predictions = await ml_service.predict_price(prices, token_id)
-            logger.info(f"Successfully generated ML predictions for {token_id}")
-        except Exception as e:
-            logger.warning(f"ML prediction failed: {str(e)}")
-            ml_predictions = None
-
-        # Calculate signal strength
-        signal_strength = calculate_enhanced_signal_strength(
-            current_price=current_price,
-            current_rsi=current_rsi,
-            is_macd_bullish=is_macd_bullish,
-            macd_strength=macd_strength,
-            levels=levels,
-            ml_predictions=ml_predictions
-        )
-
-        # Update optimal levels with final signal strength
-        optimal_levels = calculate_optimal_levels(
-            current_price=current_price,
-            levels=levels,
-            signal_strength=signal_strength
-        )
-
-        # Build response with all necessary data
-        result = {
-            'signal': get_signal_type(signal_strength),
-            'signal_strength': abs(signal_strength),
-            'trend_direction': "Bullish 📈" if signal_strength > 0 else "Bearish 📉" if signal_strength < 0 else "Neutral ⚖️",
-            'current_price': current_price,
-            'rsi': current_rsi,
-            'macd_signal': "Bullish 📈" if is_macd_bullish else "Bearish 📉",
-            'support_1': levels['support_1'],
-            'support_2': levels['support_2'],
-            'resistance_1': levels['resistance_1'],
-            'resistance_2': levels['resistance_2'],
-            'optimal_entry': optimal_levels['optimal_entry'],
-            'optimal_exit': optimal_levels['optimal_exit'],
-            'stop_loss': optimal_levels['stop_loss']
-        }
-
-        # Add ML predictions if available
-        if ml_predictions:
-            result.update({
-                'ml_predictions': ml_predictions,
-                'confidence_score': ml_predictions['confidence_score']
-            })
-        else:
-            result.update({
-                'ml_predictions': {
-                    'next_day': {
-                        'rf_prediction': current_price * 1.01,
-                        'prophet_prediction': current_price * 1.02,
-                        'combined_prediction': current_price * 1.015,
-                        'upper_bound': current_price * 1.05,
-                        'lower_bound': current_price * 0.95
-                    }
-                },
-                'confidence_score': 75.0
-            })
-
-        logger.info("Successfully generated signal analysis")
-        return result
-
-    except Exception as e:
-        logger.error(f"Failed to generate signal analysis: {str(e)}")
-        raise
-
-def calculate_enhanced_signal_strength(current_price, current_rsi, is_macd_bullish, macd_strength, levels, ml_predictions):
-    """Calculate signal strength with improved error handling."""
-    try:
-        signal_strength = 0
-
-        # RSI contribution (40%)
-        if 0 <= current_rsi <= 100:  # Validate RSI range
-            if current_rsi < 30:
-                signal_strength += 40 * (1 - current_rsi/30)
-            elif current_rsi > 70:
-                signal_strength -= 40 * (current_rsi-70)/30
-
-        # MACD contribution (30%)
-        if is_macd_bullish and macd_strength > 0:
-            signal_strength += 30 * min(macd_strength/current_price, 1.0)
-        elif not is_macd_bullish and macd_strength > 0:
-            signal_strength -= 30 * min(macd_strength/current_price, 1.0)
-
-        # Support/Resistance contribution (30%)
-        if all(v > 0 for v in [levels['support_1'], levels['resistance_1']]):
-            price_to_support1 = (current_price - levels['support_1']) / current_price
-            price_to_resistance1 = (levels['resistance_1'] - current_price) / current_price
-
-            if 0 <= price_to_support1 <= 0.05:  # Within 5% of support
-                signal_strength += 30 * (1 - price_to_support1/0.05)
-            elif 0 <= price_to_resistance1 <= 0.05:  # Within 5% of resistance
-                signal_strength -= 30 * (1 - price_to_resistance1/0.05)
-
-        # ML predictions influence (if available)
-        if ml_predictions and 'next_day' in ml_predictions:
-            try:
-                rf_pred = float(ml_predictions['next_day']['rf_prediction'])
-                prophet_pred = float(ml_predictions['next_day']['prophet_prediction'])
-                confidence = min(ml_predictions['confidence_score'], 100) / 100
-
-                # Calculate predicted changes
-                rf_change = (rf_pred - current_price) / current_price
-                prophet_change = (prophet_pred - current_price) / current_price
-
-                # Weight the predictions based on confidence
-                weighted_change = (rf_change + prophet_change) / 2 * confidence
-                signal_strength += 20 * weighted_change  # Add ML signal (±20 max)
-            except Exception as e:
-                logger.error(f"Error processing ML predictions: {str(e)}")
-
-        # Ensure signal strength stays within bounds
-        return max(min(signal_strength, 100), -100)
-
-    except Exception as e:
-        logger.error(f"Error calculating signal strength: {str(e)}")
-        return 0  # Return neutral signal on error
-
-def get_enhanced_dca_recommendation(signal_strength, ml_predictions, token_id):
-    """Get enhanced DCA recommendation incorporating ML predictions."""
-    base_recommendation = get_dca_recommendation(signal_strength)
-
-    if not ml_predictions or 'next_day' not in ml_predictions:
-        return base_recommendation
-
-    confidence_score = ml_predictions['confidence_score']
-    current_price = float(ml_predictions['next_day']['rf_prediction'])
-    predicted_price = float(ml_predictions['next_day']['combined_prediction'])
-    price_change = ((predicted_price - current_price) / current_price) * 100
-
-    # Add ML-specific insights
-    ml_insights = (
-        f"\n\n💡 ML Analysis for {token_id.upper()}:\n"
-        f"• Prediction Confidence: {confidence_score:.1f}%\n"
-        f"• Expected Price: ${predicted_price:,.2f}\n"
-        f"• Expected Range: ${ml_predictions['next_day']['lower_bound']:,.2f} "
-        f"to ${ml_predictions['next_day']['upper_bound']:,.2f}\n"
-        f"• Predicted Change: {price_change:+.2f}%\n"
-    )
-
-    if confidence_score > 70:
-        ml_insights += "• High confidence in predictions - consider following signals more aggressively\n"
-    elif confidence_score < 30:
-        ml_insights += "• Low confidence in predictions - maintain conservative position sizing\n"
-
-    return base_recommendation + ml_insights
-
-def get_signal_type(signal_strength):
-    """Determine signal type based on signal strength."""
-    if signal_strength > 60:
-        return "Strong Buy 🟢"
-    elif signal_strength > 20:
-        return "Moderate Buy 🟡"
-    elif signal_strength < -60:
-        return "Strong Sell 🔴"
-    elif signal_strength < -20:
-        return "Moderate Sell 🟡"
-    else:
-        return "Neutral ⚖️"
-
-def get_dca_recommendation(signal_strength):
-    """Get DCA recommendation based on signal strength."""
-    if signal_strength > 60:
-        return (
-            "💡 DCA Strategy:\n"
-            "• Consider splitting your investment into 3-4 portions\n"
-            "• Invest 40% now while momentum is strong\n"
-            "• Space out remaining portions over 1-2 weeks\n"
-            "• Set stop-loss just below Support 2"
-        )
-    elif signal_strength > 20:
-        return (
-            "💡 DCA Strategy:\n"
-            "• Split investment into 5-6 smaller portions\n"
-            "• Invest 25% now at current levels\n"
-            "• Space out remaining portions over 2-3 weeks\n"
-            "• Set stop-loss between Support 1 and 2"
-        )
-    elif signal_strength < -60:
-        return (
-            "💡 DCA Exit Strategy:\n"
-            "• Consider selling 40-50% of position now\n"
-            "• Set limit orders near Resistance 1 for remaining exit\n"
-            "• Space out sells over 3-4 days\n"
-            "• Keep small position (10-15%) for potential breakout"
-        )
-    elif signal_strength < -20:
-        return (
-            "💡 DCA Exit Strategy:\n"
-            "• Consider selling 25-30% of position now\n"
-            "• Set limit orders near Resistance 1 for remaining exit\n"
-            "• Space out sells over 1-2 weeks\n"
-            "• Keep 20-25% position for potential breakout"
-        )
-    else:
-        return (
-            "💡 Neutral Strategy:\n"
-            "• Market shows mixed signals\n"
-            "• Consider waiting for clearer direction\n"
-            "• Set alerts at Support 1 and Resistance 1\n"
-            "• Focus on portfolio rebalancing"
-        )
-
 def calculate_support_resistance(prices):
     """Calculate support and resistance levels using improved price clustering."""
     try:
@@ -742,3 +475,88 @@ def calculate_support_resistance(prices):
             "resistance_1": current_price * 1.05,
             "resistance_2": current_price * 1.10
         }
+
+def get_enhanced_dca_recommendation(signal_strength, ml_predictions, token_id):
+    """Get enhanced DCA recommendation incorporating ML predictions."""
+    base_recommendation = get_dca_recommendation(signal_strength)
+
+    if not ml_predictions or 'next_day' not in ml_predictions:
+        return base_recommendation
+
+    confidence_score = ml_predictions['confidence_score']
+    current_price = float(ml_predictions['next_day']['rf_prediction'])
+    predicted_price = float(ml_predictions['next_day']['combined_prediction'])
+    price_change = ((predicted_price - current_price) / current_price) * 100
+
+    # Add ML-specific insights
+    ml_insights = (
+        f"\n\n💡 ML Analysis for {token_id.upper()}:\n"
+        f"• Prediction Confidence: {confidence_score:.1f}%\n"
+        f"• Expected Price: ${predicted_price:,.2f}\n"
+        f"• Expected Range: ${ml_predictions['next_day']['lower_bound']:,.2f} "
+        f"to ${ml_predictions['next_day']['upper_bound']:,.2f}\n"
+        f"• Predicted Change: {price_change:+.2f}%\n"
+    )
+
+    if confidence_score > 70:
+        ml_insights += "• High confidence in predictions - consider following signals more aggressively\n"
+    elif confidence_score < 30:
+        ml_insights += "• Low confidence in predictions - maintain conservative position sizing\n"
+
+    return base_recommendation + ml_insights
+
+def get_signal_type(signal_strength):
+    """Determine signal type based on signal strength."""
+    if signal_strength > 60:
+        return "Strong Buy 🟢"
+    elif signal_strength > 20:
+        return "Moderate Buy 🟡"
+    elif signal_strength < -60:
+        return "Strong Sell 🔴"
+    elif signal_strength < -20:
+        return "Moderate Sell 🟡"
+    else:
+        return "Neutral ⚖️"
+
+def get_dca_recommendation(signal_strength):
+    """Get DCA recommendation based on signal strength."""
+    if signal_strength > 60:
+        return (
+            "💡 DCA Strategy:\n"
+            "• Consider splitting your investment into 3-4 portions\n"
+            "• Invest 40% now while momentum is strong\n"
+            "• Space out remaining portions over 1-2 weeks\n"
+            "• Set stop-loss just below Support 2"
+        )
+    elif signal_strength > 20:
+        return (
+            "💡 DCA Strategy:\n"
+            "• Split investment into 5-6 smaller portions\n"
+            "• Invest 25% now at current levels\n"
+            "• Space out remaining portions over 2-3 weeks\n"
+            "• Set stop-loss between Support 1 and 2"
+        )
+    elif signal_strength < -60:
+        return (
+            "💡 DCA Exit Strategy:\n"
+            "• Consider selling 40-50% of position now\n"
+            "• Set limit orders near Resistance 1 for remaining exit\n"
+            "• Space out sells over 3-4 days\n"
+            "• Keep small position (10-15%) for potential breakout"
+        )
+    elif signal_strength < -20:
+        return (
+            "💡 DCA Exit Strategy:\n"
+            "• Consider selling 25-30% of position now\n"
+            "• Set limit orders near Resistance 1 for remaining exit\n"
+            "• Space out sells over 1-2 weeks\n"
+            "• Keep 20-25% position for potential breakout"
+        )
+    else:
+        return (
+            "💡 Neutral Strategy:\n"
+            "• Market shows mixed signals\n"
+            "• Consider waiting for clearer direction\n"
+            "• Set alerts at Support 1 and Resistance 1\n"
+            "• Focus on portfolio rebalancing"
+        )
