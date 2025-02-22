@@ -8,6 +8,7 @@ dependencies = [
     "anthropic>=0.46.0",
     "asgiref>=3.8.1",
     "cachetools>=5.5.1",
+    "email-validator>=2.2.0",
     "firebase-admin>=6.6.0",
     "flask-compress>=1.17",
     "flask-cors>=5.0.0",
