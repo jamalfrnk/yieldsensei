@@ -45,11 +45,11 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python app.py"
+args = "FLASK_ENV=production python app.py"
 waitForPort = 3000
 
 [deployment]
-run = ["sh", "-c", "python app.py"]
+run = ["sh", "-c", "FLASK_ENV=production python app.py"]
 deploymentTarget = "gce"
 
 [[ports]]
