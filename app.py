@@ -23,6 +23,13 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Set default environment variables if not present
+if 'FLASK_ENV' not in os.environ:
+    os.environ['FLASK_ENV'] = 'development'
+
+if 'REDIS_URL' not in os.environ:
+    os.environ['REDIS_URL'] = 'redis://localhost:6379/0'
+
 # Default data for the dashboard
 DEFAULT_DATA = {
     'token_symbol': 'Enter a token',
