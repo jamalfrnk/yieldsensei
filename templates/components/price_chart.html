@@ -6,12 +6,10 @@
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial@0.1.1/dist/chartjs-chart-financial.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const priceCtx = document.getElementById('priceChart').getContext('2d');
     const historicalData = {{ historical_data|tojson if historical_data else '[]' }};
-    const predictions = {{ predictions|tojson if predictions else '{"forecast":{"dates":[], "values":[], "lower_bounds":[], "upper_bounds":[]}}' }};
     const support1 = {{ support_1|tojson }};
     const support2 = {{ support_2|tojson }};
     const resistance1 = {{ resistance_1|tojson }};
@@ -22,13 +20,10 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
 
-    // Prepare candlestick data
-    const candlestickData = historicalData.map(d => ({
+    // Prepare line chart data
+    const chartData = historicalData.map(d => ({
         x: new Date(d.time),
-        o: d.open,
-        h: d.high,
-        l: d.low,
-        c: d.close
+        y: d.close
     }));
 
     // Create horizontal lines for support and resistance levels
@@ -83,25 +78,19 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-    // Create the candlestick chart with enhanced configuration
+    // Create the line chart
     window.priceChart = new Chart(priceCtx, {
-        type: 'candlestick',
+        type: 'line',
         data: {
             datasets: [{
                 label: '90-Day Price History',
-                data: candlestickData,
-                color: {
-                    up: '#10B981',   // Green for up candles
-                    down: '#EF4444', // Red for down candles
-                },
-                borderColor: {
-                    up: '#10B981',
-                    down: '#EF4444',
-                },
-                backgroundColor: {
-                    up: 'rgba(16, 185, 129, 0.1)',    // Transparent green
-                    down: 'rgba(239, 68, 68, 0.1)',    // Transparent red
-                }
+                data: chartData,
+                borderColor: '#F97316',
+                backgroundColor: 'rgba(249, 115, 22, 0.1)',
+                borderWidth: 2,
+                pointRadius: 0,
+                fill: true,
+                tension: 0.1
             }]
         },
         options: {
@@ -170,13 +159,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     padding: 12,
                     callbacks: {
                         label: function(context) {
-                            const data = context.raw;
-                            return [
-                                `Open: $${data.o.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-                                `High: $${data.h.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-                                `Low: $${data.l.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-                                `Close: $${data.c.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                            ];
+                            return `Price: $${context.parsed.y.toLocaleString(undefined, { 
+                                minimumFractionDigits: 2, 
+                                maximumFractionDigits: 2 
+                            })}`;
                         }
                     }
                 }

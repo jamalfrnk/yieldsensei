@@ -53,18 +53,30 @@ async def get_historical_prices(token_id: str):
 def calculate_rsi(prices, periods=14):
     """Calculate RSI using pandas."""
     try:
-        returns = pd.Series(prices).diff()
+        # Convert to pandas series and calculate returns
+        price_series = pd.Series(prices)
+        returns = price_series.diff()
         gains = returns.where(returns > 0, 0)
         losses = -returns.where(returns < 0, 0)
 
-        avg_gain = gains.rolling(window=periods).mean()
-        avg_loss = losses.rolling(window=periods).mean()
+        # Calculate average gains and losses
+        avg_gain = gains.rolling(window=periods, min_periods=1).mean()
+        avg_loss = losses.rolling(window=periods, min_periods=1).mean()
 
+        # Calculate RS and RSI
         rs = avg_gain / avg_loss
         rsi = 100 - (100 / (1 + rs))
-        return float(rsi.iloc[-1])
+
+        # Handle edge cases
+        rsi = rsi.fillna(50)  # Fill NaN values with neutral RSI
+        rsi = rsi.clip(0, 100)  # Ensure RSI is between 0 and 100
+
+        latest_rsi = float(rsi.iloc[-1])
+        logger.info(f"Calculated RSI: {latest_rsi}")
+        return latest_rsi
     except Exception as e:
-        raise Exception(f"RSI calculation error: {str(e)}")
+        logger.error(f"RSI calculation error: {str(e)}")
+        return 50.0  # Return neutral RSI on error
 
 def calculate_macd(prices):
     """Calculate MACD using pandas."""
