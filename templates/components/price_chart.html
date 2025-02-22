@@ -12,6 +12,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const priceCtx = document.getElementById('priceChart').getContext('2d');
     const historicalData = {{ historical_data|tojson if historical_data else '[]' }};
     const predictions = {{ predictions|tojson if predictions else '{"forecast":{"dates":[], "values":[], "lower_bounds":[], "upper_bounds":[]}}' }};
+    const support1 = {{ support_1|tojson }};
+    const support2 = {{ support_2|tojson }};
+    const resistance1 = {{ resistance_1|tojson }};
+    const resistance2 = {{ resistance_2|tojson }};
 
     if (!historicalData.length) {
         console.log('No historical data available');
@@ -26,6 +30,58 @@ document.addEventListener('DOMContentLoaded', function() {
         l: d.low,
         c: d.close
     }));
+
+    // Create horizontal lines for support and resistance levels
+    const annotations = {
+        support1: {
+            type: 'line',
+            yMin: support1,
+            yMax: support1,
+            borderColor: 'rgba(16, 185, 129, 0.5)',
+            borderWidth: 1,
+            label: {
+                enabled: true,
+                content: 'Support 1',
+                position: 'left'
+            }
+        },
+        support2: {
+            type: 'line',
+            yMin: support2,
+            yMax: support2,
+            borderColor: 'rgba(16, 185, 129, 0.3)',
+            borderWidth: 1,
+            label: {
+                enabled: true,
+                content: 'Support 2',
+                position: 'left'
+            }
+        },
+        resistance1: {
+            type: 'line',
+            yMin: resistance1,
+            yMax: resistance1,
+            borderColor: 'rgba(239, 68, 68, 0.5)',
+            borderWidth: 1,
+            label: {
+                enabled: true,
+                content: 'Resistance 1',
+                position: 'left'
+            }
+        },
+        resistance2: {
+            type: 'line',
+            yMin: resistance2,
+            yMax: resistance2,
+            borderColor: 'rgba(239, 68, 68, 0.3)',
+            borderWidth: 1,
+            label: {
+                enabled: true,
+                content: 'Resistance 2',
+                position: 'left'
+            }
+        }
+    };
 
     // Create the candlestick chart with enhanced configuration
     window.priceChart = new Chart(priceCtx, {
@@ -95,6 +151,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             },
             plugins: {
+                annotation: {
+                    annotations: annotations
+                },
                 legend: {
                     display: true,
                     labels: {
