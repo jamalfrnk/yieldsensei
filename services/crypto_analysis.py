@@ -61,9 +61,8 @@ class CryptoAnalysisService:
             df['resistance_1'] = df['price'].rolling(window=10).max()
             df['resistance_2'] = df['price'].rolling(window=20).max()
 
-            # Fill NaN values with appropriate methods
-            df.fillna(method='ffill', inplace=True)
-            df.fillna(method='bfill', inplace=True)
+            # Fill NaN values with forward fill then backward fill
+            df = df.ffill().bfill()
 
             return df
 
@@ -75,25 +74,28 @@ class CryptoAnalysisService:
         """Get current market summary for a cryptocurrency"""
         try:
             logger.debug(f"Fetching market summary for {coin_id}")
-            url = f"{self.base_url}/simple/price"
+            # Changed to use /coins/{id} endpoint which provides more reliable market data
+            url = f"{self.base_url}/coins/{coin_id}"
             params = {
-                'ids': coin_id,
-                'vs_currencies': 'usd',
-                'include_24hr_vol': True,
-                'include_24hr_change': True,
-                'include_market_cap': True
+                'localization': 'false',
+                'tickers': 'false',
+                'community_data': 'false',
+                'developer_data': 'false',
+                'sparkline': 'false'
             }
 
             response = requests.get(url, params=params)
             response.raise_for_status()
 
-            data = response.json()[coin_id]
+            data = response.json()
+            market_data = data['market_data']
+
             return {
-                'current_price': data['usd'],
-                'market_cap': data['usd_market_cap'],
-                'volume': data['usd_24h_vol'],
-                'price_change_24h': data['usd_24h_change'],
-                'last_updated': datetime.now().isoformat()
+                'current_price': market_data['current_price']['usd'],
+                'market_cap': market_data['market_cap']['usd'],
+                'volume': market_data['total_volume']['usd'],
+                'price_change_24h': market_data['price_change_percentage_24h'],
+                'last_updated': data['last_updated']
             }
 
         except requests.exceptions.RequestException as e:
