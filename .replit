@@ -49,7 +49,7 @@ args = "python app.py"
 waitForPort = 5000
 
 [deployment]
-run = ["sh", "-c", "pkill -f 'python app.py' || true && ENVIRONMENT=development SECRET_KEY=dev_secret_key DEBUG=true python app.py"]
+run = ["sh", "-c", "python app.py"]
 deploymentTarget = "gce"
 
 [[ports]]

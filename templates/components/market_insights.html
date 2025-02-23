@@ -1,41 +1,76 @@
 <!-- AI Market Insights Component -->
-<div class="bg-gray-900 rounded-lg p-6 hover:bg-opacity-90 transition-all duration-300">
+<div class="bg-gray-900 rounded-lg p-6 hover:bg-opacity-90 transition-all duration-300 shadow-lg">
     <div class="flex items-center justify-between mb-6">
-        <h2 class="text-2xl font-bold text-orange-500">AI Market Insights</h2>
-        <div class="text-sm text-gray-400">
-            Last updated: {{ "{:%Y-%m-%d %H:%M UTC}".format(last_updated) if last_updated else "Updating..." }}
+        <div class="flex items-center">
+            <h2 class="text-2xl font-bold text-orange-500">AI Market Insights</h2>
+            <div class="ml-2 group relative">
+                <span class="cursor-help text-orange-500">ⓘ</span>
+                <div class="opacity-0 bg-black text-white text-sm rounded-lg py-2 px-3 absolute z-10 bottom-full mb-2 -left-1/2 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 w-64">
+                    AI-powered analysis of market conditions and trends
+                </div>
+            </div>
+        </div>
+        <div class="text-sm text-gray-400 flex items-center">
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            {{ "{:%Y-%m-%d %H:%M UTC}".format(last_updated) if last_updated else "Updating..." }}
         </div>
     </div>
 
     <!-- Market Summary -->
-    <div class="bg-gray-800 rounded-lg p-6 mb-6 hover:bg-gray-700 transition-all duration-300">
-        <h3 class="text-xl font-semibold text-orange-500 mb-4">Market Summary</h3>
-        <div class="prose prose-invert max-w-none">
+    <div class="bg-gray-800 rounded-lg p-6 mb-6 hover:bg-gray-700 transition-all duration-300 shadow-inner">
+        <h3 class="text-xl font-semibold text-orange-500 mb-4 flex items-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            Market Summary
+        </h3>
+        <div class="prose prose-invert max-w-none text-gray-300">
             {{ market_insights.summary | safe if market_insights and market_insights.summary else "Generating market insights..." }}
         </div>
     </div>
 
     <!-- Key Metrics Analysis -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <div class="bg-gray-800 rounded-lg p-6 hover:bg-gray-700 transition-all duration-300">
-            <h3 class="text-xl font-semibold text-orange-500 mb-4">Sentiment Analysis</h3>
-            <div class="flex items-center justify-between mb-3">
-                <span class="text-gray-300">Market Sentiment:</span>
-                <span class="text-white font-semibold">
-                    {{ market_insights.sentiment.label if market_insights and market_insights.sentiment else "Analyzing..." }}
-                </span>
-            </div>
-            <div class="flex items-center justify-between">
-                <span class="text-gray-300">Confidence Score:</span>
-                <span class="text-white font-semibold">
-                    {{ "{:.1f}%".format(market_insights.sentiment.score * 100) if market_insights and market_insights.sentiment else "0.0%" }}
-                </span>
+        <!-- Sentiment Analysis -->
+        <div class="bg-gray-800 rounded-lg p-6 hover:bg-gray-700 transition-all duration-300 shadow-inner">
+            <h3 class="text-xl font-semibold text-orange-500 mb-4 flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                Sentiment Analysis
+            </h3>
+            <div class="space-y-4">
+                <div class="flex items-center justify-between">
+                    <span class="text-gray-300">Market Sentiment:</span>
+                    <span class="text-white font-semibold px-3 py-1 rounded-full bg-gray-700">
+                        {{ market_insights.sentiment.label if market_insights and market_insights.sentiment else "Analyzing..." }}
+                    </span>
+                </div>
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-300">Confidence Score:</span>
+                        <span class="text-white font-semibold">
+                            {{ "{:.1f}%".format(market_insights.sentiment.score * 100) if market_insights and market_insights.sentiment else "0.0%" }}
+                        </span>
+                    </div>
+                    <div class="w-full bg-gray-700 rounded-full h-2">
+                        <div class="bg-orange-500 h-2 rounded-full" style="width: {{ "{:.1f}%".format(market_insights.sentiment.score * 100) if market_insights and market_insights.sentiment else "0" }};"></div>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <div class="bg-gray-800 rounded-lg p-6 hover:bg-gray-700 transition-all duration-300">
-            <h3 class="text-xl font-semibold text-orange-500 mb-4">Market Factors</h3>
-            <ul class="space-y-2 text-gray-300">
+        <!-- Market Factors -->
+        <div class="bg-gray-800 rounded-lg p-6 hover:bg-gray-700 transition-all duration-300 shadow-inner">
+            <h3 class="text-xl font-semibold text-orange-500 mb-4 flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                </svg>
+                Market Factors
+            </h3>
+            <ul class="space-y-3 text-gray-300">
                 {% if market_insights and market_insights.factors %}
                     {% for factor in market_insights.factors %}
                         <li class="flex items-center">
@@ -53,10 +88,15 @@
         </div>
     </div>
 
-    <!-- AI Predictions -->
-    <div class="bg-gray-800 rounded-lg p-6 hover:bg-gray-700 transition-all duration-300">
-        <h3 class="text-xl font-semibold text-orange-500 mb-4">Market Outlook</h3>
-        <div class="prose prose-invert max-w-none">
+    <!-- Market Outlook -->
+    <div class="bg-gray-800 rounded-lg p-6 hover:bg-gray-700 transition-all duration-300 shadow-inner">
+        <h3 class="text-xl font-semibold text-orange-500 mb-4 flex items-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            Market Outlook
+        </h3>
+        <div class="prose prose-invert max-w-none text-gray-300">
             {{ market_insights.outlook | safe if market_insights and market_insights.outlook else "Generating market outlook..." }}
         </div>
     </div>
