@@ -156,7 +156,7 @@ if __name__ == '__main__':
         local_ip = socket.gethostbyname(hostname)
         logger.info(f"Local IP address: {local_ip}")
 
-        # Create and configure the Flask app
+        # Create the Flask app
         app = create_app()
 
         # Always use port 5000 as required by Replit
@@ -164,8 +164,11 @@ if __name__ == '__main__':
         logger.info(f"Starting Flask server on port {port}")
         logger.info(f"Server will be accessible at http://{local_ip}:{port}")
 
+        # Try to kill any existing process on port 5000
+        os.system(f"fuser -k {port}/tcp > /dev/null 2>&1")
+
         app.run(
-            host='0.0.0.0',
+            host='0.0.0.0',  # Listen on all available interfaces
             port=port,
             debug=True
         )

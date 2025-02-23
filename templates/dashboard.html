@@ -1,28 +1,30 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="space-y-4">
+<div class="min-h-screen space-y-6">
     <!-- Market Overview -->
-    <div class="bg-gray-900 rounded-lg p-6">
-        <h1 class="text-2xl font-bold text-orange-500 mb-4">Market Overview</h1>
+    <div class="bg-gray-900 rounded-lg p-6 hover:bg-opacity-90 transition-all duration-300">
+        <h1 class="text-4xl md:text-5xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-orange-500 to-orange-400">
+            Market Overview
+        </h1>
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div class="bg-gray-800 p-4 rounded-lg">
+            <div class="bg-gray-800 p-6 rounded-lg hover:bg-gray-700 transition-all duration-300 hover-scale">
                 <h3 class="text-gray-400 text-sm">Current Price</h3>
-                <p class="text-xl font-bold text-white">${{ "{:,.2f}".format(market_data.current_price) }}</p>
+                <p class="text-2xl font-bold text-white">${{ "{:,.2f}".format(market_data.current_price) }}</p>
             </div>
-            <div class="bg-gray-800 p-4 rounded-lg">
+            <div class="bg-gray-800 p-6 rounded-lg hover:bg-gray-700 transition-all duration-300 hover-scale">
                 <h3 class="text-gray-400 text-sm">24h Change</h3>
-                <p class="text-xl font-bold {% if market_data.price_change_24h > 0 %}text-green-500{% else %}text-red-500{% endif %}">
+                <p class="text-2xl font-bold {% if market_data.price_change_24h > 0 %}text-green-500{% else %}text-red-500{% endif %}">
                     {{ "{:,.2f}%".format(market_data.price_change_24h) }}
                 </p>
             </div>
-            <div class="bg-gray-800 p-4 rounded-lg">
+            <div class="bg-gray-800 p-6 rounded-lg hover:bg-gray-700 transition-all duration-300 hover-scale">
                 <h3 class="text-gray-400 text-sm">Market Cap</h3>
-                <p class="text-xl font-bold text-white">${{ "{:,.0f}".format(market_data.market_cap) }}</p>
+                <p class="text-2xl font-bold text-white">${{ "{:,.0f}".format(market_data.market_cap) }}</p>
             </div>
-            <div class="bg-gray-800 p-4 rounded-lg">
+            <div class="bg-gray-800 p-6 rounded-lg hover:bg-gray-700 transition-all duration-300 hover-scale">
                 <h3 class="text-gray-400 text-sm">24h Volume</h3>
-                <p class="text-xl font-bold text-white">${{ "{:,.0f}".format(market_data.volume) }}</p>
+                <p class="text-2xl font-bold text-white">${{ "{:,.0f}".format(market_data.volume) }}</p>
             </div>
         </div>
     </div>
@@ -31,9 +33,9 @@
     {% include 'components/market_insights.html' %}
 
     <!-- Price Chart -->
-    <div class="bg-gray-900 rounded-lg p-6">
-        <h2 class="text-xl font-bold text-orange-500 mb-4">Price Chart</h2>
-        <div class="w-full h-96">
+    <div class="bg-gray-900 rounded-lg p-6 hover:bg-opacity-90 transition-all duration-300">
+        <h2 class="text-2xl font-bold text-orange-500 mb-6">Price Chart</h2>
+        <div class="w-full h-96 bg-gray-800 rounded-lg p-4">
             <canvas id="priceChart"></canvas>
         </div>
     </div>
@@ -56,8 +58,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 label: 'Price (USD)',
                 data: chartData.map(d => d.price),
                 borderColor: '#f97316',
+                backgroundColor: 'rgba(249, 115, 22, 0.1)',
                 borderWidth: 2,
-                fill: false,
+                fill: true,
                 tension: 0.1
             }]
         },
@@ -71,7 +74,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         color: 'rgba(255, 255, 255, 0.1)'
                     },
                     ticks: {
-                        color: '#9ca3af'
+                        color: '#9ca3af',
+                        callback: function(value) {
+                            return '$' + value.toLocaleString();
+                        }
                     }
                 },
                 x: {
@@ -79,14 +85,33 @@ document.addEventListener('DOMContentLoaded', function() {
                         color: 'rgba(255, 255, 255, 0.1)'
                     },
                     ticks: {
-                        color: '#9ca3af'
+                        color: '#9ca3af',
+                        maxRotation: 45,
+                        minRotation: 45
                     }
                 }
             },
             plugins: {
                 legend: {
                     labels: {
-                        color: '#9ca3af'
+                        color: '#9ca3af',
+                        font: {
+                            family: "'Inter', sans-serif"
+                        }
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(17, 24, 39, 0.8)',
+                    titleColor: '#f97316',
+                    bodyColor: '#ffffff',
+                    borderColor: '#f97316',
+                    borderWidth: 1,
+                    padding: 12,
+                    displayColors: false,
+                    callbacks: {
+                        label: function(context) {
+                            return '$' + context.parsed.y.toLocaleString();
+                        }
                     }
                 }
             }
@@ -94,4 +119,13 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
+
+<style>
+.hover-scale {
+    transition: transform 0.3s ease-in-out;
+}
+.hover-scale:hover {
+    transform: scale(1.05);
+}
+</style>
 {% endblock %}

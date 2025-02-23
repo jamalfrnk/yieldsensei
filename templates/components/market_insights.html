@@ -1,25 +1,25 @@
 <!-- AI Market Insights Component -->
-<div class="bg-gray-900 rounded-lg p-6 mb-6">
-    <div class="flex items-center justify-between mb-4">
-        <h2 class="text-xl font-bold text-orange-500">AI Market Insights</h2>
+<div class="bg-gray-900 rounded-lg p-6 hover:bg-opacity-90 transition-all duration-300">
+    <div class="flex items-center justify-between mb-6">
+        <h2 class="text-2xl font-bold text-orange-500">AI Market Insights</h2>
         <div class="text-sm text-gray-400">
             Last updated: {{ "{:%Y-%m-%d %H:%M UTC}".format(last_updated) if last_updated else "Updating..." }}
         </div>
     </div>
 
     <!-- Market Summary -->
-    <div class="bg-black bg-opacity-50 rounded-lg p-4 mb-4">
-        <h3 class="text-lg font-semibold text-orange-500 mb-2">Market Summary</h3>
+    <div class="bg-gray-800 rounded-lg p-6 mb-6 hover:bg-gray-700 transition-all duration-300">
+        <h3 class="text-xl font-semibold text-orange-500 mb-4">Market Summary</h3>
         <div class="prose prose-invert max-w-none">
             {{ market_insights.summary | safe if market_insights and market_insights.summary else "Generating market insights..." }}
         </div>
     </div>
 
     <!-- Key Metrics Analysis -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-        <div class="bg-black bg-opacity-50 rounded-lg p-4">
-            <h3 class="text-lg font-semibold text-orange-500 mb-2">Sentiment Analysis</h3>
-            <div class="flex items-center justify-between mb-2">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div class="bg-gray-800 rounded-lg p-6 hover:bg-gray-700 transition-all duration-300">
+            <h3 class="text-xl font-semibold text-orange-500 mb-4">Sentiment Analysis</h3>
+            <div class="flex items-center justify-between mb-3">
                 <span class="text-gray-300">Market Sentiment:</span>
                 <span class="text-white font-semibold">
                     {{ market_insights.sentiment.label if market_insights and market_insights.sentiment else "Analyzing..." }}
@@ -33,23 +33,29 @@
             </div>
         </div>
 
-        <div class="bg-black bg-opacity-50 rounded-lg p-4">
-            <h3 class="text-lg font-semibold text-orange-500 mb-2">Market Factors</h3>
-            <ul class="list-disc list-inside text-gray-300">
+        <div class="bg-gray-800 rounded-lg p-6 hover:bg-gray-700 transition-all duration-300">
+            <h3 class="text-xl font-semibold text-orange-500 mb-4">Market Factors</h3>
+            <ul class="space-y-2 text-gray-300">
                 {% if market_insights and market_insights.factors %}
                     {% for factor in market_insights.factors %}
-                        <li>{{ factor }}</li>
+                        <li class="flex items-center">
+                            <span class="text-orange-500 mr-2">•</span>
+                            {{ factor }}
+                        </li>
                     {% endfor %}
                 {% else %}
-                    <li>Analyzing market factors...</li>
+                    <li class="flex items-center">
+                        <span class="text-orange-500 mr-2">•</span>
+                        Analyzing market factors...
+                    </li>
                 {% endif %}
             </ul>
         </div>
     </div>
 
     <!-- AI Predictions -->
-    <div class="bg-black bg-opacity-50 rounded-lg p-4">
-        <h3 class="text-lg font-semibold text-orange-500 mb-2">Market Outlook</h3>
+    <div class="bg-gray-800 rounded-lg p-6 hover:bg-gray-700 transition-all duration-300">
+        <h3 class="text-xl font-semibold text-orange-500 mb-4">Market Outlook</h3>
         <div class="prose prose-invert max-w-none">
             {{ market_insights.outlook | safe if market_insights and market_insights.outlook else "Generating market outlook..." }}
         </div>

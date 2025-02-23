@@ -1,7 +1,7 @@
 <!-- ML Predictions and Price Analysis -->
-<div class="bg-gray-900 rounded-lg p-6">
+<div class="bg-gray-900 rounded-lg p-6 hover:bg-opacity-90 transition-all duration-300">
     <div class="flex items-center mb-4">
-        <h2 class="text-xl font-bold text-orange-500">Comprehensive Price Analysis</h2>
+        <h2 class="text-2xl font-bold text-orange-500">Comprehensive Price Analysis</h2>
         <div class="ml-2 group relative">
             <span class="cursor-help text-orange-500">ⓘ</span>
             <div class="opacity-0 bg-black text-white text-sm rounded-lg py-2 px-3 absolute z-10 bottom-full mb-2 -left-1/2 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 w-64">
@@ -13,7 +13,7 @@
     <!-- Technical Indicators -->
     <div class="mb-6">
         <div class="flex items-center mb-3">
-            <h3 class="text-orange-500 font-semibold">Technical Indicators</h3>
+            <h3 class="text-xl font-semibold text-orange-500">Technical Indicators</h3>
             <div class="ml-2 group relative">
                 <span class="cursor-help text-orange-500">ⓘ</span>
                 <div class="opacity-0 bg-black text-white text-sm rounded-lg py-2 px-3 absolute z-10 bottom-full mb-2 -left-1/2 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 w-64">
@@ -23,7 +23,7 @@
         </div>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <!-- RSI Analysis -->
-            <div class="bg-black bg-opacity-50 p-4 rounded">
+            <div class="bg-gray-800 p-6 rounded-lg hover:bg-gray-700 transition-all duration-300 hover-scale">
                 <h4 class="text-orange-500 font-semibold mb-2">RSI Analysis</h4>
                 <p class="text-sm">Value: {{ "{:.1f}".format(technical_indicators.rsi.value) if technical_indicators and technical_indicators.rsi else "50.0" }}</p>
                 <p class="text-sm">Trend: {{ technical_indicators.rsi.trend if technical_indicators and technical_indicators.rsi else "Neutral" }}</p>
@@ -31,7 +31,7 @@
             </div>
 
             <!-- MACD Analysis -->
-            <div class="bg-black bg-opacity-50 p-4 rounded">
+            <div class="bg-gray-800 p-6 rounded-lg hover:bg-gray-700 transition-all duration-300 hover-scale">
                 <h4 class="text-orange-500 font-semibold mb-2">MACD Analysis</h4>
                 <p class="text-sm">Signal: {{ technical_indicators.macd.signal if technical_indicators and technical_indicators.macd else "Neutral" }}</p>
                 <p class="text-sm">Crossover: {{ technical_indicators.macd.crossover if technical_indicators and technical_indicators.macd else "None" }}</p>
@@ -39,7 +39,7 @@
             </div>
 
             <!-- Overall Trend -->
-            <div class="bg-black bg-opacity-50 p-4 rounded">
+            <div class="bg-gray-800 p-6 rounded-lg hover:bg-gray-700 transition-all duration-300 hover-scale">
                 <h4 class="text-orange-500 font-semibold mb-2">Overall Trend</h4>
                 <p class="text-sm">Direction: {{ trend_direction if trend_direction else "Neutral" }}</p>
                 <p class="text-sm">Signal: {{ signal if signal else "Neutral" }}</p>
@@ -48,40 +48,10 @@
         </div>
     </div>
 
-    <!-- Fibonacci Levels -->
-    <div class="mb-6">
-        <div class="flex items-center mb-3">
-            <h3 class="text-orange-500 font-semibold">Fibonacci Levels</h3>
-            <div class="ml-2 group relative">
-                <span class="cursor-help text-orange-500">ⓘ</span>
-                <div class="opacity-0 bg-black text-white text-sm rounded-lg py-2 px-3 absolute z-10 bottom-full mb-2 -left-1/2 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 w-64">
-                    Fibonacci retracement and extension levels for identifying potential support and resistance zones.
-                </div>
-            </div>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {% if fibonacci_levels %}
-            {% for level_name, level_value in fibonacci_levels.levels.items() %}
-            <div class="bg-black bg-opacity-50 p-4 rounded">
-                <h4 class="text-orange-500 font-semibold mb-2">{{ level_name }}</h4>
-                <p class="text-sm">${{ "{:,.2f}".format(level_value) }}</p>
-                {% if fibonacci_levels.current_position == level_name %}
-                <p class="text-sm text-orange-500">Current Level</p>
-                {% endif %}
-            </div>
-            {% endfor %}
-            {% else %}
-            <div class="col-span-3 text-center p-4">
-                <p class="text-gray-400">Fibonacci levels not available</p>
-            </div>
-            {% endif %}
-        </div>
-    </div>
-
     <!-- Support & Resistance Levels -->
     <div class="mb-6">
         <div class="flex items-center mb-3">
-            <h3 class="text-orange-500 font-semibold">Price Levels</h3>
+            <h3 class="text-xl font-semibold text-orange-500">Price Levels</h3>
             <div class="ml-2 group relative">
                 <span class="cursor-help text-orange-500">ⓘ</span>
                 <div class="opacity-0 bg-black text-white text-sm rounded-lg py-2 px-3 absolute z-10 bottom-full mb-2 -left-1/2 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 w-64">
@@ -91,25 +61,25 @@
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <!-- Support Level 1 -->
-            <div class="bg-black bg-opacity-50 p-4 rounded">
+            <div class="bg-gray-800 p-6 rounded-lg hover:bg-gray-700 transition-all duration-300 hover-scale">
                 <h4 class="text-orange-500 font-semibold mb-2">Support 1</h4>
                 <p class="text-sm">${{ "{:.2f}".format(price_levels.support_1) if price_levels and price_levels.support_1 else "0.00" }}</p>
             </div>
 
             <!-- Support Level 2 -->
-            <div class="bg-black bg-opacity-50 p-4 rounded">
+            <div class="bg-gray-800 p-6 rounded-lg hover:bg-gray-700 transition-all duration-300 hover-scale">
                 <h4 class="text-orange-500 font-semibold mb-2">Support 2</h4>
                 <p class="text-sm">${{ "{:.2f}".format(price_levels.support_2) if price_levels and price_levels.support_2 else "0.00" }}</p>
             </div>
 
             <!-- Resistance Level 1 -->
-            <div class="bg-black bg-opacity-50 p-4 rounded">
+            <div class="bg-gray-800 p-6 rounded-lg hover:bg-gray-700 transition-all duration-300 hover-scale">
                 <h4 class="text-orange-500 font-semibold mb-2">Resistance 1</h4>
                 <p class="text-sm">${{ "{:.2f}".format(price_levels.resistance_1) if price_levels and price_levels.resistance_1 else "0.00" }}</p>
             </div>
 
             <!-- Resistance Level 2 -->
-            <div class="bg-black bg-opacity-50 p-4 rounded">
+            <div class="bg-gray-800 p-6 rounded-lg hover:bg-gray-700 transition-all duration-300 hover-scale">
                 <h4 class="text-orange-500 font-semibold mb-2">Resistance 2</h4>
                 <p class="text-sm">${{ "{:.2f}".format(price_levels.resistance_2) if price_levels and price_levels.resistance_2 else "0.00" }}</p>
             </div>
@@ -119,7 +89,7 @@
     <!-- Historical Price Ranges -->
     <div class="mb-6">
         <div class="flex items-center mb-3">
-            <h3 class="text-orange-500 font-semibold">Historical Price Ranges</h3>
+            <h3 class="text-xl font-semibold text-orange-500">Historical Price Ranges</h3>
             <div class="ml-2 group relative">
                 <span class="cursor-help text-orange-500">ⓘ</span>
                 <div class="opacity-0 bg-black text-white text-sm rounded-lg py-2 px-3 absolute z-10 bottom-full mb-2 -left-1/2 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 w-64">
@@ -129,35 +99,35 @@
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <!-- 24h Range -->
-            <div class="bg-black bg-opacity-50 p-4 rounded">
+            <div class="bg-gray-800 p-6 rounded-lg hover:bg-gray-700 transition-all duration-300 hover-scale">
                 <h4 class="text-orange-500 font-semibold mb-2">24h Range</h4>
                 <p class="text-sm">High: ${{ "{:,.2f}".format(price_ranges.day.high) }}</p>
                 <p class="text-sm">Low: ${{ "{:,.2f}".format(price_ranges.day.low) }}</p>
             </div>
 
             <!-- 7d Range -->
-            <div class="bg-black bg-opacity-50 p-4 rounded">
+            <div class="bg-gray-800 p-6 rounded-lg hover:bg-gray-700 transition-all duration-300 hover-scale">
                 <h4 class="text-orange-500 font-semibold mb-2">7 Day Range</h4>
                 <p class="text-sm">High: ${{ "{:,.2f}".format(price_ranges.week.high) }}</p>
                 <p class="text-sm">Low: ${{ "{:,.2f}".format(price_ranges.week.low) }}</p>
             </div>
 
             <!-- 30d Range -->
-            <div class="bg-black bg-opacity-50 p-4 rounded">
+            <div class="bg-gray-800 p-6 rounded-lg hover:bg-gray-700 transition-all duration-300 hover-scale">
                 <h4 class="text-orange-500 font-semibold mb-2">30 Day Range</h4>
                 <p class="text-sm">High: ${{ "{:,.2f}".format(price_ranges.month.high) }}</p>
                 <p class="text-sm">Low: ${{ "{:,.2f}".format(price_ranges.month.low) }}</p>
             </div>
 
             <!-- 90d Range -->
-            <div class="bg-black bg-opacity-50 p-4 rounded">
+            <div class="bg-gray-800 p-6 rounded-lg hover:bg-gray-700 transition-all duration-300 hover-scale">
                 <h4 class="text-orange-500 font-semibold mb-2">90 Day Range</h4>
                 <p class="text-sm">High: ${{ "{:,.2f}".format(price_ranges.quarter.high) }}</p>
                 <p class="text-sm">Low: ${{ "{:,.2f}".format(price_ranges.quarter.low) }}</p>
             </div>
 
             <!-- 365d Range -->
-            <div class="bg-black bg-opacity-50 p-4 rounded">
+            <div class="bg-gray-800 p-6 rounded-lg hover:bg-gray-700 transition-all duration-300 hover-scale">
                 <h4 class="text-orange-500 font-semibold mb-2">365 Day Range</h4>
                 <p class="text-sm">High: ${{ "{:,.2f}".format(price_ranges.year.high) }}</p>
                 <p class="text-sm">Low: ${{ "{:,.2f}".format(price_ranges.year.low) }}</p>
@@ -169,7 +139,7 @@
     {% if ml_predictions and ml_predictions.next_day %}
     <div class="mb-6">
         <div class="flex items-center mb-3">
-            <h3 class="text-orange-500 font-semibold">AI Predictions</h3>
+            <h3 class="text-xl font-semibold text-orange-500">AI Predictions</h3>
             <div class="ml-2 group relative">
                 <span class="cursor-help text-orange-500">ⓘ</span>
                 <div class="opacity-0 bg-black text-white text-sm rounded-lg py-2 px-3 absolute z-10 bottom-full mb-2 -left-1/2 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 w-64">
@@ -178,22 +148,22 @@
             </div>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div class="bg-black bg-opacity-50 p-4 rounded">
+            <div class="bg-gray-800 p-6 rounded-lg hover:bg-gray-700 transition-all duration-300 hover-scale">
                 <h4 class="text-orange-500 font-semibold mb-2">ML Model Prediction</h4>
                 <p class="text-sm">Random Forest: ${{ "{:.2f}".format(ml_predictions.next_day.rf_prediction) }}</p>
                 <p class="text-sm">Prophet: ${{ "{:.2f}".format(ml_predictions.next_day.prophet_prediction) }}</p>
             </div>
-            <div class="bg-black bg-opacity-50 p-4 rounded">
+            <div class="bg-gray-800 p-6 rounded-lg hover:bg-gray-700 transition-all duration-300 hover-scale">
                 <h4 class="text-orange-500 font-semibold mb-2">Combined Prediction</h4>
                 <p class="text-sm">Price: ${{ "{:.2f}".format(ml_predictions.next_day.combined_prediction) }}</p>
                 <p class="text-sm">Confidence: {{ "{:.1f}%".format(confidence_score) if confidence_score else "0.0%" }}</p>
             </div>
-            <div class="bg-black bg-opacity-50 p-4 rounded">
+            <div class="bg-gray-800 p-6 rounded-lg hover:bg-gray-700 transition-all duration-300 hover-scale">
                 <h4 class="text-orange-500 font-semibold mb-2">Prediction Range</h4>
                 <p class="text-sm">Upper: ${{ "{:.2f}".format(ml_predictions.next_day.upper_bound) }}</p>
                 <p class="text-sm">Lower: ${{ "{:.2f}".format(ml_predictions.next_day.lower_bound) }}</p>
             </div>
-            <div class="bg-black bg-opacity-50 p-4 rounded">
+            <div class="bg-gray-800 p-6 rounded-lg hover:bg-gray-700 transition-all duration-300 hover-scale">
                 <h4 class="text-orange-500 font-semibold mb-2">Optimal Trading Levels</h4>
                 <p class="text-sm">Entry: ${{ "{:.2f}".format(trading_levels.optimal_entry) if trading_levels and trading_levels.optimal_entry else "0.00" }}</p>
                 <p class="text-sm">Exit: ${{ "{:.2f}".format(trading_levels.optimal_exit) if trading_levels and trading_levels.optimal_exit else "0.00" }}</p>
