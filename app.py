@@ -33,7 +33,7 @@ except Exception as e:
 if __name__ == '__main__':
     try:
         # Always use port 5000 for Replit
-        port = 5000
+        port = 8080
         logger.info(f"Starting Flask server on port {port}...")
 
         # Basic configuration without threading or debug mode
