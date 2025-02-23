@@ -27,11 +27,11 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python3 minimal.py"
+args = "gunicorn wsgi:app --bind 0.0.0.0:5000 --log-level debug"
 waitForPort = 5000
 
 [deployment]
-run = ["sh", "-c", "python3 minimal.py"]
+run = ["sh", "-c", "gunicorn wsgi:app --bind 0.0.0.0:5000 --log-level debug"]
 deploymentTarget = "gce"
 
 [[ports]]
