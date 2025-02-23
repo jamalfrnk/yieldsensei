@@ -1,50 +1,78 @@
 import os
 import logging
-from flask import Flask, render_template, send_from_directory
+from flask import Flask, render_template, send_from_directory, jsonify
+from services.crypto_analysis import CryptoAnalysisService
 
 # Configure detailed logging
 logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.DEBUG  # Set to DEBUG for more detailed logs
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
 
-# Initialize Flask app with explicit static folder
+# Initialize Flask app
 app = Flask(__name__, 
     static_folder='static',
     static_url_path='/static'
 )
 
 # Configure Flask app
-app.config['SECRET_KEY'] = os.urandom(24)  # Add secret key for forms
-app.config['TEMPLATES_AUTO_RELOAD'] = True  # Enable template auto-reload
+app.config['SECRET_KEY'] = os.urandom(24)
+app.config['TEMPLATES_AUTO_RELOAD'] = True
+
+# Initialize services
+crypto_service = CryptoAnalysisService()
 
 @app.route('/')
 def index():
     try:
-        logger.debug("Attempting to render index page")
+        logger.debug("Rendering index page")
         return render_template('index.html')
     except Exception as e:
         logger.error(f"Error rendering index page: {str(e)}", exc_info=True)
-        return f"Error: {str(e)}", 500
+        return render_template('error.html', error=str(e)), 500
 
 @app.route('/dashboard')
 def dashboard():
     try:
-        logger.debug("Attempting to render dashboard page")
-        return render_template('dashboard.html')
+        logger.debug("Rendering dashboard page")
+        historical_data = crypto_service.get_historical_data()
+        if historical_data is None:
+            logger.error("Failed to fetch historical data")
+            raise Exception("Failed to fetch cryptocurrency data")
+
+        market_summary = crypto_service.get_market_summary()
+        if market_summary is None:
+            logger.error("Failed to fetch market summary")
+            raise Exception("Failed to fetch market data")
+
+        logger.debug(f"Successfully fetched market data: {market_summary}")
+
+        chart_data = historical_data.reset_index().to_dict('records')
+        support_1 = float(historical_data['support_1'].iloc[-1])
+        support_2 = float(historical_data['support_2'].iloc[-1])
+        resistance_1 = float(historical_data['resistance_1'].iloc[-1])
+        resistance_2 = float(historical_data['resistance_2'].iloc[-1])
+
+        return render_template('dashboard.html',
+                             market_summary=market_summary,
+                             historical_data=chart_data,
+                             support_1=support_1,
+                             support_2=support_2,
+                             resistance_1=resistance_1,
+                             resistance_2=resistance_2)
     except Exception as e:
         logger.error(f"Error rendering dashboard page: {str(e)}", exc_info=True)
-        return f"Error: {str(e)}", 500
+        return render_template('error.html', error=str(e)), 500
 
 @app.route('/static/<path:filename>')
 def serve_static(filename):
     try:
-        logger.debug(f"Attempting to serve static file: {filename}")
+        logger.debug(f"Serving static file: {filename}")
         return send_from_directory(app.static_folder, filename)
     except Exception as e:
         logger.error(f"Error serving static file {filename}: {str(e)}", exc_info=True)
-        return f"Error: {str(e)}", 404
+        return render_template('error.html', error=f"File not found: {filename}"), 404
 
 @app.errorhandler(404)
 def not_found_error(error):
@@ -56,8 +84,15 @@ def internal_error(error):
 
 if __name__ == '__main__':
     # Ensure required directories exist
-    os.makedirs('static', exist_ok=True)
     os.makedirs('static/assets', exist_ok=True)
+
+    # Copy the image file to static/assets if it doesn't exist
+    source_image = 'attached_assets/blackyieldsensei.webp'
+    dest_image = 'static/assets/blackyieldsensei.webp'
+    if os.path.exists(source_image) and not os.path.exists(dest_image):
+        import shutil
+        shutil.copy2(source_image, dest_image)
+        logger.info(f"Copied {source_image} to {dest_image}")
 
     # Start server
     port = int(os.environ.get('PORT', 5000))
