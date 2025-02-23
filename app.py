@@ -1,6 +1,7 @@
 import os
 import logging
 import socket
+import pandas as pd
 from flask import Flask, render_template, send_from_directory, jsonify
 from services.crypto_analysis import CryptoAnalysisService
 
@@ -20,13 +21,24 @@ def create_app():
     app.config['TEMPLATES_AUTO_RELOAD'] = True
     app.config['DEBUG'] = True
 
+    # Initialize CryptoAnalysisService with error handling
     try:
         logger.info("Initializing CryptoAnalysisService...")
         crypto_service = CryptoAnalysisService()
         logger.info("CryptoAnalysisService initialized successfully")
     except Exception as e:
         logger.error(f"Failed to initialize CryptoAnalysisService: {str(e)}", exc_info=True)
-        raise
+        crypto_service = None  # Allow app to start even if service fails
+
+    @app.route('/test')
+    def test():
+        """Test route to verify server functionality"""
+        try:
+            logger.info("Test route accessed")
+            return jsonify({"status": "ok", "message": "Server is running"})
+        except Exception as e:
+            logger.error(f"Error in test route: {str(e)}", exc_info=True)
+            return jsonify({"status": "error", "message": str(e)}), 500
 
     @app.route('/')
     def index():
@@ -40,6 +52,11 @@ def create_app():
     @app.route('/dashboard')
     def dashboard():
         try:
+            # Verify crypto_service is available
+            if not crypto_service:
+                logger.error("CryptoAnalysisService not initialized")
+                return render_template('error.html', error="Service temporarily unavailable"), 503
+
             # Get basic market data
             logger.info("Fetching market data...")
             market_data = {
@@ -49,26 +66,34 @@ def create_app():
                 'volume': 0
             }
 
-            market_summary = crypto_service.get_market_summary()
-            if market_summary:
-                market_data.update({
-                    'current_price': market_summary.get('current_price', 0.0),
-                    'price_change_24h': market_summary.get('price_change_24h', 0.0),
-                    'market_cap': market_summary.get('market_cap', 0),
-                    'volume': market_summary.get('volume', 0)
-                })
-            else:
-                logger.warning("Failed to fetch market data, using defaults")
+            try:
+                market_summary = crypto_service.get_market_summary()
+                if market_summary:
+                    market_data.update({
+                        'current_price': market_summary.get('current_price', 0.0),
+                        'price_change_24h': market_summary.get('price_change_24h', 0.0),
+                        'market_cap': market_summary.get('market_cap', 0),
+                        'volume': market_summary.get('volume', 0)
+                    })
+                else:
+                    logger.warning("Failed to fetch market data, using defaults")
+            except Exception as e:
+                logger.error(f"Error fetching market data: {str(e)}")
 
             # Get historical data for the chart
-            historical_data = crypto_service.get_historical_data()
-            if not historical_data:
-                logger.warning("Failed to fetch historical data")
-                historical_data = []
+            chart_data = []
+            try:
+                historical_data = crypto_service.get_historical_data()
+                if isinstance(historical_data, pd.DataFrame) and not historical_data.empty:
+                    chart_data = historical_data.reset_index().to_dict('records')
+                else:
+                    logger.warning("Historical data is not available")
+            except Exception as e:
+                logger.error(f"Error fetching historical data: {str(e)}")
 
             return render_template('dashboard.html',
                                market_data=market_data,
-                               chart_data=historical_data.reset_index().to_dict('records') if not isinstance(historical_data, list) else [])
+                               chart_data=chart_data)
 
         except Exception as e:
             logger.error(f"Dashboard error: {str(e)}")
