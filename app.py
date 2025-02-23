@@ -1,6 +1,7 @@
 import logging
 import sys
 import os
+import socket
 
 # Configure logging with full tracebacks
 logging.basicConfig(
@@ -17,6 +18,15 @@ except Exception as e:
     logger.critical(f"Failed to import Flask: {str(e)}", exc_info=True)
     sys.exit(1)
 
+def is_port_in_use(port):
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        try:
+            s.bind(('0.0.0.0', port))
+            return False
+        except socket.error as e:
+            logger.error(f"Port {port} check failed: {str(e)}")
+            return True
+
 try:
     logger.info("Creating Flask app...")
     app = Flask(__name__)
@@ -32,11 +42,12 @@ except Exception as e:
 
 if __name__ == '__main__':
     try:
-        # Always use port 5000 for Replit
-        port = 8080
-        logger.info(f"Starting Flask server on port {port}...")
+        port = 5000  # ALWAYS use port 5000 for Replit
+        if is_port_in_use(port):
+            logger.error(f"Port {port} is already in use!")
+            sys.exit(1)
 
-        # Basic configuration without threading or debug mode
+        logger.info(f"Starting Flask server on port {port}...")
         app.run(
             host='0.0.0.0',
             port=port,

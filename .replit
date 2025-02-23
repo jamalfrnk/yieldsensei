@@ -4,34 +4,15 @@ modules = ["python-3.11", "nodejs-20", "python3", "postgresql-16"]
 channel = "stable-24_05"
 
 [workflows]
-runButton = "Flask Server"
+runButton = "Project"
 
 [[workflows.workflow]]
 name = "Project"
 mode = "parallel"
 author = "agent"
 
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Flask Server"
-
-[[workflows.workflow]]
-name = "Flask Server"
-author = "agent"
-
-[workflows.workflow.metadata]
-agentRequireRestartOnSave = false
-
-[[workflows.workflow.tasks]]
-task = "packager.installForAll"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "gunicorn wsgi:app --bind 0.0.0.0:8080 --log-level debug"
-waitForPort = 5000
-
 [deployment]
-run = ["sh", "-c", "gunicorn wsgi:app --bind 0.0.0.0:5000 --log-level debug"]
+run = ["sh", "-c", "python3 app.py"]
 deploymentTarget = "gce"
 
 [[ports]]
