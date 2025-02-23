@@ -11,9 +11,16 @@ name = "Project"
 mode = "parallel"
 author = "agent"
 
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
 [[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Production Server"
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm install && node build_css.js && FLASK_ENV=production PYTHONUNBUFFERED=1 gunicorn --workers 4 --bind 0.0.0.0:5000 --log-level info --error-logfile - --access-logfile - app:app"
+waitForPort = 5000
 
 [[workflows.workflow]]
 name = "Production Server"
