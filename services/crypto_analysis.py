@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 import requests
 import logging
 import ta
+from services.technical_analysis import get_signal_analysis
 
 logger = logging.getLogger(__name__)
 
@@ -33,22 +34,28 @@ class CryptoAnalysisService:
                 'days': days,
                 'interval': 'daily'
             }
+            logger.debug(f"Making API request to: {url}")
+
             response = requests.get(url, params=params)
+            if response.status_code == 404:
+                logger.error(f"Token '{coin_id}' not found")
+                return None
             response.raise_for_status()
 
             data = response.json()
+            if not data or "prices" not in data:
+                logger.error("Invalid response format from API")
+                return None
+
             df = pd.DataFrame(data['prices'], columns=['timestamp', 'price'])
             df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
             df.set_index('timestamp', inplace=True)
 
-            logger.debug(f"Successfully fetched historical data for {coin_id}")
+            logger.debug(f"Successfully fetched {len(df)} price points for {coin_id}")
             return self._add_technical_indicators(df)
 
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Network error fetching historical data: {str(e)}")
-            return None
         except Exception as e:
-            logger.error(f"Error processing historical data: {str(e)}")
+            logger.error(f"Error fetching historical data: {str(e)}")
             return None
 
     def _add_technical_indicators(self, df):
@@ -114,9 +121,127 @@ class CryptoAnalysisService:
             logger.debug(f"Successfully fetched market summary for {coin_id}")
             return summary
 
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Network error fetching market summary: {str(e)}")
-            return None
         except Exception as e:
             logger.error(f"Error processing market summary: {str(e)}")
+            return None
+
+    def get_market_sentiment(self, coin_id="bitcoin"):
+        """Get market sentiment analysis"""
+        try:
+            logger.debug(f"Analyzing market sentiment for {coin_id}")
+            df = self.get_historical_data(coin_id)
+            if df is None:
+                return None
+
+            # Calculate sentiment score based on technical indicators
+            rsi = df['rsi'].iloc[-1]
+            macd = df['macd'].iloc[-1]
+            macd_signal = df['macd_signal'].iloc[-1]
+            price = df['price'].iloc[-1]
+            sma_20 = df['price'].rolling(window=20).mean().iloc[-1]
+
+            # Initialize sentiment factors
+            factors = []
+            score = 0.5  # Neutral starting point
+
+            # RSI Analysis
+            if rsi > 70:
+                factors.append("RSI indicates overbought conditions")
+                score -= 0.1
+            elif rsi < 30:
+                factors.append("RSI indicates oversold conditions")
+                score += 0.1
+
+            # MACD Analysis
+            if macd > macd_signal:
+                factors.append("MACD shows bullish momentum")
+                score += 0.1
+            else:
+                factors.append("MACD shows bearish momentum")
+                score -= 0.1
+
+            # Trend Analysis
+            if price > sma_20:
+                factors.append("Price above 20-day moving average")
+                score += 0.1
+            else:
+                factors.append("Price below 20-day moving average")
+                score -= 0.1
+
+            # Normalize score between 0 and 1
+            score = max(0, min(1, score))
+
+            # Determine sentiment label
+            if score > 0.6:
+                label = "Bullish 📈"
+            elif score < 0.4:
+                label = "Bearish 📉"
+            else:
+                label = "Neutral ⚖️"
+
+            sentiment_data = {
+                'score': score,
+                'label': label,
+                'factors': factors
+            }
+
+            logger.debug(f"Successfully generated sentiment analysis for {coin_id}")
+            return sentiment_data
+
+        except Exception as e:
+            logger.error(f"Error calculating market sentiment: {str(e)}")
+            return None
+
+    def get_dca_recommendations(self, coin_id="bitcoin"):
+        """Get DCA (Dollar Cost Averaging) recommendations"""
+        try:
+            logger.debug(f"Generating DCA recommendations for {coin_id}")
+            signal_data = get_signal_analysis(coin_id)
+
+            if not signal_data:
+                return None
+
+            current_price = signal_data['current_price']
+            support_1 = signal_data['price_levels']['support_1']
+            support_2 = signal_data['price_levels']['support_2']
+
+            # Calculate entry points based on technical levels
+            entry_points = [
+                {'price': current_price * 0.98, 'allocation': '20%'},
+                {'price': support_1, 'allocation': '40%'},
+                {'price': support_2, 'allocation': '40%'}
+            ]
+
+            # Determine risk level based on signal strength
+            signal_strength = abs(signal_data['signal_strength'])
+            if signal_strength > 70:
+                risk_level = "High Risk 🔴"
+                risk_explanation = "Strong market momentum detected. Consider smaller position sizes."
+            elif signal_strength > 30:
+                risk_level = "Medium Risk 🟡"
+                risk_explanation = "Moderate market conditions. Standard position sizing recommended."
+            else:
+                risk_level = "Low Risk 🟢"
+                risk_explanation = "Stable market conditions. Optimal for DCA strategy."
+
+            # Generate schedule based on risk level
+            if risk_level == "High Risk 🔴":
+                schedule = "Weekly small purchases spread across 6-8 weeks"
+            elif risk_level == "Medium Risk 🟡":
+                schedule = "Bi-weekly purchases spread across 4-6 weeks"
+            else:
+                schedule = "Monthly purchases spread across 3-4 months"
+
+            recommendations = {
+                'entry_points': entry_points,
+                'risk_level': risk_level,
+                'risk_explanation': risk_explanation,
+                'schedule': schedule
+            }
+
+            logger.debug(f"Successfully generated DCA recommendations for {coin_id}")
+            return recommendations
+
+        except Exception as e:
+            logger.error(f"Error generating DCA recommendations: {str(e)}")
             return None

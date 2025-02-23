@@ -2,6 +2,8 @@ import os
 import logging
 import sys
 from flask import Flask, render_template, send_from_directory, jsonify
+import pandas as pd
+import numpy as np
 from services.crypto_analysis import CryptoAnalysisService
 import socket
 
@@ -31,6 +33,7 @@ def create_app():
 
         # Initialize services with error handling
         try:
+            logger.info("Initializing CryptoAnalysisService...")
             crypto_service = CryptoAnalysisService()
             logger.info("CryptoAnalysisService initialized successfully")
         except Exception as e:
@@ -49,7 +52,7 @@ def create_app():
         @app.route('/dashboard')
         def dashboard():
             try:
-                logger.debug("Rendering dashboard page")
+                logger.debug("Attempting to fetch dashboard data...")
                 historical_data = crypto_service.get_historical_data()
                 if historical_data is None:
                     logger.error("Failed to fetch historical data")
@@ -62,20 +65,58 @@ def create_app():
 
                 logger.debug(f"Successfully fetched market data: {market_summary}")
 
-                chart_data = historical_data.reset_index().to_dict('records')
+                # Calculate price ranges
+                current_price = historical_data['price'].iloc[-1]
+                price_ranges = {
+                    'day': {
+                        'high': historical_data['price'].tail(24).max(),
+                        'low': historical_data['price'].tail(24).min(),
+                        'change': ((current_price - historical_data['price'].iloc[-2]) / historical_data['price'].iloc[-2]) * 100
+                    },
+                    'week': {
+                        'high': historical_data['price'].tail(7 * 24).max(),
+                        'low': historical_data['price'].tail(7 * 24).min(),
+                        'change': ((current_price - historical_data['price'].iloc[-7]) / historical_data['price'].iloc[-7]) * 100
+                    },
+                    'month': {
+                        'high': historical_data['price'].tail(30 * 24).max(),
+                        'low': historical_data['price'].tail(30 * 24).min(),
+                        'change': ((current_price - historical_data['price'].iloc[-30]) / historical_data['price'].iloc[-30]) * 100
+                    }
+                }
+
                 support_1 = float(historical_data['support_1'].iloc[-1])
                 support_2 = float(historical_data['support_2'].iloc[-1])
                 resistance_1 = float(historical_data['resistance_1'].iloc[-1])
                 resistance_2 = float(historical_data['resistance_2'].iloc[-1])
 
+                # Get sentiment analysis
+                try:
+                    sentiment_data = crypto_service.get_market_sentiment()
+                    logger.debug("Successfully fetched sentiment data")
+                except Exception as e:
+                    logger.warning(f"Failed to fetch sentiment data: {str(e)}")
+                    sentiment_data = None
+
+                # Get DCA recommendations
+                try:
+                    dca_recommendations = crypto_service.get_dca_recommendations()
+                    logger.debug("Successfully fetched DCA recommendations")
+                except Exception as e:
+                    logger.warning(f"Failed to fetch DCA recommendations: {str(e)}")
+                    dca_recommendations = None
+
                 logger.debug("Preparing to render dashboard template")
                 return render_template('dashboard.html',
                                     market_summary=market_summary,
-                                    historical_data=chart_data,
+                                    historical_data=historical_data.reset_index().to_dict('records'),
+                                    price_ranges=price_ranges,
                                     support_1=support_1,
                                     support_2=support_2,
                                     resistance_1=resistance_1,
-                                    resistance_2=resistance_2)
+                                    resistance_2=resistance_2,
+                                    sentiment_data=sentiment_data,
+                                    dca_recommendations=dca_recommendations)
             except Exception as e:
                 logger.error(f"Error rendering dashboard page: {str(e)}", exc_info=True)
                 return render_template('error.html', error=str(e)), 500
@@ -134,8 +175,7 @@ if __name__ == '__main__':
             host='0.0.0.0',
             port=port,
             debug=True,
-            threaded=True,
-            use_reloader=True
+            threaded=True
         )
     except Exception as e:
         logger.critical(f"Failed to start server: {str(e)}", exc_info=True)
