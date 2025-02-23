@@ -2,6 +2,8 @@ from flask import Flask, render_template, send_from_directory
 import logging
 import sys
 import os
+import signal
+import socket
 from models import db
 
 # Configure logging
@@ -14,6 +16,22 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger(__name__)
+
+def check_port_available(port):
+    """Check if a port is available."""
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        sock.bind(('0.0.0.0', port))
+        sock.close()
+        return True
+    except OSError as e:
+        logger.error(f"Error checking port availability: {e}")
+        return False
+
+def cleanup_handler(signum, frame):
+    """Handle cleanup when the app is shutting down."""
+    logger.info("Received signal to shutdown. Cleaning up...")
+    sys.exit(0)
 
 def create_app():
     try:
@@ -67,7 +85,7 @@ def create_app():
         @app.route('/docs')
         def documentation():
             try:
-                return render_template('docs.html')
+                return render_template('documentation.html')
             except Exception as e:
                 logger.error(f"Error rendering documentation: {e}", exc_info=True)
                 return "Error loading documentation", 500
@@ -95,11 +113,20 @@ app = create_app()
 
 if __name__ == '__main__':
     try:
+        # Set up signal handlers
+        signal.signal(signal.SIGINT, cleanup_handler)
+        signal.signal(signal.SIGTERM, cleanup_handler)
+
+        port = 5000
+        if not check_port_available(port):
+            logger.error(f"Port {port} is already in use! Please free the port and try again.")
+            sys.exit(1)
+
         with app.app_context():
             db.create_all()
             logger.info("Database tables created successfully")
         logger.info("Starting Flask development server...")
-        app.run(host='0.0.0.0', port=5000)
+        app.run(host='0.0.0.0', port=port, debug=True)
     except Exception as e:
         logger.critical(f"Failed to start server: {e}", exc_info=True)
         sys.exit(1)

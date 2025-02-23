@@ -4,6 +4,7 @@ import logging
 import socket
 import sys
 import os
+import time
 
 logging.basicConfig(
     level=logging.INFO,
@@ -22,8 +23,19 @@ def check_port_available(port):
 
 if __name__ == "__main__":
     port = 5000
+
+    # Add retry logic for port availability
+    max_retries = 3
+    retry_delay = 2  # seconds
+
+    for attempt in range(max_retries):
+        if check_port_available(port):
+            break
+        logger.warning(f"Port {port} is busy, waiting {retry_delay} seconds before retry {attempt + 1}/{max_retries}")
+        time.sleep(retry_delay)
+
     if not check_port_available(port):
-        logger.error(f"Port {port} is already in use!")
+        logger.error(f"Port {port} is still in use after {max_retries} attempts!")
         sys.exit(1)
 
     try:

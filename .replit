@@ -7,7 +7,7 @@ channel = "stable-24_05"
 runButton = "Project"
 
 [[workflows.workflow]]
-name = "Project"
+name = "Production Server"
 mode = "parallel"
 author = "agent"
 
@@ -19,11 +19,11 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "npm install && node build_css.js && FLASK_ENV=production PYTHONUNBUFFERED=1 gunicorn --workers 4 --bind 0.0.0.0:5000 --log-level info --error-logfile - --access-logfile - app:app"
+args = "python wsgi.py"
 waitForPort = 5000
 
 [[workflows.workflow]]
-name = "Production Server"
+name = "Flask Server"
 author = "agent"
 
 [workflows.workflow.metadata]
@@ -34,11 +34,36 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "FLASK_ENV=production PYTHONUNBUFFERED=1 gunicorn --workers 4 --bind 0.0.0.0:5000 --log-level info --error-logfile - --access-logfile - app:app"
+args = "python app.py"
 waitForPort = 5000
 
+[[workflows.workflow]]
+name = "Flask Server"
+mode = "parallel"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "PYTHONUNBUFFERED=1 FLASK_ENV=development python app.py"
+waitForPort = 5000
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Flask Server"
+
 [deployment]
-run = ["sh", "-c", "FLASK_ENV=production PYTHONUNBUFFERED=1 gunicorn --workers 4 --bind 0.0.0.0:5000 --log-level info --error-logfile - --access-logfile - app:app"]
+run = ["sh", "-c", "PYTHONUNBUFFERED=1 FLASK_ENV=development python app.py"]
 deploymentTarget = "gce"
 
 [[ports]]
