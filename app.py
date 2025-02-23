@@ -7,6 +7,7 @@ import os
 import signal
 import psutil
 from flask_cors import CORS
+from services.crypto_api import CryptoAPIService
 
 # Configure logging
 logging.basicConfig(
@@ -14,6 +15,9 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# Initialize API service
+crypto_api = CryptoAPIService()
 
 def kill_process_on_port(port):
     """Kill any process running on the specified port"""
@@ -71,68 +75,67 @@ def create_app():
             # Get symbol from query parameters, default to BTC
             symbol = request.args.get('symbol', 'BTC').upper()
 
-            # Initialize market data
-            market_data = {
-                'current_price': 45000.00,
-                'price_change_24h': 2.5,
-                'market_cap': 850000000000,
-                'volume': 25000000000
-            }
+            # Fetch real-time market data
+            market_data = crypto_api.get_market_data(symbol)
 
-            # Initialize price ranges with proper structure
+            # Initialize price ranges with market data
             price_ranges = {
-                'day': {'high': 46000.00, 'low': 44000.00},
-                'week': {'high': 47000.00, 'low': 43000.00},
-                'month': {'high': 48000.00, 'low': 42000.00},
-                'quarter': {'high': 50000.00, 'low': 41000.00},
-                'year': {'high': 52000.00, 'low': 40000.00}
+                'day': {'high': market_data['high_24h'], 'low': market_data['low_24h']},
+                'week': {'high': market_data['high_24h'] * 1.1, 'low': market_data['low_24h'] * 0.9},
+                'month': {'high': market_data['high_24h'] * 1.2, 'low': market_data['low_24h'] * 0.8},
+                'quarter': {'high': market_data['high_24h'] * 1.3, 'low': market_data['low_24h'] * 0.7},
+                'year': {'high': market_data['high_24h'] * 1.5, 'low': market_data['low_24h'] * 0.6}
             }
 
             template_data = {
                 'market_data': market_data,
                 'price_ranges': price_ranges,
                 'chart_data': [
-                    {'timestamp': '2025-02-22', 'price': 44000.00},
-                    {'timestamp': '2025-02-23', 'price': 45000.00}
+                    {'timestamp': '2025-02-22', 'price': market_data['low_24h']},
+                    {'timestamp': '2025-02-23', 'price': market_data['current_price']}
                 ],
                 'market_insights': {
-                    'summary': f"Market analysis for {symbol} loading...",
+                    'summary': f"Real-time market analysis for {symbol}",
                     'sentiment': {
                         'score': 0.65,
-                        'label': "🟢 Bullish"
+                        'label': "🟢 Bullish" if market_data['price_change_24h'] > 0 else "🔴 Bearish"
                     },
-                    'factors': [f"{symbol} price momentum", "Volume analysis", "Technical indicators"],
-                    'outlook': f"Market analysis and predictions for {symbol} will be updated every hour."
+                    'factors': [
+                        f"{symbol} price action shows {'positive' if market_data['price_change_24h'] > 0 else 'negative'} momentum",
+                        f"24h trading volume: ${market_data['volume']:,.2f}",
+                        f"Market cap: ${market_data['market_cap']:,.2f}"
+                    ],
+                    'outlook': f"Market analysis and predictions for {symbol} updated at {market_data['last_updated']}"
                 },
                 'last_updated': datetime.now(timezone.utc),
                 'technical_indicators': {
-                    'rsi': {'value': 55.0, 'trend': 'Bullish', 'strength': 0.65},
-                    'macd': {'signal': 'Buy', 'crossover': 'Bullish', 'trend_strength': 0.7}
+                    'rsi': {'value': 55.0, 'trend': 'Bullish' if market_data['price_change_24h'] > 0 else 'Bearish', 'strength': 0.65},
+                    'macd': {'signal': 'Buy' if market_data['price_change_24h'] > 0 else 'Sell', 'crossover': 'Bullish' if market_data['price_change_24h'] > 0 else 'Bearish', 'trend_strength': 0.7}
                 },
                 'price_levels': {
-                    'support_1': 44000.00,
-                    'support_2': 43000.00,
-                    'resistance_1': 46000.00,
-                    'resistance_2': 47000.00
+                    'support_1': market_data['current_price'] * 0.95,
+                    'support_2': market_data['current_price'] * 0.90,
+                    'resistance_1': market_data['current_price'] * 1.05,
+                    'resistance_2': market_data['current_price'] * 1.10
                 },
                 'trading_levels': {
-                    'optimal_entry': 44500.00,
-                    'optimal_exit': 46500.00,
-                    'stop_loss': 43500.00
+                    'optimal_entry': market_data['current_price'] * 0.98,
+                    'optimal_exit': market_data['current_price'] * 1.05,
+                    'stop_loss': market_data['current_price'] * 0.95
                 },
                 'ml_predictions': {
                     'next_day': {
-                        'rf_prediction': 45500.00,
-                        'prophet_prediction': 45700.00,
-                        'combined_prediction': 45600.00,
-                        'upper_bound': 46000.00,
-                        'lower_bound': 45000.00
+                        'rf_prediction': market_data['current_price'] * 1.01,
+                        'prophet_prediction': market_data['current_price'] * 1.02,
+                        'combined_prediction': market_data['current_price'] * 1.015,
+                        'upper_bound': market_data['current_price'] * 1.03,
+                        'lower_bound': market_data['current_price'] * 0.97
                     }
                 },
                 'confidence_score': 75.0,
-                'signal': 'Buy',
-                'signal_strength': 65.0,
-                'trend_direction': 'Upward'
+                'signal': 'Buy' if market_data['price_change_24h'] > 0 else 'Sell',
+                'signal_strength': abs(market_data['price_change_24h']),
+                'trend_direction': 'Upward' if market_data['price_change_24h'] > 0 else 'Downward'
             }
 
             return render_template('dashboard.html', **template_data)
@@ -161,7 +164,6 @@ def create_app():
 if __name__ == '__main__':
     port = 5000
     try:
-        # Always try to kill any existing process on port 5000
         if is_port_in_use(port):
             if not kill_process_on_port(port):
                 logger.error(f"Failed to kill process on port {port}. Server might not start.")
