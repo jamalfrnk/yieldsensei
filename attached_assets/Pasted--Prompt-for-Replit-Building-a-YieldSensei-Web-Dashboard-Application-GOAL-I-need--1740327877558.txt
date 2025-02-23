@@ -1,0 +1,68 @@
+### **Prompt for Replit: Building a YieldSensei Web Dashboard Application**  
+
+**GOAL**  
+I need a detailed, step-by-step guide to create and deploy an interactive web application for **YieldSensei.ai**, a **crypto analytics and AI-powered insights platform**. The web app will feature **real-time market data, technical indicators, ML predictions, and trading signals**, with a **sleek, user-friendly interface**.
+
+---
+
+### **REQUIREMENTS**  
+
+#### **1. Backend (Flask API)**
+- Build a **Flask-based REST API** to handle user requests.
+- Implement API endpoints for:
+  - **Market Data** – Fetching live token prices, volume, market cap from CoinGecko.
+  - **Technical Analysis** – Compute RSI, MACD, and support/resistance levels using **TA-Lib**.
+  - **Trading Signals** – AI-powered buy/sell indicators.
+  - **Sentiment Analysis** – Fetch market sentiment using **OpenAI API**.
+  - **DCA Recommendations** – Generate Dollar Cost Averaging (DCA) strategies.
+- Optimize API with **caching, rate limiting, and input validation**.
+
+#### **2. Frontend (Dashboard UI)**
+- **Develop a modern, responsive web dashboard** using:
+  - **Tailwind CSS** – For sleek and mobile-friendly styling.
+  - **Chart.js** – For real-time **crypto price charts, indicators, and historical analysis**.
+- **Dashboard Sections:**
+  - 📊 **Live Market Overview** – Price charts, market cap, and sentiment analysis.
+  - 📈 **Technical Indicators** – Interactive RSI, MACD, and trend signals.
+  - 🛠 **Trading Insights** – Buy/Sell signals and AI-generated predictions.
+  - 📉 **DCA Strategy** – Cost averaging recommendations.
+  - 🔍 **Historical Analysis** – Backtesting trading strategies.
+
+#### **3. Database (Firestore)**
+- Use **Firebase Firestore** as the NoSQL database.
+- Store **user settings, watchlists, preferences, and trading history**.
+
+#### **4. Security & Performance**
+- Implement **rate limiting** to avoid API overuse.
+- **Cache API responses** to minimize redundant requests.
+- **Input validation & error handling** to prevent invalid queries.
+- **Deploy Flask app on Replit**, connect with **Bluehost for domain hosting**.
+
+---
+
+### **DELIVERABLE**  
+1. **Flask API Setup**
+   - Python scripts for handling API requests and processing market data.
+   - Implementation of **coingecko_service.py, dexscreener_service.py, and openai_service.py**.
+   - ML-based trading signal generation using **Prophet & scikit-learn**.
+
+2. **Frontend Dashboard**
+   - A **Tailwind CSS & Chart.js-powered UI** with interactive market charts.
+   - Real-time technical indicators and sentiment overview.
+   - Mobile-responsive and optimized for seamless user interaction.
+
+3. **Data Flow**
+   - **User Input** → Via web dashboard
+   - **API Processing** → Fetches real-time market data
+   - **AI/ML Analysis** → Generates signals & sentiment insights
+   - **Dashboard Update** → Displays data via interactive charts
+
+4. **Deployment & Hosting**
+   - Host backend on **Replit (Flask API)**.
+   - Host frontend on **Bluehost (yieldsensei.ai)**.
+   - Implement **security layers & rate limiting**.
+
+---
+
+### **PROMPT END**  
+Be thorough and ensure seamless integration between the **Flask API backend** and the **frontend UI dashboard**. The goal is to **deliver an immersive, real-time market analytics experience** for users on **YieldSensei.ai**. 🚀
