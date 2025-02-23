@@ -1,4 +1,4 @@
-from flask import Flask, render_template, send_from_directory
+from flask import Flask, render_template, send_from_directory, request
 import logging
 import socket
 from datetime import datetime, timezone
@@ -12,22 +12,6 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
-
-def cleanup_port(port):
-    """Attempt to cleanup any process using the specified port"""
-    try:
-        for proc in psutil.process_iter(['pid', 'name', 'connections']):
-            try:
-                for conn in proc.connections():
-                    if conn.laddr.port == port:
-                        logger.info(f"Found process using port {port}: {proc.pid}")
-                        os.kill(proc.pid, signal.SIGTERM)
-                        return True
-            except (psutil.NoSuchProcess, psutil.AccessDenied):
-                continue
-    except Exception as e:
-        logger.error(f"Error during port cleanup: {str(e)}")
-    return False
 
 def is_port_in_use(port):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -52,6 +36,9 @@ def create_app():
     @app.route('/dashboard')
     def dashboard():
         try:
+            # Get symbol from query parameters, default to BTC
+            symbol = request.args.get('symbol', 'BTC')
+
             # Initialize market data with example values
             market_data = {
                 'current_price': 45000.00,
@@ -75,13 +62,13 @@ def create_app():
                 'price_ranges': price_ranges,
                 'chart_data': [],
                 'market_insights': {
-                    'summary': "Market analysis loading...",
+                    'summary': f"Market analysis for {symbol} loading...",
                     'sentiment': {
                         'score': 0.65,
                         'label': "🟢 Bullish"
                     },
-                    'factors': ["Price momentum", "Volume analysis", "Technical indicators"],
-                    'outlook': "Market analysis and predictions will be updated every hour."
+                    'factors': [f"{symbol} price momentum", "Volume analysis", "Technical indicators"],
+                    'outlook': f"Market analysis and predictions for {symbol} will be updated every hour."
                 },
                 'last_updated': datetime.now(timezone.utc),
                 'technical_indicators': {
@@ -140,20 +127,13 @@ def create_app():
 if __name__ == '__main__':
     try:
         # Check if port is already in use
-        if is_port_in_use(5000):
-            logger.error("Port 5000 is already in use. Attempting to force close...")
-            if cleanup_port(5000):
-                logger.info("Successfully cleaned up port 5000")
-                # Wait a moment for cleanup
-                import time
-                time.sleep(2)
-            else:
-                logger.error("Failed to clean up port 5000")
+        if is_port_in_use(8080):
+            logger.error("Port 8080 is already in use")
+            raise RuntimeError("Port 8080 is already in use")
 
         logger.info("Starting Flask application...")
         app = create_app()
-        # ALWAYS serve the app on port 5000
-        app.run(host='0.0.0.0', port=5000, debug=True)
+        app.run(host='0.0.0.0', port=8080, debug=True)
     except Exception as e:
         logger.critical(f"Failed to start server: {str(e)}", exc_info=True)
         raise
