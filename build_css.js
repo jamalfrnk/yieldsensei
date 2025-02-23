@@ -3,7 +3,7 @@ const path = require('path');
 
 try {
   console.log('Building CSS...');
-  execSync('npx tailwindcss -i ./static/css/input.css -o ./static/css/main.css --minify', {
+  execSync(`npx tailwindcss -i ./static/css/input.css -o ./static/css/main.css --minify`, {
     stdio: 'inherit',
     encoding: 'utf-8',
     cwd: __dirname,
