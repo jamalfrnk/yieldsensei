@@ -145,8 +145,8 @@ if __name__ == '__main__':
         logger.info("Creating and configuring application...")
         app = create_app()
 
-        logger.info("Starting Waitress server on port 5000...")
-        serve(app, host='0.0.0.0', port=5000)
+        logger.info("Starting Waitress server on port 3000...")
+        serve(app, host='0.0.0.0', port=3000)
 
     except Exception as e:
         logger.critical(f"Failed to start server: {str(e)}", exc_info=True)
