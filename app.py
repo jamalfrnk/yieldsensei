@@ -146,15 +146,16 @@ def create_app():
     return app
 
 if __name__ == '__main__':
+    port = 5000
     try:
-        port = 3000
+        # Always try to kill any existing process on port 5000
         if is_port_in_use(port):
-            logger.warning(f"Port {port} is in use, attempting to free it...")
-            if not kill_process_on_port(port):
-                raise RuntimeError(f"Could not free port {port}")
-        logger.info(f"Starting Flask application on port {port}...")
+            kill_process_on_port(port)
+            time.sleep(2)  # Wait for port to be fully released
+
         app = create_app()
-        app.run(host='0.0.0.0', port=port, debug=True)
+        logger.info(f"Starting Flask application on port {port}...")
+        app.run(host='0.0.0.0', port=port, debug=False, threaded=True)
     except Exception as e:
         logger.critical(f"Failed to start server: {str(e)}", exc_info=True)
         raise
