@@ -13,6 +13,24 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+def kill_process_on_port(port):
+    """Kill any process running on the specified port"""
+    try:
+        for proc in psutil.process_iter(['pid', 'name']):
+            try:
+                connections = proc.connections()
+                for conn in connections:
+                    if hasattr(conn.laddr, 'port') and conn.laddr.port == port:
+                        os.kill(proc.pid, signal.SIGTERM)
+                        logger.info(f"Killed process {proc.pid} on port {port}")
+                        return True
+            except (psutil.AccessDenied, psutil.NoSuchProcess):
+                continue
+        return False
+    except Exception as e:
+        logger.error(f"Error killing process on port {port}: {e}")
+        return False
+
 def is_port_in_use(port):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         try:
@@ -37,7 +55,7 @@ def create_app():
     def dashboard():
         try:
             # Get symbol from query parameters, default to BTC
-            symbol = request.args.get('symbol', 'BTC')
+            symbol = request.args.get('symbol', 'BTC').upper()
 
             # Initialize market data with example values
             market_data = {
@@ -47,20 +65,22 @@ def create_app():
                 'volume': 25000000000
             }
 
-            # Initialize price ranges with correct structure matching the template
+            # Initialize price ranges with proper structure
             price_ranges = {
                 'day': {'high': 46000.00, 'low': 44000.00},
                 'week': {'high': 47000.00, 'low': 43000.00},
                 'month': {'high': 48000.00, 'low': 42000.00},
-                'quarter': {'high': 50000.00, 'low': 41000.00},
+                'quarter': {'high': 50000.00, 'low': 41000.00},  # Explicitly include quarter
                 'year': {'high': 52000.00, 'low': 40000.00}
             }
 
-            # Initialize template variables
             template_data = {
                 'market_data': market_data,
                 'price_ranges': price_ranges,
-                'chart_data': [],
+                'chart_data': [
+                    {'timestamp': '2025-02-22', 'price': 44000.00},
+                    {'timestamp': '2025-02-23', 'price': 45000.00}
+                ],
                 'market_insights': {
                     'summary': f"Market analysis for {symbol} loading...",
                     'sentiment': {
@@ -126,14 +146,18 @@ def create_app():
 
 if __name__ == '__main__':
     try:
-        # Check if port is already in use
-        if is_port_in_use(8080):
-            logger.error("Port 8080 is already in use")
-            raise RuntimeError("Port 8080 is already in use")
+        port = 3000  # Changed from 5000 to 3000
+        if is_port_in_use(port):
+            logger.warning(f"Port {port} is in use, attempting to free it...")
+            if kill_process_on_port(port):
+                logger.info(f"Successfully freed port {port}")
+            else:
+                logger.error(f"Failed to free port {port}")
+                raise RuntimeError(f"Port {port} is already in use and could not be freed")
 
         logger.info("Starting Flask application...")
         app = create_app()
-        app.run(host='0.0.0.0', port=8080, debug=True)
+        app.run(host='0.0.0.0', port=port, debug=True)
     except Exception as e:
         logger.critical(f"Failed to start server: {str(e)}", exc_info=True)
         raise
