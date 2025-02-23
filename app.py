@@ -11,8 +11,7 @@ logger = logging.getLogger(__name__)
 
 try:
     logger.info("Importing Flask...")
-    from flask import Flask, render_template, request, jsonify
-    from services.crypto_api import CryptoAPIService
+    from flask import Flask
     logger.info("Flask imported successfully")
 except Exception as e:
     logger.critical(f"Failed to import Flask: {str(e)}", exc_info=True)
@@ -21,21 +20,11 @@ except Exception as e:
 try:
     logger.info("Creating Flask app...")
     app = Flask(__name__)
-    crypto_service = CryptoAPIService()
+    app.config['DEBUG'] = False
 
     @app.route('/')
     def index():
-        return render_template('dashboard.html')
-
-    @app.route('/api/market-data/<symbol>')
-    def get_market_data(symbol):
-        try:
-            data = crypto_service.get_market_data(symbol.upper())
-            logger.info(f"Market data for {symbol}: {data}")
-            return jsonify(data)
-        except Exception as e:
-            logger.error(f"Error fetching market data: {str(e)}")
-            return jsonify({"error": str(e)}), 500
+        return "Hello World - Server is running!"
 
 except Exception as e:
     logger.critical(f"Failed to create Flask application: {str(e)}", exc_info=True)
@@ -43,10 +32,18 @@ except Exception as e:
 
 if __name__ == '__main__':
     try:
-        port = int(os.environ.get("PORT", 5000))  # Default to port 5000
+        # Always use port 5000 for Replit
+        port = 5000
         logger.info(f"Starting Flask server on port {port}...")
-        # Start without debug mode and with minimal configuration
-        app.run(host='0.0.0.0', port=port, debug=False)
+
+        # Basic configuration without threading or debug mode
+        app.run(
+            host='0.0.0.0',
+            port=port,
+            debug=False,
+            use_reloader=False,
+            threaded=False
+        )
     except Exception as e:
         logger.critical(f"Application startup failed: {str(e)}", exc_info=True)
         sys.exit(1)
