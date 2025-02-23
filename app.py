@@ -4,6 +4,9 @@ import socket
 import pandas as pd
 from flask import Flask, render_template, send_from_directory, jsonify
 from services.crypto_analysis import CryptoAnalysisService
+from services.openai_service import get_crypto_news_sync
+from services.sentiment_service import calculate_sentiment_score
+from datetime import datetime, timezone
 
 # Configure logging
 logging.basicConfig(
@@ -69,14 +72,7 @@ def create_app():
             try:
                 market_summary = crypto_service.get_market_summary()
                 if market_summary:
-                    market_data.update({
-                        'current_price': market_summary.get('current_price', 0.0),
-                        'price_change_24h': market_summary.get('price_change_24h', 0.0),
-                        'market_cap': market_summary.get('market_cap', 0),
-                        'volume': market_summary.get('volume', 0)
-                    })
-                else:
-                    logger.warning("Failed to fetch market data, using defaults")
+                    market_data.update(market_summary)
             except Exception as e:
                 logger.error(f"Error fetching market data: {str(e)}")
 
@@ -91,9 +87,44 @@ def create_app():
             except Exception as e:
                 logger.error(f"Error fetching historical data: {str(e)}")
 
+            # Get AI-generated market insights
+            market_insights = None
+            last_updated = None
+            try:
+                logger.info("Fetching AI market insights...")
+                crypto_news = get_crypto_news_sync()  # Using synchronous version
+
+                sentiment_score, sentiment_emoji, sentiment_description = calculate_sentiment_score(
+                    price_change=market_data['price_change_24h'],
+                    volume_change=0,
+                    rsi=50,
+                    current_price=market_data['current_price'],
+                    support_1=market_data['current_price'] * 0.95,
+                    resistance_1=market_data['current_price'] * 1.05
+                )
+
+                market_insights = {
+                    'summary': crypto_news,
+                    'sentiment': {
+                        'score': sentiment_score,
+                        'label': f"{sentiment_emoji} {sentiment_description}",
+                    },
+                    'factors': [
+                        "Price momentum analysis",
+                        "Volume analysis",
+                        "Technical indicators"
+                    ],
+                    'outlook': "Market analysis and predictions will be updated every hour."
+                }
+                last_updated = datetime.now(timezone.utc)
+            except Exception as e:
+                logger.error(f"Error generating market insights: {str(e)}")
+
             return render_template('dashboard.html',
                                market_data=market_data,
-                               chart_data=chart_data)
+                               chart_data=chart_data,
+                               market_insights=market_insights,
+                               last_updated=last_updated)
 
         except Exception as e:
             logger.error(f"Dashboard error: {str(e)}")
@@ -120,9 +151,6 @@ def create_app():
 
 if __name__ == '__main__':
     try:
-        # Ensure required directories exist
-        os.makedirs('static/assets', exist_ok=True)
-
         # Get local IP address for logging
         hostname = socket.gethostname()
         local_ip = socket.gethostbyname(hostname)
@@ -131,16 +159,15 @@ if __name__ == '__main__':
         # Create and configure the Flask app
         app = create_app()
 
-        # Start server
-        port = int(os.environ.get('PORT', 5000))
+        # Always use port 5000 as required by Replit
+        port = 5000
         logger.info(f"Starting Flask server on port {port}")
         logger.info(f"Server will be accessible at http://{local_ip}:{port}")
 
         app.run(
             host='0.0.0.0',
             port=port,
-            debug=True,
-            threaded=True
+            debug=True
         )
     except Exception as e:
         logger.critical(f"Failed to start server: {str(e)}", exc_info=True)

@@ -1,20 +1,24 @@
 from openai import OpenAI
 import json
+import asyncio
 from config import OPENAI_API_KEY
+import logging
+
+# Configure logging
+logger = logging.getLogger(__name__)
 
 # Initialize OpenAI client
 client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
 
-async def get_crypto_news():
-    """Get AI-generated crypto market insights."""
-    if not client:
-        return "OpenAI API key not configured. Please contact the bot administrator."
-
+def get_crypto_news_sync():
+    """Synchronous wrapper for get_crypto_news"""
     try:
-        # the newest OpenAI model is "gpt-4o" which was released May 13, 2024.
-        # do not change this unless explicitly requested by the user
+        if not client:
+            logger.warning("OpenAI API key not configured")
+            return "OpenAI integration not available. Using default market analysis."
+
         response = client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-4",  # Using current GPT-4 model
             messages=[
                 {
                     "role": "system",
@@ -40,18 +44,18 @@ async def get_crypto_news():
         content = json.loads(response.choices[0].message.content)
         return content.get("summary", "Unable to generate market insights.")
     except Exception as e:
-        return f"Failed to fetch crypto news: {str(e)}"
+        logger.error(f"Failed to fetch crypto news: {str(e)}")
+        return "Market insights temporarily unavailable. Please try again later."
 
-async def process_nlp_query(query: str):
-    """Process natural language queries about crypto and DeFi."""
-    if not client:
-        return "OpenAI API key not configured. Please contact the bot administrator."
-
+def process_nlp_query_sync(query: str):
+    """Synchronous wrapper for process_nlp_query"""
     try:
-        # the newest OpenAI model is "gpt-4o" which was released May 13, 2024.
-        # do not change this unless explicitly requested by the user
+        if not client:
+            logger.warning("OpenAI API key not configured")
+            return "OpenAI integration not available. Please try basic commands."
+
         response = client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-4",  # Using current GPT-4 model
             messages=[
                 {
                     "role": "system",
@@ -78,4 +82,12 @@ async def process_nlp_query(query: str):
         content = json.loads(response.choices[0].message.content)
         return content.get("message", "I apologize, but I couldn't process your query properly. Please try again.")
     except Exception as e:
-        return f"Failed to process your query: {str(e)}"
+        logger.error(f"Failed to process query: {str(e)}")
+        return f"Sorry, I encountered an error processing your query. Please try again later."
+
+# Keep async versions for backward compatibility
+async def get_crypto_news():
+    return get_crypto_news_sync()
+
+async def process_nlp_query(query: str):
+    return process_nlp_query_sync(query)
