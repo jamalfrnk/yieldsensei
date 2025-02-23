@@ -1,6 +1,7 @@
 import os
 import logging
 import socket
+import time
 from typing import Optional, Dict, Any
 import pandas as pd
 from flask import Flask, render_template, send_from_directory, jsonify
@@ -17,25 +18,40 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 def init_services() -> Optional[CryptoAnalysisService]:
-    """Initialize application services with proper error handling"""
-    try:
-        # Initialize OpenAI service first
-        logger.info("Initializing OpenAI service...")
-        openai_api_key = os.getenv('OPENAI_API_KEY')
-        if not openai_api_key:
-            logger.warning("OPENAI_API_KEY not found in environment variables")
-            logger.info("Some features may be limited without OpenAI integration")
-        init_openai_service(openai_api_key)
+    """Initialize application services with proper error handling and retries"""
+    crypto_service = None
+    max_retries = 3
+    retry_delay = 2
 
-        # Initialize CryptoAnalysis service
-        logger.info("Initializing CryptoAnalysisService...")
-        crypto_service = CryptoAnalysisService()
-        logger.info("Services initialized successfully")
-        return crypto_service
+    for attempt in range(max_retries):
+        try:
+            # Initialize OpenAI service first
+            logger.info(f"Initializing OpenAI service (attempt {attempt + 1}/{max_retries})...")
+            openai_api_key = os.getenv('OPENAI_API_KEY')
+            if not openai_api_key:
+                logger.warning("OPENAI_API_KEY not found in environment variables")
+            init_openai_service(openai_api_key)
 
-    except Exception as e:
-        logger.error(f"Error initializing services: {str(e)}")
-        return None
+            # Initialize CryptoAnalysis service
+            logger.info(f"Initializing CryptoAnalysisService (attempt {attempt + 1}/{max_retries})...")
+            crypto_service = CryptoAnalysisService()
+
+            # Test service connectivity
+            if crypto_service.get_market_summary():
+                logger.info("Services initialized and tested successfully")
+                return crypto_service
+
+        except ImportError as e:
+            logger.error(f"Failed to import required module: {str(e)}")
+            return None
+        except Exception as e:
+            logger.error(f"Service initialization error (attempt {attempt + 1}): {str(e)}")
+            if attempt < max_retries - 1:
+                time.sleep(retry_delay)
+                continue
+
+    logger.error("Failed to initialize services after all retries")
+    return None
 
 def create_app():
     """Create and configure the Flask application"""
@@ -67,12 +83,18 @@ def create_app():
     @app.route('/dashboard')
     def dashboard():
         try:
-            # Basic market data structure
+            logger.info("Accessing dashboard route")
+            if not crypto_service:
+                logger.error("Crypto service not initialized")
+                return render_template('error.html', error="Service temporarily unavailable"), 503
+
+            # Basic market data structure with defaults
             market_data = {
                 'current_price': 0.0,
                 'price_change_24h': 0.0,
                 'market_cap': 0,
-                'volume': 0
+                'volume': 0,
+                'last_updated': datetime.now(timezone.utc).isoformat()
             }
 
             chart_data = []
@@ -152,16 +174,19 @@ def create_app():
 if __name__ == '__main__':
     try:
         app = create_app()
+        port = int(os.getenv('PORT', 3000))
 
-        # Always use port 5000 as required by Replit
-        port = 5000
+        # Test if port is available
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        result = sock.connect_ex(('0.0.0.0', port))
+        sock.close()
+
+        if result == 0:
+            logger.warning(f"Port {port} is in use, trying next available port")
+            port += 1
+
         logger.info(f"Starting Flask server on port {port}")
-
-        app.run(
-            host='0.0.0.0',
-            port=port,
-            debug=True
-        )
+        app.run(host='0.0.0.0', port=port, debug=True)
     except Exception as e:
         logger.critical(f"Failed to start server: {str(e)}", exc_info=True)
         raise
