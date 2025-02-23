@@ -1,11 +1,47 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Custom styles */
+@layer base {
+  :root {
+    --bg-primary: #000000;
+    --bg-secondary: #111827;
+    --bg-card: #1F2937;
+    --text-primary: #FFFFFF;
+    --text-secondary: #9CA3AF;
+    --border-color: #F97316;
+    --chart-grid: rgba(255, 255, 255, 0.1);
+  }
+
+  body {
+    @apply bg-black text-white;
+  }
+}
+
 @layer components {
   .btn-primary {
-    @apply px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600;
+    @apply bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-400 transition-all duration-300;
+  }
+
+  .btn-secondary {
+    @apply bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-all duration-300;
+  }
+
+  .card {
+    @apply bg-gray-800 p-6 rounded-lg border border-gray-700 hover:border-orange-500/20 transition-all duration-300;
+  }
+
+  .input-field {
+    @apply bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500;
+  }
+
+  .section-title {
+    @apply text-3xl md:text-4xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-orange-500 to-orange-400;
+  }
+}
+
+@layer utilities {
+  .loading-spinner {
+    @apply animate-spin h-8 w-8 border-4 border-gray-700 border-t-orange-500 rounded-full;
   }
 }
