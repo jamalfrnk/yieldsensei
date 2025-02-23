@@ -169,7 +169,7 @@ if __name__ == '__main__':
         app = create_app()
 
         # Always serve the app on port 5000
-        port = 5000
+        port = 3000
         logger.info(f"Starting Flask server on port {port}")
         logger.info(f"Server will be accessible at http://{local_ip}:{port}")
 
