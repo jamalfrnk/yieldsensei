@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 import os
 import signal
 import psutil
+from flask_cors import CORS
 
 # Configure logging
 logging.basicConfig(
@@ -37,12 +38,24 @@ def is_port_in_use(port):
         try:
             s.bind(('0.0.0.0', port))
             return False
-        except socket.error:
+        except socket.error as e:
+            logger.warning(f"Port {port} in use: {e}")
             return True
 
 def create_app():
     """Create and configure the Flask application"""
     app = Flask(__name__, static_folder='static', static_url_path='/static')
+    CORS(app)  # Enable CORS for all routes
+
+    # Request logging middleware
+    @app.before_request
+    def log_request_info():
+        logger.info(f'Request: {request.method} {request.url} from {request.remote_addr}')
+        logger.debug(f'Headers: {dict(request.headers)}')
+
+    @app.route('/health')
+    def health_check():
+        return {'status': 'healthy', 'timestamp': datetime.now().isoformat()}, 200
 
     @app.route('/')
     def index():
@@ -150,12 +163,18 @@ if __name__ == '__main__':
     try:
         # Always try to kill any existing process on port 5000
         if is_port_in_use(port):
-            kill_process_on_port(port)
+            if not kill_process_on_port(port):
+                logger.error(f"Failed to kill process on port {port}. Server might not start.")
             time.sleep(2)  # Wait for port to be fully released
 
         app = create_app()
         logger.info(f"Starting Flask application on port {port}...")
-        app.run(host='0.0.0.0', port=port, debug=False, threaded=True)
+        app.run(
+            host='0.0.0.0',
+            port=port,
+            debug=False,
+            threaded=True
+        )
     except Exception as e:
         logger.critical(f"Failed to start server: {str(e)}", exc_info=True)
         raise
