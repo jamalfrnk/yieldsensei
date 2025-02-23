@@ -1,12 +1,20 @@
-import pandas as pd
-import numpy as np
-from datetime import datetime, timedelta
-import requests
 import logging
-import ta
-from services.technical_analysis import get_signal_analysis
+from typing import Optional, Dict, Any
+import requests
+from datetime import datetime, timedelta
 
+# Configure logging
 logger = logging.getLogger(__name__)
+
+# Initialize optional dependencies with error handling
+try:
+    import pandas as pd
+    import numpy as np
+    import ta
+    HAVE_ANALYTICS = True
+except ImportError as e:
+    logger.warning(f"Analytics dependencies not available: {str(e)}")
+    HAVE_ANALYTICS = False
 
 class CryptoAnalysisService:
     def __init__(self):
@@ -31,6 +39,10 @@ class CryptoAnalysisService:
 
     def get_historical_data(self, coin_id="bitcoin", days=90):
         """Fetch historical price data for a cryptocurrency"""
+        if not HAVE_ANALYTICS:
+            logger.warning("Analytics features not available - missing required packages")
+            return None
+
         try:
             logger.debug(f"Fetching historical data for {coin_id}")
             url = f"{self.base_url}/coins/{coin_id}/market_chart"
@@ -65,6 +77,9 @@ class CryptoAnalysisService:
 
     def _add_technical_indicators(self, df):
         """Add technical indicators to the dataframe"""
+        if not HAVE_ANALYTICS:
+            logger.warning("Analytics features not available - skipping technical indicator calculation")
+            return df
         try:
             logger.debug("Calculating technical indicators")
             # Calculate RSI
@@ -139,6 +154,9 @@ class CryptoAnalysisService:
 
     def get_market_sentiment(self, coin_id="bitcoin"):
         """Get market sentiment analysis"""
+        if not HAVE_ANALYTICS:
+            logger.warning("Analytics features not available - skipping market sentiment analysis")
+            return None
         try:
             logger.debug(f"Analyzing market sentiment for {coin_id}")
             df = self.get_historical_data(coin_id)
@@ -206,6 +224,9 @@ class CryptoAnalysisService:
 
     def get_dca_recommendations(self, coin_id="bitcoin"):
         """Get DCA (Dollar Cost Averaging) recommendations"""
+        if not HAVE_ANALYTICS:
+            logger.warning("Analytics features not available - skipping DCA recommendations")
+            return None
         try:
             logger.debug(f"Generating DCA recommendations for {coin_id}")
             signal_data = get_signal_analysis(coin_id)
