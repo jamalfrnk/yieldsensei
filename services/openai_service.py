@@ -35,8 +35,7 @@ class OpenAIService:
                             "2. Notable DeFi Protocol Updates\n"
                             "3. Important Market Events\n\n"
                             "Keep it factual, avoid speculation or financial advice. "
-                            "Format the response as a JSON object with a 'summary' key "
-                            "containing markdown-formatted text with emojis."
+                            "Use markdown formatting and emojis for better readability."
                         )
                     },
                     {
@@ -44,11 +43,9 @@ class OpenAIService:
                         "content": "What are the latest important developments in the crypto market?"
                     }
                 ],
-                max_tokens=400,
-                response_format={"type": "json_object"}
+                max_tokens=400
             )
-            content = json.loads(response.choices[0].message.content)
-            return content.get("summary", "Unable to generate market insights.")
+            return response.choices[0].message.content
         except Exception as e:
             logger.error(f"Failed to fetch crypto news: {str(e)}")
             return "Market insights temporarily unavailable. Please try again later."

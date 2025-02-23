@@ -11,15 +11,19 @@ logger = logging.getLogger(__name__)
 COINGECKO_API_KEY = os.environ.get('COINGECKO_API_KEY')
 BASE_URL = "https://pro-api.coingecko.com/api/v3" if COINGECKO_API_KEY else COINGECKO_BASE_URL
 
-async def retry_with_backoff(func, *args, max_retries=3):
+async def retry_with_backoff(func, *args, max_retries=5):
     """Retry a function with exponential backoff."""
     for attempt in range(max_retries):
         try:
             return await func(*args)
         except Exception as e:
-            if "429" in str(e) and attempt < max_retries - 1:
-                wait_time = (2 ** attempt) * 2  # Exponential backoff: 2, 4, 8 seconds
+            if ("429" in str(e) or "rate limit" in str(e).lower()) and attempt < max_retries - 1:
+                wait_time = (2 ** attempt) * 3  # Exponential backoff: 3, 6, 12, 24, 48 seconds
                 logger.warning(f"Rate limit hit, waiting {wait_time} seconds before retry")
+                await asyncio.sleep(wait_time)
+                continue
+            elif attempt < max_retries - 1:
+                wait_time = 2  # Brief pause for non-rate-limit errors
                 await asyncio.sleep(wait_time)
                 continue
             raise
