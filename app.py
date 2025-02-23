@@ -1,56 +1,97 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, send_from_directory
 import logging
 import sys
+import os
 from models import db
 
 # Configure logging
 logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - [%(funcName)s] %(message)s'
+    level=logging.INFO if os.environ.get('FLASK_ENV') == 'production' else logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - [%(funcName)s] %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout),
+        logging.FileHandler('flask_app.log')
+    ]
 )
 logger = logging.getLogger(__name__)
 
-# Create Flask app
-app = Flask(__name__)
-app.config['SECRET_KEY'] = 'dev'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:postgres@localhost:5432/postgres'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-# Initialize SQLAlchemy
-db.init_app(app)
-
-@app.route('/')
-def index():
+def create_app():
     try:
-        return render_template('index.html')
-    except Exception as e:
-        logger.error(f"Error rendering index: {e}", exc_info=True)
-        return f"Error: {str(e)}", 500
+        # Create Flask app
+        app = Flask(__name__, 
+                   static_folder='static',
+                   template_folder='templates')
 
-@app.route('/dashboard')
-def dashboard():
-    try:
-        return render_template('dashboard.html')
-    except Exception as e:
-        logger.error(f"Error rendering dashboard: {e}", exc_info=True)
-        return "Error loading dashboard", 500
+        # Configure app
+        app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev')
+        app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
+        app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-@app.route('/docs')
-def documentation():
-    try:
-        return render_template('docs.html')
-    except Exception as e:
-        logger.error(f"Error rendering documentation: {e}", exc_info=True)
-        return "Error loading documentation", 500
+        # Production configurations
+        if os.environ.get('FLASK_ENV') == 'production':
+            app.config['SESSION_COOKIE_SECURE'] = True
+            app.config['SESSION_COOKIE_HTTPONLY'] = True
+            app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # 1 hour
 
-@app.route('/telegram')
-def telegram():
-    try:
-        return render_template('telegram.html')
-    except Exception as e:
-        logger.error(f"Error rendering telegram page: {e}", exc_info=True)
-        return "Error loading telegram page", 500
+        # Initialize extensions
+        db.init_app(app)
 
+        # Error handlers
+        @app.errorhandler(404)
+        def not_found_error(error):
+            logger.warning(f"404 error: {error}")
+            return render_template('errors/404.html'), 404
+
+        @app.errorhandler(500)
+        def internal_error(error):
+            logger.error(f"500 error: {error}", exc_info=True)
+            return render_template('errors/500.html'), 500
+
+        # Register routes
+        @app.route('/')
+        def index():
+            try:
+                return render_template('index.html')
+            except Exception as e:
+                logger.error(f"Error rendering index: {e}", exc_info=True)
+                return f"Error: {str(e)}", 500
+
+        @app.route('/dashboard')
+        def dashboard():
+            try:
+                return render_template('dashboard.html')
+            except Exception as e:
+                logger.error(f"Error rendering dashboard: {e}", exc_info=True)
+                return "Error loading dashboard", 500
+
+        @app.route('/docs')
+        def documentation():
+            try:
+                return render_template('docs.html')
+            except Exception as e:
+                logger.error(f"Error rendering documentation: {e}", exc_info=True)
+                return "Error loading documentation", 500
+
+        @app.route('/telegram')
+        def telegram():
+            try:
+                return render_template('telegram.html')
+            except Exception as e:
+                logger.error(f"Error rendering telegram page: {e}", exc_info=True)
+                return "Error loading telegram page", 500
+
+        # Ensure the static folder exists
+        os.makedirs(app.static_folder, exist_ok=True)
+
+        logger.info("Application successfully created")
+        return app
+
+    except Exception as e:
+        logger.critical(f"Failed to create application: {e}", exc_info=True)
+        raise
+
+# Create the application instance
+app = create_app()
 
 if __name__ == '__main__':
     try:
