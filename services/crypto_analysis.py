@@ -10,6 +10,18 @@ logger = logging.getLogger(__name__)
 class CryptoAnalysisService:
     def __init__(self):
         self.base_url = "https://api.coingecko.com/api/v3"
+        logger.info("Initializing CryptoAnalysisService with CoinGecko API")
+        self._test_api_connection()
+
+    def _test_api_connection(self):
+        """Test the API connection during initialization"""
+        try:
+            response = requests.get(f"{self.base_url}/ping")
+            response.raise_for_status()
+            logger.info("Successfully connected to CoinGecko API")
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Failed to connect to CoinGecko API: {str(e)}")
+            raise ConnectionError("Cannot connect to CoinGecko API")
 
     def get_historical_data(self, coin_id="bitcoin", days=90):
         """Fetch historical price data for a cryptocurrency"""
@@ -29,6 +41,7 @@ class CryptoAnalysisService:
             df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
             df.set_index('timestamp', inplace=True)
 
+            logger.debug(f"Successfully fetched historical data for {coin_id}")
             return self._add_technical_indicators(df)
 
         except requests.exceptions.RequestException as e:
@@ -41,6 +54,7 @@ class CryptoAnalysisService:
     def _add_technical_indicators(self, df):
         """Add technical indicators to the dataframe"""
         try:
+            logger.debug("Calculating technical indicators")
             # Calculate RSI
             df['rsi'] = ta.momentum.RSIIndicator(close=df['price']).rsi()
 
@@ -63,7 +77,7 @@ class CryptoAnalysisService:
 
             # Fill NaN values with forward fill then backward fill
             df = df.ffill().bfill()
-
+            logger.debug("Successfully calculated technical indicators")
             return df
 
         except Exception as e:
@@ -74,7 +88,6 @@ class CryptoAnalysisService:
         """Get current market summary for a cryptocurrency"""
         try:
             logger.debug(f"Fetching market summary for {coin_id}")
-            # Changed to use /coins/{id} endpoint which provides more reliable market data
             url = f"{self.base_url}/coins/{coin_id}"
             params = {
                 'localization': 'false',
@@ -90,13 +103,16 @@ class CryptoAnalysisService:
             data = response.json()
             market_data = data['market_data']
 
-            return {
+            summary = {
                 'current_price': market_data['current_price']['usd'],
                 'market_cap': market_data['market_cap']['usd'],
                 'volume': market_data['total_volume']['usd'],
                 'price_change_24h': market_data['price_change_percentage_24h'],
                 'last_updated': data['last_updated']
             }
+
+            logger.debug(f"Successfully fetched market summary for {coin_id}")
+            return summary
 
         except requests.exceptions.RequestException as e:
             logger.error(f"Network error fetching market summary: {str(e)}")
