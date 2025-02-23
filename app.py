@@ -5,11 +5,6 @@ from flask_cors import CORS
 from datetime import datetime, timezone, timedelta
 from waitress import serve
 from services.crypto_api import CryptoAPIService
-import socket
-import time
-import psutil
-import signal
-import sys
 import os
 
 # Configure logging
@@ -206,69 +201,12 @@ def create_app():
         logger.critical(f"Failed to create Flask application: {str(e)}", exc_info=True)
         raise
 
-def check_port(port):
-    """Check if a port is available"""
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    try:
-        sock.bind(('0.0.0.0', port))
-        available = True
-    except socket.error:
-        available = False
-    finally:
-        sock.close()
-    return available
-
-def cleanup_port(port):
-    """Clean up any process using the specified port"""
-    try:
-        logger.info(f"Checking port {port} availability...")
-
-        if check_port(port):
-            logger.info(f"Port {port} is available")
-            return True
-
-        logger.info(f"Port {port} is in use, attempting cleanup...")
-
-        # Find and terminate processes using the port
-        for proc in psutil.process_iter():
-            try:
-                for conn in proc.connections('tcp'):
-                    if hasattr(conn, 'laddr') and conn.laddr.port == port:
-                        logger.info(f"Found process {proc.pid} using port {port}")
-                        proc.terminate()
-                        proc.wait(timeout=3)
-                        logger.info(f"Terminated process {proc.pid}")
-            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.TimeoutExpired) as e:
-                logger.debug(f"Process handling error: {str(e)}")
-                continue
-
-        # Verify port is now available
-        time.sleep(1)  # Wait for cleanup
-        if check_port(port):
-            logger.info(f"Port {port} is now available")
-            return True
-
-        logger.error(f"Port {port} is still in use after cleanup")
-        return False
-
-    except Exception as e:
-        logger.error(f"Error during port cleanup: {str(e)}")
-        return False
-
 if __name__ == '__main__':
     try:
         logger.info("Starting application setup...")
-
-        # Clean up port 5000
-        if not cleanup_port(5000):
-            logger.error("Failed to clean up port 5000")
-            sys.exit(1)
-
         app = create_app()
-
-        logger.info("Starting Waitress server on port 5000...")
-        serve(app, host='0.0.0.0', port=5000)
-
+        logger.info("Starting Waitress server on port 3000...")
+        serve(app, host='0.0.0.0', port=3000)
     except Exception as e:
         logger.critical(f"Application startup failed: {str(e)}", exc_info=True)
         sys.exit(1)
