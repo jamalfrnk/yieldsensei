@@ -4,6 +4,9 @@ from flask_cors import CORS
 from datetime import datetime, timezone
 from waitress import serve
 from services.crypto_api import CryptoAPIService
+import socket
+import time
+import psutil
 
 # Configure logging
 logging.basicConfig(
@@ -140,13 +143,37 @@ def create_app():
         logger.critical(f"Failed to create Flask application: {str(e)}", exc_info=True)
         raise
 
+def cleanup_port(port):
+    """Clean up any process using the specified port"""
+    for proc in psutil.process_iter():
+        try:
+            for conn in proc.connections('tcp'):
+                if hasattr(conn, 'laddr') and conn.laddr.port == port:
+                    logger.info(f"Found process {proc.pid} using port {port}")
+                    try:
+                        proc.terminate()
+                        proc.wait(timeout=3)
+                        logger.info(f"Successfully terminated process {proc.pid}")
+                    except psutil.TimeoutExpired:
+                        logger.warning(f"Timeout waiting for process {proc.pid} to terminate")
+                        proc.kill()
+                    break
+        except (psutil.NoSuchProcess, psutil.AccessDenied) as e:
+            logger.debug(f"Skipping process {proc.pid}: {str(e)}")
+        except Exception as e:
+            logger.error(f"Error checking process {proc.pid}: {str(e)}")
+
 if __name__ == '__main__':
     try:
         logger.info("Creating and configuring application...")
-        app = create_app()
 
-        logger.info("Starting Waitress server on port 3000...")
-        serve(app, host='0.0.0.0', port=3000)
+        # Clean up port 5000 before starting
+        cleanup_port(5000)
+        time.sleep(1)  # Wait for port to be fully released
+
+        app = create_app()
+        logger.info("Starting Waitress server on port 5000...")
+        serve(app, host='0.0.0.0', port=5000)
 
     except Exception as e:
         logger.critical(f"Failed to start server: {str(e)}", exc_info=True)
