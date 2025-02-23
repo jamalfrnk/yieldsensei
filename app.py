@@ -117,7 +117,7 @@ if __name__ == '__main__':
         signal.signal(signal.SIGINT, cleanup_handler)
         signal.signal(signal.SIGTERM, cleanup_handler)
 
-        port = 5000
+        port = 8080
         if not check_port_available(port):
             logger.error(f"Port {port} is already in use! Please free the port and try again.")
             sys.exit(1)

@@ -38,7 +38,7 @@ def check_port_available(port):
         return False
 
 if __name__ == "__main__":
-    port = 5000
+    port = int(os.environ.get('PORT', 5000))
     logger.info(f"Current process ID: {os.getpid()}")
 
     # Add retry logic for port availability
