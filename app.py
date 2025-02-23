@@ -1,14 +1,9 @@
-import time
-from flask import Flask, render_template, send_from_directory, request
 import logging
-import socket
-from datetime import datetime, timezone
-import os
-import signal
-import psutil
+from flask import Flask, render_template, request
 from flask_cors import CORS
-from services.crypto_api import CryptoAPIService
+from datetime import datetime, timezone
 from waitress import serve
+from services.crypto_api import CryptoAPIService
 
 # Configure logging
 logging.basicConfig(
@@ -66,21 +61,11 @@ def create_app():
 
 if __name__ == '__main__':
     try:
-        # Kill any existing process on port 5000
-        for conn in psutil.net_connections('tcp'):
-            if hasattr(conn.laddr, 'port') and conn.laddr.port == 5000:
-                try:
-                    process = psutil.Process(conn.pid)
-                    process.terminate()
-                    time.sleep(1)
-                except:
-                    pass
-
         logger.info("Creating and configuring application...")
         app = create_app()
 
         logger.info("Starting Waitress server on port 5000...")
-        serve(app, host='0.0.0.0', port=5000, threads=4, url_scheme='http', clear_untrusted_proxy_headers=True)
+        serve(app, host='0.0.0.0', port=5000)
 
     except Exception as e:
         logger.critical(f"Failed to start server: {str(e)}", exc_info=True)
