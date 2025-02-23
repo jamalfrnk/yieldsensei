@@ -99,17 +99,42 @@
     <!-- AI Market Insights -->
     {% include 'components/market_insights.html' %}
 
-    <!-- Price Chart -->
+    <!-- Price Chart Section -->
     <div class="bg-gray-900 rounded-lg p-6 hover:bg-opacity-90 transition-all duration-300 shadow-lg">
-        <div class="flex items-center justify-between mb-6">
-            <h2 class="text-2xl font-bold text-orange-500">Price Chart</h2>
-            <div class="flex space-x-2">
-                <button class="bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-700 transition-colors duration-200">24H</button>
-                <button class="bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-700 transition-colors duration-200">7D</button>
-                <button class="bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-700 transition-colors duration-200">30D</button>
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 space-y-4 md:space-y-0">
+            <div>
+                <h2 class="text-2xl font-bold text-orange-500">Price Chart</h2>
+                <p class="text-gray-400 text-sm">Real-time price data for {{ request.args.get('symbol', 'BTC') }}</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                <button data-range="24h" 
+                        class="time-range-btn bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-orange-500 transition-colors duration-200 active">
+                    24H
+                </button>
+                <button data-range="7d" 
+                        class="time-range-btn bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-orange-500 transition-colors duration-200">
+                    7D
+                </button>
+                <button data-range="30d" 
+                        class="time-range-btn bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-orange-500 transition-colors duration-200">
+                    30D
+                </button>
+                <button data-range="90d" 
+                        class="time-range-btn bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-orange-500 transition-colors duration-200">
+                    90D
+                </button>
+                <button data-range="1y" 
+                        class="time-range-btn bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-orange-500 transition-colors duration-200">
+                    1Y
+                </button>
             </div>
         </div>
-        <div class="w-full h-96 bg-gray-800 rounded-lg p-4 shadow-inner">
+        <div class="relative w-full h-96 bg-gray-800 rounded-lg p-4 shadow-inner">
+            <!-- Loading Spinner -->
+            <div id="chartLoading" class="absolute inset-0 flex items-center justify-center bg-gray-800 bg-opacity-90 rounded-lg z-10 hidden">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+            </div>
+            <!-- Chart Canvas -->
             <canvas id="priceChart"></canvas>
         </div>
     </div>
@@ -125,20 +150,25 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const ctx = document.getElementById('priceChart').getContext('2d');
-    const chartData = {{ chart_data|tojson }};
+    let priceChart = null;
+    const symbol = '{{ request.args.get('symbol', 'BTC') }}';
 
-    new Chart(ctx, {
+    // Chart configuration
+    const chartConfig = {
         type: 'line',
         data: {
-            labels: chartData.map(d => new Date(d.timestamp).toLocaleDateString()),
             datasets: [{
-                label: 'Price (USD)',
-                data: chartData.map(d => d.price),
+                label: `${symbol}/USD`,
                 borderColor: '#f97316',
                 backgroundColor: 'rgba(249, 115, 22, 0.1)',
                 borderWidth: 2,
                 fill: true,
-                tension: 0.1
+                tension: 0.1,
+                pointRadius: 0,
+                pointHitRadius: 10,
+                pointHoverRadius: 5,
+                pointHoverBorderWidth: 2,
+                pointHoverBackgroundColor: '#f97316'
             }]
         },
         options: {
@@ -149,26 +179,27 @@ document.addEventListener('DOMContentLoaded', function() {
                 mode: 'index'
             },
             scales: {
-                y: {
-                    beginAtZero: false,
+                x: {
+                    type: 'time',
+                    time: {
+                        unit: 'hour'
+                    },
                     grid: {
                         color: 'rgba(255, 255, 255, 0.1)'
                     },
                     ticks: {
                         color: '#9ca3af',
-                        callback: function(value) {
-                            return '$' + value.toLocaleString();
-                        }
+                        maxRotation: 0
                     }
                 },
-                x: {
+                y: {
+                    position: 'right',
                     grid: {
                         color: 'rgba(255, 255, 255, 0.1)'
                     },
                     ticks: {
                         color: '#9ca3af',
-                        maxRotation: 45,
-                        minRotation: 45
+                        callback: (value) => `$${value.toLocaleString()}`
                     }
                 }
             },
@@ -185,14 +216,85 @@ document.addEventListener('DOMContentLoaded', function() {
                     padding: 12,
                     displayColors: false,
                     callbacks: {
-                        label: function(context) {
-                            return '$' + context.parsed.y.toLocaleString();
+                        title: (tooltipItems) => {
+                            const date = new Date(tooltipItems[0].parsed.x);
+                            return date.toLocaleString();
+                        },
+                        label: (context) => {
+                            const price = context.parsed.y;
+                            const change = context.dataIndex > 0 
+                                ? ((price - context.dataset.data[context.dataIndex - 1].y) / context.dataset.data[context.dataIndex - 1].y * 100).toFixed(2)
+                                : 0;
+                            return [
+                                `Price: $${price.toLocaleString()}`,
+                                `Change: ${change}%`
+                            ];
                         }
                     }
                 }
             }
         }
+    };
+
+    // Initialize chart
+    priceChart = new Chart(ctx, chartConfig);
+
+    // Function to update chart data
+    async function updateChartData(timeRange) {
+        const loadingElement = document.getElementById('chartLoading');
+        loadingElement.classList.remove('hidden');
+
+        try {
+            const response = await fetch(`/api/price-history/${symbol}?range=${timeRange}`);
+            const data = await response.json();
+
+            priceChart.data.labels = data.map(d => d.timestamp);
+            priceChart.data.datasets[0].data = data.map(d => ({
+                x: d.timestamp,
+                y: d.price
+            }));
+
+            // Update time unit based on range
+            const timeUnit = timeRange === '24h' ? 'hour' 
+                         : timeRange === '7d' ? 'day'
+                         : timeRange === '30d' ? 'week'
+                         : 'month';
+            priceChart.options.scales.x.time.unit = timeUnit;
+
+            priceChart.update();
+        } catch (error) {
+            console.error('Error fetching price data:', error);
+        } finally {
+            loadingElement.classList.add('hidden');
+        }
+    }
+
+    // Time range button click handlers
+    document.querySelectorAll('.time-range-btn').forEach(button => {
+        button.addEventListener('click', (e) => {
+            // Update active button state
+            document.querySelectorAll('.time-range-btn').forEach(btn => {
+                btn.classList.remove('bg-orange-500');
+                btn.classList.add('bg-gray-800');
+            });
+            e.target.classList.remove('bg-gray-800');
+            e.target.classList.add('bg-orange-500');
+
+            // Update chart data
+            updateChartData(e.target.dataset.range);
+        });
     });
+
+    // Initial chart update
+    updateChartData('24h');
+
+    // Auto-refresh every minute for 24h view
+    setInterval(() => {
+        const activeButton = document.querySelector('.time-range-btn.bg-orange-500');
+        if (activeButton && activeButton.dataset.range === '24h') {
+            updateChartData('24h');
+        }
+    }, 60000);
 });
 </script>
 

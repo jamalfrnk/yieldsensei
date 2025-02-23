@@ -1,12 +1,16 @@
 import logging
-from flask import Flask, render_template, request
+import random
+from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from waitress import serve
 from services.crypto_api import CryptoAPIService
 import socket
 import time
 import psutil
+import signal
+import sys
+import os
 
 # Configure logging
 logging.basicConfig(
@@ -27,7 +31,7 @@ def create_app():
 
         @app.route('/health')
         def health_check():
-            logger.info("Health check endpoint called")
+            """Health check endpoint"""
             return {'status': 'healthy', 'timestamp': datetime.now().isoformat()}, 200
 
         @app.route('/')
@@ -111,12 +115,6 @@ def create_app():
                     }
                 }
 
-                # Sample chart data
-                chart_data = [
-                    {'timestamp': '2025-02-22', 'price': market_data['low_24h']},
-                    {'timestamp': '2025-02-23', 'price': market_data['current_price']}
-                ]
-
                 return render_template('dashboard.html',
                     market_data=market_data,
                     price_ranges=price_ranges,
@@ -125,7 +123,6 @@ def create_app():
                     price_levels=price_levels,
                     trading_levels=trading_levels,
                     ml_predictions=ml_predictions,
-                    chart_data=chart_data,
                     last_updated=datetime.now(timezone.utc),
                     confidence_score=75.0,
                     signal='Buy' if market_data['price_change_24h'] > 0 else 'Sell',
@@ -136,6 +133,71 @@ def create_app():
                 logger.error(f"Dashboard error: {str(e)}", exc_info=True)
                 return f"Error: {str(e)}", 500
 
+        @app.route('/api/price-history/<symbol>')
+        def price_history(symbol):
+            try:
+                time_range = request.args.get('range', '24h')
+                symbol = symbol.upper()
+
+                # Get current market data
+                market_data = crypto_api.get_market_data(symbol)
+                current_price = market_data['current_price']
+
+                # Generate time points based on range
+                now = datetime.now(timezone.utc)
+                if time_range == '24h':
+                    start_time = now - timedelta(days=1)
+                    interval = timedelta(hours=1)
+                    points = 24
+                elif time_range == '7d':
+                    start_time = now - timedelta(days=7)
+                    interval = timedelta(days=1)
+                    points = 7
+                elif time_range == '30d':
+                    start_time = now - timedelta(days=30)
+                    interval = timedelta(days=1)
+                    points = 30
+                elif time_range == '90d':
+                    start_time = now - timedelta(days=90)
+                    interval = timedelta(days=3)
+                    points = 30
+                else:  # 1y
+                    start_time = now - timedelta(days=365)
+                    interval = timedelta(days=7)
+                    points = 52
+
+                # Generate price data points
+                price_data = []
+                timestamp = start_time
+                initial_price = current_price * 0.8  # Start slightly lower
+
+                for i in range(points):
+                    # Generate somewhat realistic price movement
+                    if i > 0:
+                        prev_price = price_data[-1]['price']
+                        change = (random.random() - 0.45) * 0.02  # -0.9% to +1.1% change
+                        price = prev_price * (1 + change)
+                    else:
+                        price = initial_price
+
+                    price_data.append({
+                        'timestamp': timestamp.isoformat(),
+                        'price': round(price, 2)
+                    })
+                    timestamp += interval
+
+                # Ensure the last point matches current price
+                price_data.append({
+                    'timestamp': now.isoformat(),
+                    'price': current_price
+                })
+
+                return jsonify(price_data)
+
+            except Exception as e:
+                logger.error(f"Error fetching price history for {symbol}: {str(e)}")
+                return jsonify({'error': str(e)}), 500
+
         logger.info("Flask application created successfully")
         return app
 
@@ -145,36 +207,88 @@ def create_app():
 
 def cleanup_port(port):
     """Clean up any process using the specified port"""
-    for proc in psutil.process_iter():
+    def check_port_in_use(port):
+        """Helper function to check if port is in use"""
         try:
-            for conn in proc.connections('tcp'):
-                if hasattr(conn, 'laddr') and conn.laddr.port == port:
-                    logger.info(f"Found process {proc.pid} using port {port}")
-                    try:
-                        proc.terminate()
-                        proc.wait(timeout=3)
-                        logger.info(f"Successfully terminated process {proc.pid}")
-                    except psutil.TimeoutExpired:
-                        logger.warning(f"Timeout waiting for process {proc.pid} to terminate")
-                        proc.kill()
-                    break
-        except (psutil.NoSuchProcess, psutil.AccessDenied) as e:
-            logger.debug(f"Skipping process {proc.pid}: {str(e)}")
+            # Create a test socket
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(2)
+
+            # Try to connect to the port
+            result = sock.connect_ex(('127.0.0.1', port))
+            sock.close()
+
+            # Return True if port is in use (connection successful)
+            return result == 0
         except Exception as e:
-            logger.error(f"Error checking process {proc.pid}: {str(e)}")
+            logger.error(f"Error checking port {port}: {str(e)}")
+            return False
+
+    try:
+        logger.info(f"Checking port {port} availability...")
+        if not check_port_in_use(port):
+            logger.info(f"Port {port} is already available")
+            return True
+
+        logger.info(f"Port {port} is in use. Attempting to clean up...")
+        cleaned_up = False
+
+        # Find and terminate processes using the port
+        for proc in psutil.process_iter():
+            try:
+                connections = proc.connections()
+                for conn in connections:
+                    if hasattr(conn, 'laddr') and conn.laddr.port == port:
+                        logger.info(f"Found process {proc.pid} using port {port}")
+                        os.kill(proc.pid, signal.SIGTERM)
+                        time.sleep(0.5)  # Give process time to terminate gracefully
+
+                        # Check if process is still running
+                        if psutil.pid_exists(proc.pid):
+                            logger.warning(f"Process {proc.pid} did not terminate gracefully, forcing...")
+                            os.kill(proc.pid, signal.SIGKILL)
+
+                        logger.info(f"Successfully terminated process {proc.pid}")
+                        cleaned_up = True
+                        break
+            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess) as e:
+                logger.debug(f"Skipping process: {str(e)}")
+            except Exception as e:
+                logger.error(f"Error checking process: {str(e)}")
+
+        # Re-check port availability after cleanup attempts
+        time.sleep(1)  # Wait for any killed processes to fully release the port
+        if check_port_in_use(port):
+            logger.error(f"Port {port} is still in use after cleanup attempts")
+            return False
+
+        logger.info(f"Port {port} is now available")
+        return True
+
+    except Exception as e:
+        logger.error(f"Error during port cleanup: {str(e)}")
+        return False
 
 if __name__ == '__main__':
     try:
-        logger.info("Creating and configuring application...")
+        logger.info("Starting application setup...")
 
-        # Clean up port 5000 before starting
-        cleanup_port(5000)
+        # Force cleanup of port 5000
+        if not cleanup_port(5000):
+            logger.error("Failed to clean up port 5000")
+            sys.exit(1)
+
         time.sleep(1)  # Wait for port to be fully released
 
         app = create_app()
-        logger.info("Starting Waitress server on port 5000...")
-        serve(app, host='0.0.0.0', port=5000)
+
+        try:
+            logger.info("Starting Waitress server on port 5000...")
+            serve(app, host='0.0.0.0', port=5000)
+        except Exception as e:
+            logger.critical(f"Failed to start Waitress server: {str(e)}", exc_info=True)
+            sys.exit(1)
 
     except Exception as e:
-        logger.critical(f"Failed to start server: {str(e)}", exc_info=True)
-        raise
+        logger.critical(f"Application startup failed: {str(e)}", exc_info=True)
+        sys.exit(1)
