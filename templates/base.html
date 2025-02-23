@@ -2,100 +2,25 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>YieldSensei - DeFi Intelligence Platform</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
-    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
-    {% block extra_head %}{% endblock %}
+    <link href="https://cdn.tailwindcss.com" rel="stylesheet">
 </head>
-<body class="bg-black text-white min-h-screen">
-    <!-- Mobile-friendly Navigation -->
-    <nav class="bg-black border-b border-orange-500">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0 flex items-center">
-                        <img class="h-8 w-auto" src="{{ url_for('static', filename='images/logo.svg') }}" alt="YieldSensei">
-                        <span class="ml-2 text-xl font-bold text-orange-500 hidden sm:inline">YieldSensei</span>
-                    </div>
-                </div>
-                <!-- Mobile-optimized navigation menu -->
-                <div class="flex items-center space-x-2 sm:space-x-4">
-                    <a href="/" class="flex items-center text-sm sm:text-base text-white hover:text-orange-500 px-2 py-1">
-                        <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
-                        </svg>
-                        Home
-                    </a>
-                    <a href="/dashboard" class="text-sm sm:text-base text-white hover:text-orange-500 px-2 py-1">Dashboard</a>
-                    <a href="https://t.me/yieldsenseisanSOL" target="_blank" class="text-sm sm:text-base text-white hover:text-orange-500 px-2 py-1">Bot</a>
-                    <a href="https://yieldsensei.gitbook.io/yieldsensei-docs" target="_blank" class="text-sm sm:text-base text-white hover:text-orange-500 px-2 py-1">Docs</a>
+<body class="bg-gray-900 text-white">
+    <nav class="bg-black p-4">
+        <div class="container mx-auto">
+            <div class="flex justify-between items-center">
+                <a href="/" class="text-2xl font-bold text-orange-500">YieldSensei</a>
+                <div class="space-x-4">
+                    <a href="/" class="text-white hover:text-orange-500">Home</a>
+                    <a href="/dashboard" class="text-white hover:text-orange-500">Dashboard</a>
                 </div>
             </div>
         </div>
     </nav>
 
-    <!-- Responsive Main Content -->
-    <main class="max-w-7xl mx-auto py-4 sm:py-6 px-4 sm:px-6 lg:px-8">
+    <main class="container mx-auto p-4">
         {% block content %}{% endblock %}
     </main>
-
-    <!-- Mobile-friendly Footer -->
-    <footer class="bg-black border-t border-orange-500 mt-8">
-        <div class="max-w-7xl mx-auto py-4 sm:py-6 px-4 sm:px-6 lg:px-8">
-            <div class="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
-                <div class="text-gray-400 text-sm sm:text-base">
-                    © 2025 YieldSensei. All rights reserved.
-                </div>
-                <div class="flex space-x-4 sm:space-x-6">
-                    <a href="https://twitter.com/yieldsenseisan" target="_blank" class="text-sm sm:text-base text-gray-400 hover:text-orange-500">
-                        Twitter
-                    </a>
-                    <a href="https://t.me/yieldsenseisanSOL" target="_blank" class="text-sm sm:text-base text-gray-400 hover:text-orange-500">
-                        Telegram
-                    </a>
-                </div>
-            </div>
-        </div>
-    </footer>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Handle info icon interactions
-            const infoTooltips = document.querySelectorAll('.info-tooltip');
-
-            infoTooltips.forEach(tooltip => {
-                const button = tooltip.querySelector('.info-icon');
-
-                // Close other tooltips when a new one is opened
-                button.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-
-                    // Close all other tooltips
-                    infoTooltips.forEach(t => {
-                        if (t !== tooltip) {
-                            t.classList.remove('active');
-                        }
-                    });
-
-                    // Toggle current tooltip
-                    tooltip.classList.toggle('active');
-                });
-            });
-
-            // Close tooltips when clicking outside
-            document.addEventListener('click', (e) => {
-                if (!e.target.closest('.info-tooltip')) {
-                    infoTooltips.forEach(tooltip => {
-                        tooltip.classList.remove('active');
-                    });
-                }
-            });
-        });
-    </script>
-    {% block extra_scripts %}{% endblock %}
 </body>
 </html>

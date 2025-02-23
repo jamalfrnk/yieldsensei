@@ -1,73 +1,25 @@
 {% extends "base.html" %}
-{% from "components/error.html" import render_error %}
 
 {% block content %}
-<div class="space-y-4 sm:space-y-6">
+<div class="space-y-4">
+    <!-- Basic Dashboard Content -->
+    <div class="bg-gray-900 rounded-lg p-6">
+        <h1 class="text-2xl font-bold text-orange-500 mb-4">Dashboard</h1>
+        <p class="text-gray-300">Welcome to your crypto analytics dashboard.</p>
+    </div>
+
     <!-- Search Bar -->
     <div class="bg-gray-900 rounded-lg p-4">
-        <form action="/search" method="GET" class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
-            <input type="text" name="token" placeholder="Enter token symbol or contract address" 
-                   class="flex-1 bg-black border border-orange-500 rounded px-4 py-2 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-orange-500">
-            <button type="submit" class="bg-orange-500 text-white px-6 py-2 rounded text-sm sm:text-base hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500">
-                Analyze
+        <form action="/search" method="GET" class="flex space-x-4">
+            <input type="text" 
+                   name="token" 
+                   placeholder="Enter token symbol" 
+                   class="flex-1 bg-black border border-orange-500 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+            <button type="submit" 
+                    class="bg-orange-500 text-white px-6 py-2 rounded hover:bg-orange-600">
+                Search
             </button>
         </form>
     </div>
-
-    {% if error %}
-        {{ render_error(error) }}
-    {% else %}
-        <!-- Market Overview -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <!-- Main Price Card -->
-            <div class="bg-gray-900 rounded-lg p-4 sm:p-6 border-2 border-orange-500 hover:bg-gray-800 transition-colors duration-200 col-span-1 sm:col-span-2">
-                <h3 class="text-xl sm:text-2xl font-semibold text-orange-500 mb-2 sm:mb-4">{{ token_symbol|default('Enter a token', true) }}</h3>
-                <p class="text-3xl sm:text-5xl font-bold text-orange-500 mb-2 sm:mb-3">${{ '{:,.2f}'.format(price|default(0.0, true)) }}</p>
-                <p class="text-lg sm:text-xl text-orange-400">24h Change: 
-                    <span class="{% if price_change|default(0.0, true) >= 0 %}text-green-500{% else %}text-red-500{% endif %}">
-                        {{ '{:,.2f}'.format(price_change|default(0.0, true)) }}%
-                    </span>
-                </p>
-            </div>
-
-            <!-- Signal Strength Card -->
-            <div class="bg-gray-900 rounded-lg p-4 border border-orange-500 hover:bg-gray-800 transition-colors duration-200">
-                <div class="flex items-center mb-2">
-                    <h3 class="text-base sm:text-lg font-semibold text-orange-500">Signal Strength</h3>
-                    <div class="ml-2 info-tooltip">
-                        <button class="info-icon text-orange-500 p-2 rounded-full hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500">
-                            ⓘ
-                        </button>
-                        <div class="info-content bg-black text-white text-xs sm:text-sm rounded-lg py-3 px-4 absolute z-10 transform -translate-x-1/2 pointer-events-none w-64 sm:w-72">
-                            A measure of how strong the trading signal is, based on multiple technical indicators including RSI, MACD, and price levels. Higher values indicate stronger signals.
-                        </div>
-                    </div>
-                </div>
-                <p class="text-xl sm:text-2xl mt-2">{{ '{:,.1f}'.format(signal_strength|default(50.0, true)) }}/100</p>
-                <p class="text-xs sm:text-sm text-gray-400">{{ signal_description|default('Enter a token to view signal analysis', true) }}</p>
-            </div>
-
-            <!-- Technical Indicators Card -->
-            <div class="bg-gray-900 rounded-lg p-4 border border-orange-500 hover:bg-gray-800 transition-colors duration-200">
-                <div class="flex items-center mb-2">
-                    <h3 class="text-base sm:text-lg font-semibold text-orange-500">Technical Indicators</h3>
-                    <div class="ml-2 info-tooltip">
-                        <button class="info-icon text-orange-500 p-2 rounded-full hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500">
-                            ⓘ
-                        </button>
-                        <div class="info-content bg-black text-white text-xs sm:text-sm rounded-lg py-3 px-4 absolute z-10 transform -translate-x-1/2 pointer-events-none w-64 sm:w-72">
-                            Current RSI (Relative Strength Index) value and trend direction. RSI > 70 indicates overbought conditions, while RSI < 30 indicates oversold conditions.
-                        </div>
-                    </div>
-                </div>
-                <p class="text-xl sm:text-2xl mt-2">RSI: {{ '{:,.1f}'.format(technical_indicators.rsi.value|default(50.0, true)) }}</p>
-                <p class="text-xs sm:text-sm text-gray-400">{{ trend_direction|default('Neutral ⚖️', true) }}</p>
-            </div>
-        </div>
-
-        {% include "components/price_ranges.html" %}
-        {% include "components/trading_strategy.html" %}
-        {% include "components/price_chart.html" %}
-    {% endif %}
 </div>
 {% endblock %}
