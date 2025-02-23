@@ -1,63 +1,103 @@
 :root {
-    --primary-color: #ff6b00;
-    --secondary-color: #ff8533;
-    --background: #ffffff;
-    --text-primary: #000000;
-    --text-secondary: #333333;
+    --primary-color: #f97316;  /* orange-500 */
+    --primary-hover: #fb923c;  /* orange-400 */
+    --background-dark: #111827; /* gray-900 */
+    --background-darker: #000000;
+    --text-primary: #ffffff;
+    --text-secondary: #9ca3af; /* gray-400 */
 }
 
+/* Global styles */
+body {
+    background-color: var(--background-dark);
+    color: var(--text-primary);
+}
+
+/* Card styles */
 .feature-card {
-    background: white;
-    padding: 1.5rem;
-    border-radius: 0.5rem;
-    box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.1);
+    @apply bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-700 hover:border-orange-500/20 transition-all duration-300;
 }
 
-.bot-interface {
-    padding: 2rem;
-    background: var(--background);
-    border-radius: 1rem;
-    margin: 2rem 0;
+/* Component styles */
+.btn-primary {
+    @apply bg-orange-500 text-white px-6 py-3 rounded-lg hover:bg-orange-400 transition-all duration-300 font-semibold;
 }
 
-.command-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 1.5rem;
-    margin-top: 1.5rem;
+.btn-secondary {
+    @apply bg-gray-700 text-white px-6 py-3 rounded-lg hover:bg-gray-600 transition-all duration-300 font-semibold;
 }
 
-.command-box {
-    background: white;
-    padding: 1.5rem;
-    border-radius: 0.5rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+.input-field {
+    @apply bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent;
 }
 
-.command-form {
-    margin-top: 1rem;
-    display: flex;
-    gap: 0.5rem;
+/* Section headers */
+.section-title {
+    @apply text-3xl md:text-4xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-orange-500 to-orange-400;
 }
 
-.command-form input {
-    flex: 1;
-    padding: 0.5rem;
-    border: 1px solid #ccc;
-    border-radius: 0.25rem;
+.section-subtitle {
+    @apply text-xl text-gray-300 mb-8;
 }
 
-.command-form button {
-    background: var(--primary-color);
-    color: white;
-    border: none;
-    padding: 0.5rem 1rem;
-    border-radius: 0.25rem;
-    cursor: pointer;
+/* Card grid layouts */
+.card-grid {
+    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6;
 }
 
-.command-form button:hover {
-    background: var(--secondary-color);
+/* Stats and metrics */
+.stat-card {
+    @apply bg-gray-800 p-6 rounded-lg hover:bg-gray-700 transition-all duration-300 hover-scale shadow-lg;
+}
+
+.stat-label {
+    @apply text-gray-400 text-sm mb-2;
+}
+
+.stat-value {
+    @apply text-2xl font-bold text-white;
+}
+
+/* Animations */
+.hover-scale {
+    transition: transform 0.3s ease-in-out;
+}
+
+.hover-scale:hover {
+    transform: scale(1.02);
+}
+
+/* Form components */
+.form-group {
+    @apply mb-4;
+}
+
+.form-label {
+    @apply block text-sm font-medium text-gray-400 mb-2;
+}
+
+/* Alert and notification styles */
+.alert {
+    @apply p-4 rounded-lg mb-4;
+}
+
+.alert-success {
+    @apply bg-green-500 bg-opacity-10 text-green-400 border border-green-500;
+}
+
+.alert-error {
+    @apply bg-red-500 bg-opacity-10 text-red-400 border border-red-500;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+    .section-title {
+        @apply text-2xl;
+    }
+
+    .card-grid {
+        @apply grid-cols-1;
+    }
 }
 
 /* Placeholder for social media links -  requires actual links to be added */
