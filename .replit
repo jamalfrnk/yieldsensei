@@ -4,7 +4,7 @@ modules = ["python-3.11", "nodejs-20", "python3", "postgresql-16"]
 channel = "stable-24_05"
 
 [workflows]
-runButton = "Project"
+runButton = "Flask Server"
 
 [[workflows.workflow]]
 name = "Project"
@@ -27,7 +27,7 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "gunicorn wsgi:app --bind 0.0.0.0:5000 --log-level debug"
+args = "gunicorn wsgi:app --bind 0.0.0.0:8080 --log-level debug"
 waitForPort = 5000
 
 [deployment]
