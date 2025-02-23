@@ -19,6 +19,7 @@ dependencies = [
     "flask-talisman>=1.1.0",
     "flask-wtf>=1.2.2",
     "flask[async]>=3.1.0",
+    "gunicorn>=23.0.0",
     "joblib>=1.4.2",
     "numpy>=2.2.3",
     "oauthlib>=3.2.2",

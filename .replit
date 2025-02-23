@@ -45,7 +45,7 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python app.py"
+args = "gunicorn --workers=4 --bind=0.0.0.0:5000 --access-logfile=- --error-logfile=- --capture-output --timeout=120 app:app"
 waitForPort = 5000
 
 [deployment]
