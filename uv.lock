@@ -650,11 +650,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/af/47/93213ee66ef8fae3b93b3e29206f6b251e65c97bd91d8e1c5596ef15af0a/flask-3.1.0-py3-none-any.whl", hash = "sha256:d667207822eb83f1c4b50949b1623c8fc8d51f2341d65f72e1a1815397551136", size = 102979 },
 ]
 
-[package.optional-dependencies]
-async = [
-    { name = "asgiref" },
-]
-
 [[package]]
 name = "flask-compress"
 version = "1.17"
@@ -2263,7 +2258,7 @@ dependencies = [
     { name = "cachetools" },
     { name = "email-validator" },
     { name = "firebase-admin" },
-    { name = "flask", extra = ["async"] },
+    { name = "flask" },
     { name = "flask-compress" },
     { name = "flask-cors" },
     { name = "flask-limiter" },
@@ -2304,7 +2299,7 @@ requires-dist = [
     { name = "cachetools", specifier = ">=5.5.1" },
     { name = "email-validator", specifier = ">=2.2.0" },
     { name = "firebase-admin", specifier = ">=6.6.0" },
-    { name = "flask", extras = ["async"], specifier = ">=3.1.0" },
+    { name = "flask", specifier = ">=3.1.0" },
     { name = "flask-compress", specifier = ">=1.17" },
     { name = "flask-cors", specifier = ">=5.0.0" },
     { name = "flask-limiter", specifier = ">=3.10.1" },
