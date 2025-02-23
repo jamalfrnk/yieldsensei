@@ -135,45 +135,45 @@
         </div>
     </div>
 
-    <!-- ML Predictions Section -->
+    <!-- Update ML Predictions Section -->
     {% if ml_predictions and ml_predictions.next_day %}
     <div class="mb-6">
         <div class="flex items-center mb-3">
-            <h3 class="text-xl font-semibold text-orange-500">AI Predictions</h3>
+            <h3 class="text-xl font-semibold text-orange-500">Next Day Predictions</h3>
             <div class="ml-2 group relative">
                 <span class="cursor-help text-orange-500">ⓘ</span>
                 <div class="opacity-0 bg-black text-white text-sm rounded-lg py-2 px-3 absolute z-10 bottom-full mb-2 -left-1/2 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 w-64">
-                    Price predictions using advanced machine learning models and Facebook Prophet for time series forecasting.
+                    AI-powered price predictions for the next 24 hours using advanced machine learning models
                 </div>
             </div>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div class="bg-gray-800 p-6 rounded-lg hover:bg-gray-700 transition-all duration-300 hover-scale">
-                <h4 class="text-orange-500 font-semibold mb-2">ML Model Prediction</h4>
-                <p class="text-sm">Random Forest: ${{ "{:.2f}".format(ml_predictions.next_day.rf_prediction) }}</p>
-                <p class="text-sm">Prophet: ${{ "{:.2f}".format(ml_predictions.next_day.prophet_prediction) }}</p>
+                <h4 class="text-orange-500 font-semibold mb-2">AI Model Forecasts</h4>
+                <p class="text-sm">Random Forest: ${{ "{:,.2f}".format(ml_predictions.next_day.rf_prediction) }}</p>
+                <p class="text-sm">Prophet: ${{ "{:,.2f}".format(ml_predictions.next_day.prophet_prediction) }}</p>
             </div>
             <div class="bg-gray-800 p-6 rounded-lg hover:bg-gray-700 transition-all duration-300 hover-scale">
-                <h4 class="text-orange-500 font-semibold mb-2">Combined Prediction</h4>
-                <p class="text-sm">Price: ${{ "{:.2f}".format(ml_predictions.next_day.combined_prediction) }}</p>
+                <h4 class="text-orange-500 font-semibold mb-2">24h Forecast</h4>
+                <p class="text-sm">Expected Price: ${{ "{:,.2f}".format(ml_predictions.next_day.combined_prediction) }}</p>
                 <p class="text-sm">Confidence: {{ "{:.1f}%".format(confidence_score) if confidence_score else "0.0%" }}</p>
             </div>
             <div class="bg-gray-800 p-6 rounded-lg hover:bg-gray-700 transition-all duration-300 hover-scale">
                 <h4 class="text-orange-500 font-semibold mb-2">Prediction Range</h4>
-                <p class="text-sm">Upper: ${{ "{:.2f}".format(ml_predictions.next_day.upper_bound) }}</p>
-                <p class="text-sm">Lower: ${{ "{:.2f}".format(ml_predictions.next_day.lower_bound) }}</p>
+                <p class="text-sm">High: ${{ "{:,.2f}".format(ml_predictions.next_day.upper_bound) }}</p>
+                <p class="text-sm">Low: ${{ "{:,.2f}".format(ml_predictions.next_day.lower_bound) }}</p>
             </div>
             <div class="bg-gray-800 p-6 rounded-lg hover:bg-gray-700 transition-all duration-300 hover-scale">
-                <h4 class="text-orange-500 font-semibold mb-2">Optimal Trading Levels</h4>
-                <p class="text-sm">Entry: ${{ "{:.2f}".format(trading_levels.optimal_entry) if trading_levels and trading_levels.optimal_entry else "0.00" }}</p>
-                <p class="text-sm">Exit: ${{ "{:.2f}".format(trading_levels.optimal_exit) if trading_levels and trading_levels.optimal_exit else "0.00" }}</p>
-                <p class="text-sm">Stop Loss: ${{ "{:.2f}".format(trading_levels.stop_loss) if trading_levels and trading_levels.stop_loss else "0.00" }}</p>
+                <h4 class="text-orange-500 font-semibold mb-2">Suggested Levels</h4>
+                <p class="text-sm">Entry: ${{ "{:,.2f}".format(trading_levels.optimal_entry) if trading_levels and trading_levels.optimal_entry else "0.00" }}</p>
+                <p class="text-sm">Exit: ${{ "{:,.2f}".format(trading_levels.optimal_exit) if trading_levels and trading_levels.optimal_exit else "0.00" }}</p>
+                <p class="text-sm">Stop: ${{ "{:,.2f}".format(trading_levels.stop_loss) if trading_levels and trading_levels.stop_loss else "0.00" }}</p>
             </div>
         </div>
     </div>
     {% else %}
     <div class="col-span-4 text-center p-4">
-        <p class="text-gray-400">Enter a token symbol to view price predictions and analysis</p>
+        <p class="text-gray-400">Enter a token symbol to view price predictions</p>
     </div>
     {% endif %}
 </div>
