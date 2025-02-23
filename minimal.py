@@ -1,6 +1,8 @@
 import logging
 import sys
 import socket
+from flask import Flask
+from models import db
 
 # Configure logging
 logging.basicConfig(
@@ -10,8 +12,13 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Create Flask app
-from flask import Flask
 app = Flask(__name__)
+app.config['SECRET_KEY'] = 'dev'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:postgres@localhost:5432/postgres'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Initialize SQLAlchemy
+db.init_app(app)
 
 @app.route('/')
 def hello():
@@ -27,13 +34,15 @@ if __name__ == '__main__':
             sys.exit(1)
         sock.close()
 
+        with app.app_context():
+            db.create_all()
+            logger.info("Database tables created successfully")
+
         logger.info("Starting minimal Flask server...")
         app.run(
             host='0.0.0.0',
             port=5000,
-            debug=False,
-            use_reloader=False,
-            threaded=False
+            debug=True
         )
     except Exception as e:
         logger.error(f"Failed to start Flask server: {str(e)}", exc_info=True)

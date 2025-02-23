@@ -30,8 +30,16 @@ task = "shell.exec"
 args = "python3 app.py"
 waitForPort = 5000
 
+[[workflows.workflow]]
+name = "Production Server"
+author = 39426144
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python wsgi.py"
+
 [deployment]
-run = ["sh", "-c", "python3 app.py"]
+run = ["sh", "-c", "python wsgi.py"]
 deploymentTarget = "gce"
 
 [[ports]]
