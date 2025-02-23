@@ -1,3 +1,4 @@
+import time
 from flask import Flask, render_template, send_from_directory, request
 import logging
 import socket
@@ -18,11 +19,11 @@ def kill_process_on_port(port):
     try:
         for proc in psutil.process_iter(['pid', 'name']):
             try:
-                connections = proc.connections()
-                for conn in connections:
-                    if hasattr(conn.laddr, 'port') and conn.laddr.port == port:
+                for conn in proc.connections('tcp'):
+                    if conn.laddr.port == port:
                         os.kill(proc.pid, signal.SIGTERM)
                         logger.info(f"Killed process {proc.pid} on port {port}")
+                        time.sleep(1)  # Give the process time to terminate
                         return True
             except (psutil.AccessDenied, psutil.NoSuchProcess):
                 continue
@@ -57,7 +58,7 @@ def create_app():
             # Get symbol from query parameters, default to BTC
             symbol = request.args.get('symbol', 'BTC').upper()
 
-            # Initialize market data with example values
+            # Initialize market data
             market_data = {
                 'current_price': 45000.00,
                 'price_change_24h': 2.5,
@@ -70,7 +71,7 @@ def create_app():
                 'day': {'high': 46000.00, 'low': 44000.00},
                 'week': {'high': 47000.00, 'low': 43000.00},
                 'month': {'high': 48000.00, 'low': 42000.00},
-                'quarter': {'high': 50000.00, 'low': 41000.00},  # Explicitly include quarter
+                'quarter': {'high': 50000.00, 'low': 41000.00},
                 'year': {'high': 52000.00, 'low': 40000.00}
             }
 
@@ -146,16 +147,12 @@ def create_app():
 
 if __name__ == '__main__':
     try:
-        port = 3000  # Changed from 5000 to 3000
+        port = 3000
         if is_port_in_use(port):
             logger.warning(f"Port {port} is in use, attempting to free it...")
-            if kill_process_on_port(port):
-                logger.info(f"Successfully freed port {port}")
-            else:
-                logger.error(f"Failed to free port {port}")
-                raise RuntimeError(f"Port {port} is already in use and could not be freed")
-
-        logger.info("Starting Flask application...")
+            if not kill_process_on_port(port):
+                raise RuntimeError(f"Could not free port {port}")
+        logger.info(f"Starting Flask application on port {port}...")
         app = create_app()
         app.run(host='0.0.0.0', port=port, debug=True)
     except Exception as e:
