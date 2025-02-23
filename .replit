@@ -24,21 +24,6 @@ waitForPort = 5000
 
 [[workflows.workflow]]
 name = "Flask Server"
-author = "agent"
-
-[workflows.workflow.metadata]
-agentRequireRestartOnSave = false
-
-[[workflows.workflow.tasks]]
-task = "packager.installForAll"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python app.py"
-waitForPort = 5000
-
-[[workflows.workflow]]
-name = "Flask Server"
 mode = "parallel"
 author = "agent"
 
@@ -61,6 +46,10 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "workflow.run"
 args = "Flask Server"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Production Server"
 
 [deployment]
 run = ["sh", "-c", "PYTHONUNBUFFERED=1 FLASK_ENV=development python app.py"]
