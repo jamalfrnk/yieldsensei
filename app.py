@@ -39,6 +39,11 @@ try:
     # Initialize SQLAlchemy
     db.init_app(app)
 
+    # Create database tables
+    with app.app_context():
+        db.create_all()
+        logger.info("Database tables created successfully")
+
     # Register blueprints
     app.register_blueprint(auth)
 

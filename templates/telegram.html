@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="min-h-screen p-4 md:p-6">
+    <div class="container mx-auto">
+        <h1 class="text-3xl md:text-4xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-orange-500 to-orange-400">
+            Telegram Bot
+        </h1>
+        <div class="bg-gray-800 rounded-lg p-6 shadow-lg">
+            <p class="text-gray-300 mb-4">
+                Get real-time market insights and trading signals directly on Telegram.
+            </p>
+            <div class="space-y-4">
+                <h2 class="text-xl font-semibold text-orange-500">Features:</h2>
+                <ul class="list-disc list-inside text-gray-300 space-y-2">
+                    <li>Real-time price alerts</li>
+                    <li>Market sentiment analysis</li>
+                    <li>Trading signals and insights</li>
+                    <li>Portfolio tracking</li>
+                </ul>
+                <a href="https://t.me/yieldsensei_bot" 
+                   target="_blank"
+                   class="inline-block bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-all duration-300">
+                    Start Using Bot
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
