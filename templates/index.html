@@ -10,21 +10,85 @@
         body {
             font-family: 'Inter', sans-serif;
         }
+        .hover-scale {
+            transition: transform 0.3s ease-in-out;
+        }
+        .hover-scale:hover {
+            transform: scale(1.05);
+        }
     </style>
 </head>
 <body class="bg-gray-900 text-white">
 {% extends "base.html" %}
 
 {% block content %}
-<div class="text-center py-12">
-    <h1 class="text-4xl font-bold text-orange-500 mb-4">Welcome to YieldSensei</h1>
-    <p class="text-xl text-gray-300 mb-8">AI-Powered Crypto Intelligence Platform</p>
-    <a href="/dashboard" 
-       class="bg-orange-500 text-white px-8 py-3 rounded-lg hover:bg-orange-600 transition duration-300">
-        Launch Dashboard
-    </a>
+<!-- Beta Launch Announcement Banner -->
+<div class="bg-orange-500 text-white px-4 py-3">
+    <div class="container mx-auto text-center">
+        <p class="text-sm md:text-base">
+            🚀 <span class="font-bold">Beta Launch Announcement:</span>
+            YieldSensei is now in 90-day beta testing! Both our Telegram bot (@yieldsensei_bot) and web application (YieldSensei.ai) are live for real-time market analysis. We're collecting user feedback to refine and enhance our platform—join us and be part of the evolution!
+        </p>
+    </div>
+</div>
+
+<div class="min-h-screen">
+    <!-- Hero Section -->
+    <div class="container mx-auto px-4 py-12 text-center">
+        <h1 class="text-4xl md:text-5xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-orange-500 to-orange-400">
+            Welcome to YieldSensei
+        </h1>
+
+        <!-- YieldSensei Image -->
+        <div class="mb-8 flex justify-center">
+            <div class="hover-scale">
+                <img src="{{ url_for('static', filename='assets/blackyieldsensei.webp') }}" 
+                     alt="YieldSensei Master" 
+                     class="w-64 h-64 object-contain rounded-lg shadow-2xl border-2 border-orange-500/20">
+            </div>
+        </div>
+
+        <p class="text-xl md:text-2xl mb-4 text-orange-400">AI-Powered Crypto Intelligence</p>
+        <p class="text-lg text-gray-300 mb-8 max-w-2xl mx-auto">
+            Experience the future of crypto trading with our AI-driven analytics platform,
+            delivering real-time insights and predictive market analysis.
+        </p>
+
+        <!-- Action Buttons -->
+        <div class="flex flex-col md:flex-row justify-center gap-4 mb-12">
+            <a href="/dashboard" 
+               class="bg-orange-500 text-white px-8 py-3 rounded-lg hover:bg-orange-600 transition-all duration-300 hover-scale">
+                Launch Dashboard
+            </a>
+            <a href="https://t.me/yieldsensei_bot" 
+               target="_blank"
+               class="bg-blue-500 text-white px-8 py-3 rounded-lg hover:bg-blue-600 transition-all duration-300 hover-scale">
+                Try Telegram Bot
+            </a>
+            <a href="https://yieldsensei.gitbook.io/yieldsensei-docs" 
+               target="_blank"
+               class="bg-gray-700 text-white px-8 py-3 rounded-lg hover:bg-gray-600 transition-all duration-300 hover-scale">
+                View Documentation
+            </a>
+        </div>
+
+        <!-- Feature Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+            <div class="bg-gray-800 p-6 rounded-lg hover:bg-gray-700 transition-all duration-300 hover-scale">
+                <h3 class="text-xl font-semibold text-orange-500 mb-3">Real-Time Analysis</h3>
+                <p class="text-gray-300">Get instant market insights powered by advanced AI algorithms</p>
+            </div>
+            <div class="bg-gray-800 p-6 rounded-lg hover:bg-gray-700 transition-all duration-300 hover-scale">
+                <h3 class="text-xl font-semibold text-orange-500 mb-3">Smart Predictions</h3>
+                <p class="text-gray-300">AI-driven price predictions and trend analysis</p>
+            </div>
+            <div class="bg-gray-800 p-6 rounded-lg hover:bg-gray-700 transition-all duration-300 hover-scale">
+                <h3 class="text-xl font-semibold text-orange-500 mb-3">Portfolio Insights</h3>
+                <p class="text-gray-300">Track and optimize your crypto portfolio performance</p>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}
-
 </body>
 </html>

@@ -1,6 +1,6 @@
 import os
 import logging
-from flask import Flask, render_template
+from flask import Flask, render_template, send_from_directory
 
 # Configure logging
 logging.basicConfig(
@@ -9,15 +9,22 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static')
 
 @app.route('/')
 def index():
+    logger.info("Rendering index page")
     return render_template('index.html')
 
 @app.route('/dashboard')
 def dashboard():
+    logger.info("Rendering dashboard page")
     return render_template('dashboard.html')
+
+@app.route('/static/<path:filename>')
+def serve_static(filename):
+    logger.info(f"Serving static file: {filename}")
+    return send_from_directory(app.static_folder, filename)
 
 @app.errorhandler(404)
 def not_found_error(error):
