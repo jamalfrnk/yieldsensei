@@ -13,14 +13,10 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Production Server"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Development Server"
+args = "Flask Server"
 
 [[workflows.workflow]]
-name = "Production Server"
+name = "Flask Server"
 author = "agent"
 
 [workflows.workflow.metadata]
@@ -31,26 +27,11 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python wsgi.py"
-waitForPort = 5000
-
-[[workflows.workflow]]
-name = "Development Server"
-author = "agent"
-
-[workflows.workflow.metadata]
-agentRequireRestartOnSave = false
-
-[[workflows.workflow.tasks]]
-task = "packager.installForAll"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python wsgi.py"
+args = "python app.py"
 waitForPort = 5000
 
 [deployment]
-run = ["sh", "-c", "python wsgi.py"]
+run = ["sh", "-c", "python app.py"]
 deploymentTarget = "gce"
 
 [[ports]]
