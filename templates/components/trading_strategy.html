@@ -1,61 +1,72 @@
 <!-- Support/Resistance Levels and Trading Strategy -->
-<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
     <!-- Key Levels -->
-    <div class="bg-gray-900 rounded-lg p-4">
-        <h2 class="text-xl font-bold text-orange-500 mb-4">Key Levels</h2>
-        <div class="space-y-2">
-            <div class="flex justify-between items-center p-2 hover:bg-gray-800 rounded transition-colors duration-200">
-                <span>Resistance 2:</span>
-                <span class="text-red-500">${{ "{:.2f}".format(price_levels.resistance_2) if price_levels and price_levels.resistance_2 else "0.00" }}</span>
+    <div class="bg-gray-900 rounded-lg p-6 hover:bg-opacity-90 transition-all duration-300 shadow-lg">
+        <h2 class="text-2xl font-bold text-orange-500 mb-6">Key Levels</h2>
+        <div class="space-y-4">
+            <div class="flex justify-between items-center p-3 bg-gray-800 rounded-lg hover:bg-gray-700 transition-all duration-300">
+                <span class="text-gray-300">Resistance 2</span>
+                <span class="text-red-500 font-semibold">${{ "{:.2f}".format(price_levels.resistance_2) if price_levels and price_levels.resistance_2 else "0.00" }}</span>
             </div>
-            <div class="flex justify-between items-center p-2 hover:bg-gray-800 rounded transition-colors duration-200">
-                <span>Resistance 1:</span>
-                <span class="text-red-400">${{ "{:.2f}".format(price_levels.resistance_1) if price_levels and price_levels.resistance_1 else "0.00" }}</span>
+            <div class="flex justify-between items-center p-3 bg-gray-800 rounded-lg hover:bg-gray-700 transition-all duration-300">
+                <span class="text-gray-300">Resistance 1</span>
+                <span class="text-red-400 font-semibold">${{ "{:.2f}".format(price_levels.resistance_1) if price_levels and price_levels.resistance_1 else "0.00" }}</span>
             </div>
-            <div class="flex justify-between items-center p-2 hover:bg-gray-800 rounded transition-colors duration-200">
-                <span>Current Price:</span>
-                <span class="text-white">${{ "{:.2f}".format(price) if price else "0.00" }}</span>
+            <div class="flex justify-between items-center p-3 bg-gray-800 rounded-lg hover:bg-gray-700 transition-all duration-300">
+                <span class="text-gray-300">Current Price</span>
+                <span class="text-white font-semibold">${{ "{:.2f}".format(price) if price else "0.00" }}</span>
             </div>
-            <div class="flex justify-between items-center p-2 hover:bg-gray-800 rounded transition-colors duration-200">
-                <span>Support 1:</span>
-                <span class="text-green-400">${{ "{:.2f}".format(price_levels.support_1) if price_levels and price_levels.support_1 else "0.00" }}</span>
+            <div class="flex justify-between items-center p-3 bg-gray-800 rounded-lg hover:bg-gray-700 transition-all duration-300">
+                <span class="text-gray-300">Support 1</span>
+                <span class="text-green-400 font-semibold">${{ "{:.2f}".format(price_levels.support_1) if price_levels and price_levels.support_1 else "0.00" }}</span>
             </div>
-            <div class="flex justify-between items-center p-2 hover:bg-gray-800 rounded transition-colors duration-200">
-                <span>Support 2:</span>
-                <span class="text-green-500">${{ "{:.2f}".format(price_levels.support_2) if price_levels and price_levels.support_2 else "0.00" }}</span>
+            <div class="flex justify-between items-center p-3 bg-gray-800 rounded-lg hover:bg-gray-700 transition-all duration-300">
+                <span class="text-gray-300">Support 2</span>
+                <span class="text-green-500 font-semibold">${{ "{:.2f}".format(price_levels.support_2) if price_levels and price_levels.support_2 else "0.00" }}</span>
             </div>
         </div>
     </div>
 
     <!-- Trading Strategy -->
-    <div class="bg-gray-900 rounded-lg p-4">
-        <div class="flex items-center mb-4">
-            <h2 class="text-xl font-bold text-orange-500">Trading Strategy</h2>
-            <div class="ml-2 group relative">
-                <span class="cursor-help text-orange-500">ⓘ</span>
-                <div class="opacity-0 bg-black text-white text-sm rounded-lg py-2 px-3 absolute z-10 bottom-full mb-2 -left-1/2 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 w-64">
+    <div class="bg-gray-900 rounded-lg p-6 hover:bg-opacity-90 transition-all duration-300 shadow-lg">
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold text-orange-500">Trading Strategy</h2>
+            <div class="group relative">
+                <span class="cursor-help text-orange-500 text-xl">ⓘ</span>
+                <div class="opacity-0 bg-black text-white text-sm rounded-lg py-2 px-4 absolute z-10 -right-2 bottom-full mb-2 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 w-72 shadow-lg">
                     Personalized DCA (Dollar Cost Averaging) strategy based on market conditions and technical analysis.
                 </div>
             </div>
         </div>
-        <div class="space-y-4">
+        <div class="space-y-6">
             <!-- DCA Strategy -->
-            <div class="bg-black bg-opacity-50 p-3 rounded">
-                <h3 class="text-orange-500 font-semibold mb-2">DCA Strategy:</h3>
-                <p class="text-sm whitespace-pre-line mb-2">{{ dca_recommendation if dca_recommendation else 'Split your investment into multiple portions and invest gradually over time.' }}</p>
+            <div class="bg-gray-800 p-4 rounded-lg hover:bg-gray-700 transition-all duration-300">
+                <h3 class="text-lg font-semibold text-orange-500 mb-3">DCA Strategy</h3>
+                <p class="text-gray-300 whitespace-pre-line">{{ dca_recommendation if dca_recommendation else 'Split your investment into multiple portions and invest gradually over time.' }}</p>
             </div>
 
             <!-- Entry Strategy -->
-            <div class="bg-black bg-opacity-50 p-3 rounded">
-                <h3 class="text-orange-500 font-semibold mb-2">Entry Strategy:</h3>
-                <p class="text-sm">Optimal Entry: ${{ "{:.2f}".format(trading_levels.optimal_entry) if trading_levels and trading_levels.optimal_entry else "0.00" }}</p>
-                <p class="text-sm">Stop Loss: ${{ "{:.2f}".format(trading_levels.stop_loss) if trading_levels and trading_levels.stop_loss else "0.00" }}</p>
+            <div class="bg-gray-800 p-4 rounded-lg hover:bg-gray-700 transition-all duration-300">
+                <h3 class="text-lg font-semibold text-orange-500 mb-3">Entry Strategy</h3>
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-300">Optimal Entry</span>
+                        <span class="text-green-500 font-semibold">${{ "{:.2f}".format(trading_levels.optimal_entry) if trading_levels and trading_levels.optimal_entry else "0.00" }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-300">Stop Loss</span>
+                        <span class="text-red-500 font-semibold">${{ "{:.2f}".format(trading_levels.stop_loss) if trading_levels and trading_levels.stop_loss else "0.00" }}</span>
+                    </div>
+                </div>
             </div>
 
             <!-- Exit Strategy -->
-            <div class="bg-black bg-opacity-50 p-3 rounded">
-                <h3 class="text-orange-500 font-semibold mb-2">Exit Strategy:</h3>
-                <p class="text-sm">Take Profit: ${{ "{:.2f}".format(trading_levels.optimal_exit) if trading_levels and trading_levels.optimal_exit else "0.00" }}</p>
+            <div class="bg-gray-800 p-4 rounded-lg hover:bg-gray-700 transition-all duration-300">
+                <h3 class="text-lg font-semibold text-orange-500 mb-3">Exit Strategy</h3>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-300">Take Profit</span>
+                    <span class="text-green-500 font-semibold">${{ "{:.2f}".format(trading_levels.optimal_exit) if trading_levels and trading_levels.optimal_exit else "0.00" }}</span>
+                </div>
             </div>
         </div>
     </div>
