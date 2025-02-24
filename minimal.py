@@ -45,6 +45,24 @@ def dashboard():
 def documentation():
     return render_template('documentation.html')
 
+@app.route('/api/market-intelligence/<symbol>')
+def market_intelligence(symbol):
+    try:
+        crypto_service = CryptoAnalysisService()
+        sentiment_data = crypto_service.get_market_sentiment(symbol)
+        market_data = crypto_service.get_market_summary(symbol)
+        
+        return jsonify({
+            'sentiment': sentiment_data,
+            'volume': {
+                'total_24h': market_data['volume'],
+                'change_24h': market_data['price_change_24h']
+            }
+        })
+    except Exception as e:
+        logger.error(f"Error in market intelligence: {str(e)}")
+        return jsonify({'error': 'Failed to fetch market intelligence'}), 500
+
 if __name__ == '__main__':
     try:
         # Less intrusive port check: Log a warning instead of exiting
