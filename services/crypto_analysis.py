@@ -41,7 +41,7 @@ class CryptoAnalysisService:
         """Fetch historical price data for a cryptocurrency"""
         if not HAVE_ANALYTICS:
             logger.warning("Analytics features not available - missing required packages")
-            return None
+            return pd.DataFrame()
 
         try:
             logger.debug(f"Fetching historical data for {coin_id}")

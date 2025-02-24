@@ -58,6 +58,19 @@ def dashboard():
         market_data = crypto_service.get_market_summary(coin_id)
         sentiment_data = crypto_service.get_market_sentiment(coin_id)
         
+        if not market_data:
+            raise Exception("Failed to fetch market data")
+
+        historical_data = crypto_service.get_historical_data(coin_id)
+        
+        # Calculate price ranges
+        price_ranges = {
+            'day': {
+                'high': market_data.get('high_24h', 0),
+                'low': market_data.get('low_24h', 0)
+            }
+        }
+        
         # Parse the ISO date string to datetime object
         last_updated = datetime.fromisoformat(market_data.get('last_updated').replace('Z', '+00:00'))
         
@@ -66,7 +79,8 @@ def dashboard():
             market_data=market_data,
             market_insights={'sentiment': sentiment_data},
             symbol=symbol,
-            last_updated=last_updated
+            last_updated=last_updated,
+            price_ranges=price_ranges
         )
     except Exception as e:
         logger.error(f"Dashboard error: {str(e)}")
