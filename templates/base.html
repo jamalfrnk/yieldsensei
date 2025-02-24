@@ -1,21 +1,26 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YieldSensei - DeFi Intelligence Platform</title>
+    <title>YieldSensei - Crypto Analytics Platform</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="{{ url_for('static', filename='styles.css') }}" rel="stylesheet">
 </head>
-<body class="bg-gradient-to-br from-gray-900 via-black to-gray-900 text-white min-h-screen">
-    <nav class="bg-black/80 border-b border-orange-500/10 p-4">
-        <div class="container mx-auto">
-            <h1 class="text-2xl font-bold text-orange-500">YieldSensei</h1>
+<body class="bg-gray-900 text-white">
+    <nav class="bg-gray-800 p-4">
+        <div class="container mx-auto flex justify-between items-center">
+            <a href="/" class="text-xl font-bold text-orange-500">YieldSensei</a>
+            <div class="space-x-4">
+                <a href="/dashboard" class="text-gray-300 hover:text-orange-500">Dashboard</a>
+                <a href="/documentation" class="text-gray-300 hover:text-orange-500">Documentation</a>
+            </div>
         </div>
     </nav>
-
-    <main class="container mx-auto p-4">
+    <main>
         {% block content %}{% endblock %}
     </main>
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
 </body>
 </html>

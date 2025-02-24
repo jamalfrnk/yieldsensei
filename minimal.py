@@ -4,6 +4,10 @@ import sys
 import socket
 from flask import Flask, render_template
 from flask_sqlalchemy import SQLAlchemy
+from services.crypto_analysis import CryptoAnalysisService
+from services.ml_prediction_service import MLPredictionService
+from services.coingecko_service import get_token_price
+from services.technical_analysis import get_signal_analysis
 
 # Configure logging
 logging.basicConfig(
@@ -25,10 +29,21 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Initialize SQLAlchemy
 db = SQLAlchemy(app)
 
+crypto_service = CryptoAnalysisService()
+ml_service = MLPredictionService()
+
 @app.route('/')
 def index():
     logger.info("Handling request for index page")
     return render_template('index.html')
+
+@app.route('/dashboard')
+def dashboard():
+    return render_template('dashboard.html')
+
+@app.route('/documentation')
+def documentation():
+    return render_template('documentation.html')
 
 if __name__ == '__main__':
     try:
