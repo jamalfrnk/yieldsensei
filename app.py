@@ -1,107 +1,44 @@
-from flask import Flask, render_template, redirect, url_for
+from flask import Flask, jsonify
 import logging
-import sys
-import os
-from models import db
-from services.coingecko_service import get_token_price, get_token_market_data
-import asyncio
 
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(sys.stdout)
-    ]
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
 
 def create_app():
-    # Create Flask app
+    logger.info("Creating Flask application...")
     app = Flask(__name__)
 
-    # Log database configuration
-    logger.info("Configuring database connection...")
+    # Basic configuration
+    app.config['SECRET_KEY'] = 'dev-key'
 
-    # Configure app
-    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev')
-    database_url = os.environ.get('DATABASE_URL')
-    if database_url and database_url.startswith('postgres://'):
-        database_url = database_url.replace('postgres://', 'postgresql://', 1)
-    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    # Health check route
+    @app.route('/health')
+    def health_check():
+        logger.info("Health check endpoint called")
+        return jsonify({"status": "healthy"})
 
-    logger.info(f"Using database URL: {database_url.split('@')[1] if database_url else 'None'}")  # Log only the host part
-
-    # Initialize extensions
-    db.init_app(app)
-
-    # Create database tables
-    with app.app_context():
-        try:
-            db.create_all()
-            logger.info("Database tables created successfully")
-        except Exception as e:
-            logger.error(f"Error creating database tables: {e}")
-            raise
-
-    # Simple ping route for health check
-    @app.route('/ping')
-    def ping():
-        return 'pong'
-
-    # Main routes
+    # Simple test route
     @app.route('/')
     def index():
-        """Main dashboard view"""
-        try:
-            logger.info("Accessing dashboard route")
+        logger.info("Index endpoint called")
+        return jsonify({"status": "ok", "message": "Flask server is running"})
 
-            # Create event loop for async calls
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
+    # Error handlers (from original)
+    @app.errorhandler(404)
+    def not_found_error(error):
+        return jsonify({"status": "error", "message": "Not Found"}), 404
 
-            logger.info("Fetching market data for bitcoin")
-            try:
-                # Get market data for BTC by default
-                market_data = loop.run_until_complete(get_token_market_data('bitcoin'))
-                logger.info("Successfully retrieved market data")
-            except Exception as e:
-                logger.error(f"Error fetching market data: {e}")
-                market_data = None
-            finally:
-                # Close the event loop
-                loop.close()
+    @app.errorhandler(500)
+    def internal_error(error):
+        return jsonify({"status": "error", "message": "Internal Server Error"}), 500
 
-            return render_template('dashboard.html', 
-                                market_data={
-                                    'current_price': market_data['high_24h'] if market_data else 0.0,
-                                    'price_change_24h': market_data['price_change_percentage_24h'] if market_data else 0.0,
-                                    'market_cap': market_data['market_cap'] if market_data else 0,
-                                    'volume': market_data['total_volume'] if market_data else 0
-                                })
-        except Exception as e:
-            logger.error(f"Error rendering dashboard: {e}", exc_info=True)
-            return render_template('dashboard.html', 
-                                market_data={
-                                    'current_price': 0.0,
-                                    'price_change_24h': 0.0,
-                                    'market_cap': 0,
-                                    'volume': 0
-                                })
-
-    @app.route('/docs')
-    def documentation():
-        return render_template('documentation.html')
-
-    @app.route('/telegram')
-    def telegram():
-        return render_template('telegram.html')
-
+    logger.info("Flask application created successfully")
     return app
 
-# Create the application instance
-app = create_app()
-
 if __name__ == '__main__':
+    app = create_app()
     app.run(host='0.0.0.0', port=5000, debug=True)
