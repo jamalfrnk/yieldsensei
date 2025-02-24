@@ -102,17 +102,17 @@ def dashboard():
         last_updated = datetime.fromisoformat(market_data.get('last_updated').replace('Z', '+00:00'))
     except (ValueError, AttributeError):
         last_updated = datetime.now()
-        
-        return render_template(
-            'dashboard.html',
-            market_data=market_data,
-            market_insights={'sentiment': sentiment_data},
-            symbol=symbol,
-            last_updated=last_updated,
-            price_ranges=price_ranges,
-            historical_data=historical_data,
-            errors=error_messages
-        )
+    
+    return render_template(
+        'dashboard.html',
+        market_data=market_data,
+        market_insights={'sentiment': sentiment_data},
+        symbol=symbol,
+        last_updated=last_updated,
+        price_ranges=price_ranges,
+        historical_data=historical_data,
+        errors=error_messages
+    )
 
 @app.route('/documentation')
 def documentation():
