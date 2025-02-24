@@ -1,0 +1,154 @@
+# YieldSensei Technical Documentation
+
+## System Overview
+YieldSensei is a dual-interface crypto analytics platform consisting of:
+- Telegram bot (@yieldsensei_bot)
+- Flask web application
+
+## Core Technologies
+
+### Programming Languages
+- Python 3.11 (Primary)
+- JavaScript/TypeScript (Frontend)
+
+### Frameworks & Libraries
+#### Backend
+- Flask - Web framework
+- python-telegram-bot - Telegram bot API wrapper
+- Prophet - ML forecasting
+- scikit-learn - ML predictions
+- pandas - Data manipulation
+- numpy - Numerical operations
+
+#### Frontend
+- Tailwind CSS - Styling
+- Chart.js - Data visualization
+
+### External APIs & Services
+- CoinGecko API - Crypto market data
+- DexScreener API - DEX pair information
+- Telegram Bot API - Bot functionality
+- OpenAI API - AI-powered insights
+
+## Key Features
+
+### 1. Technical Analysis
+- Real-time price tracking
+- RSI (Relative Strength Index) calculation
+- MACD (Moving Average Convergence Divergence)
+- Support/Resistance levels
+- Trading signals generation
+- DCA (Dollar Cost Average) recommendations
+
+### 2. Machine Learning Integration
+- Price predictions using Random Forest
+- Prophet model forecasting
+- Confidence scoring
+- Trend analysis
+- Historical data processing
+
+### 3. Market Intelligence
+- Sentiment analysis
+- Volume analysis
+- DEX pair tracking
+- Price change monitoring
+- Market cap analysis
+
+## Telegram Bot Commands
+- `/start` - Initialize bot and get welcome message
+- `/help` - Display available commands
+- `/price <token>` - Get current price and 24h change
+- `/market <token>` - Get market cap, volume, and 24h high/low
+- `/signal <token>` - Get detailed trading signal analysis
+- `/dexinfo <token_address>` - Get DEX pair information
+
+## Web Application Features
+- Interactive dashboard
+- Real-time price charts
+- Technical indicators visualization
+- Trading signals display
+- Market sentiment overview
+- DCA recommendations
+- Historical price analysis
+
+## Architecture Components
+
+### 1. Core Services
+- Technical Analysis Service (services/technical_analysis.py)
+- ML Prediction Service (services/ml_prediction_service.py)
+- Market Data Services:
+  - coingecko_service.py
+  - dexscreener_service.py
+  - sentiment_service.py
+  - openai_service.py
+
+### 2. Web Application (app.py)
+- Flask routes and controllers
+- Template rendering
+- API endpoints
+- Rate limiting
+- Caching
+- Error handling
+
+### 3. Telegram Bot (main.py, bot_handlers.py)
+- Command handling
+- Message processing
+- Error handling
+- Rate limiting
+- Asynchronous operations
+
+## Data Flow
+1. User Input:
+   - Via Telegram commands
+   - Through web interface
+2. Request Processing:
+   - Rate limiting
+   - Command parsing
+   - Authentication (if applicable)
+3. Core Processing:
+   - Market data fetching
+   - Technical analysis
+   - ML predictions
+   - Sentiment analysis
+4. Response Generation:
+   - Formatted messages (Telegram)
+   - HTML templates (Web)
+   - JSON APIs
+
+## Security Features
+- Rate limiting
+- API key protection
+- Error handling
+- Input validation
+- Request throttling
+
+## Performance Optimizations
+- Data caching
+- Asynchronous operations
+- Efficient data processing
+- Response compression
+- Resource optimization
+
+## Deployment
+The application runs two parallel processes:
+1. Flask server on port 3000
+2. Telegram bot polling process
+
+Both components share:
+- Common services
+- Configuration
+- Caching mechanisms
+
+## Error Handling
+- Comprehensive logging
+- Error tracking
+- User-friendly error messages
+- Graceful degradation
+- Service recovery
+
+## Future Enhancements
+1. Additional Technical Indicators
+2. Enhanced ML Models
+3. Portfolio Tracking
+4. Alert System
+5. Custom Strategy Builder
