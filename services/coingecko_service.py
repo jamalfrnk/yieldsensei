@@ -11,6 +11,29 @@ logger = logging.getLogger(__name__)
 COINGECKO_API_KEY = os.environ.get('COINGECKO_API_KEY')
 BASE_URL = "https://pro-api.coingecko.com/api/v3" if COINGECKO_API_KEY else COINGECKO_BASE_URL
 
+from time import sleep
+from functools import wraps
+import time
+
+def rate_limit_decorator(calls_per_minute=30):
+    min_interval = 60.0 / calls_per_minute
+    last_call_time = {}
+    
+    def decorator(func):
+        @wraps(func)
+        async def wrapper(*args, **kwargs):
+            now = time.time()
+            key = func.__name__
+            if key in last_call_time:
+                time_since_last_call = now - last_call_time[key]
+                if time_since_last_call < min_interval:
+                    sleep_time = min_interval - time_since_last_call
+                    await asyncio.sleep(sleep_time)
+            last_call_time[key] = time.time()
+            return await func(*args, **kwargs)
+        return wrapper
+    return decorator
+
 async def retry_with_backoff(func, *args, max_retries=5):
     """Retry a function with exponential backoff."""
     for attempt in range(max_retries):
