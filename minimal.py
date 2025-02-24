@@ -3,7 +3,7 @@ import os
 import sys
 import socket
 from datetime import datetime
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request
 from flask_sqlalchemy import SQLAlchemy
 from services.crypto_analysis import CryptoAnalysisService
 from services.ml_prediction_service import MLPredictionService
@@ -68,20 +68,11 @@ def dashboard():
     historical_data = None
     error_messages = []
     
-    # Fetch market data with retries
-    tries = 3
-    while tries > 0:
-        try:
-            new_market_data = crypto_service.get_market_summary(coin_id)
-            if new_market_data:
-                market_data = new_market_data
-                break
-        except Exception as e:
-            logger.error(f"Market data error (tries left: {tries}): {str(e)}")
-            tries -= 1
-            await asyncio.sleep(2)
-    
-    if tries == 0:
+    # Fetch market data
+    try:
+        market_data = crypto_service.get_market_summary(coin_id) or market_data
+    except Exception as e:
+        logger.error(f"Market data error: {str(e)}")
         error_messages.append("Market data temporarily unavailable")
 
     # Fetch sentiment data
