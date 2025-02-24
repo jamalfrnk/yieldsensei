@@ -1,7 +1,8 @@
 import logging
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 import requests
 from datetime import datetime, timedelta
+import json
 
 # Configure logging
 logger = logging.getLogger(__name__)

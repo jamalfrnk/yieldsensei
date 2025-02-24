@@ -166,6 +166,24 @@ def dashboard():
 def documentation():
     return render_template('documentation.html')
 
+@app.route('/api/price-history/<symbol>')
+def price_history(symbol):
+    try:
+        days = request.args.get('range', '1')
+        days_map = {'24h': '1', '7d': '7', '30d': '30', '90d': '90', '1y': '365'}
+        days = days_map.get(days, '1')
+        
+        df = crypto_service.get_historical_data(symbol.lower(), int(days))
+        if df.empty:
+            return jsonify([])
+            
+        price_data = df.reset_index().values.tolist()
+        formatted_data = [{'timestamp': ts.isoformat(), 'price': price} for ts, price in price_data]
+        return jsonify(formatted_data)
+    except Exception as e:
+        logger.error(f"Error fetching price history: {str(e)}")
+        return jsonify({'error': 'Failed to fetch price history'}), 500
+
 @app.route('/api/market-intelligence/<symbol>')
 def market_intelligence(symbol):
     try:
