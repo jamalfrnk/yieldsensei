@@ -119,6 +119,37 @@ def dashboard():
     except (ValueError, AttributeError):
         last_updated = datetime.now()
     
+    # Generate DCA recommendations with entry/exit points
+    current_price = market_data.get('current_price', 0)
+    dca_recommendations = {
+        'entry_points': [
+            {
+                'price': current_price * 0.95,  # 5% below current price
+                'allocation': '30%'
+            },
+            {
+                'price': current_price * 0.90,  # 10% below current price
+                'allocation': '40%'
+            },
+            {
+                'price': current_price * 0.85,  # 15% below current price
+                'allocation': '30%'
+            }
+        ],
+        'risk_level': "Medium Risk 🟡",
+        'risk_explanation': "Market showing moderate volatility. Use staged entries.",
+        'schedule': "Bi-weekly purchases over 4-6 weeks",
+        'exit_strategy': {
+            'take_profit': [
+                {'price': current_price * 1.2, 'allocation': '30%'},  # 20% profit
+                {'price': current_price * 1.3, 'allocation': '40%'},  # 30% profit
+                {'price': current_price * 1.5, 'allocation': '30%'}   # 50% profit
+            ],
+            'stop_loss': current_price * 0.80,  # 20% below entry
+            'trailing_stop': '15%'  # 15% trailing stop from local highs
+        }
+    }
+
     return render_template(
         'dashboard.html',
         market_data=market_data,
@@ -127,7 +158,8 @@ def dashboard():
         last_updated=last_updated,
         price_ranges=price_ranges,
         historical_data=historical_data,
-        errors=error_messages
+        errors=error_messages,
+        dca_recommendations=dca_recommendations
     )
 
 @app.route('/documentation')

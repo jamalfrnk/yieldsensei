@@ -203,6 +203,50 @@
             <div class="bg-gray-800 p-6 rounded-lg">
                 <h3 class="text-xl font-semibold text-orange-400 mb-3">Risk Assessment</h3>
                 <div class="mb-4">
+                    <span class="text-lg font-medium">{{ dca_recommendations.risk_level }}</span>
+                    <p class="text-gray-300 mt-2">{{ dca_recommendations.risk_explanation }}</p>
+                </div>
+                <div>
+                    <h4 class="text-lg font-medium text-orange-400 mb-2">Recommended Schedule</h4>
+                    <p class="text-gray-300">{{ dca_recommendations.schedule }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Exit Strategy Section -->
+        <div class="mt-6">
+            <h3 class="text-xl font-semibold text-orange-400 mb-4">Exit Strategy</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Take Profit Levels -->
+                <div class="bg-gray-800 p-4 rounded-lg">
+                    <h4 class="text-lg font-medium text-green-500 mb-3">Take Profit Levels</h4>
+                    {% for tp in dca_recommendations.exit_strategy.take_profit %}
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-gray-300">Target {{ loop.index }}</span>
+                        <div>
+                            <span class="text-green-500 font-semibold">${{ "{:,.2f}".format(tp.price) }}</span>
+                            <span class="text-gray-400 ml-2">({{ tp.allocation }})</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <!-- Stop Loss & Trailing Stop -->
+                <div class="bg-gray-800 p-4 rounded-lg">
+                    <h4 class="text-lg font-medium text-red-500 mb-3">Risk Management</h4>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-300">Stop Loss</span>
+                            <span class="text-red-500 font-semibold">${{ "{:,.2f}".format(dca_recommendations.exit_strategy.stop_loss) }}</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-300">Trailing Stop</span>
+                            <span class="text-orange-500 font-semibold">{{ dca_recommendations.exit_strategy.trailing_stop }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>ent</h3>
+                <div class="mb-4">
                     <span class="text-lg font-medium">{{ dca_recommendations.risk_level if dca_recommendations else "Low Risk 🟢" }}</span>
                     <p class="text-gray-300 mt-2">{{ dca_recommendations.risk_explanation if dca_recommendations else "Market conditions appear stable. Consider standard DCA approach." }}</p>
                 </div>
