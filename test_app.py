@@ -18,7 +18,7 @@ def hello():
 if __name__ == '__main__':
     try:
         logger.info("Starting Flask test server...")
-        app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)
+        app.run(host='0.0.0.0', port=3000, debug=False, use_reloader=False)
     except Exception as e:
         logger.error(f"Failed to start Flask server: {str(e)}", exc_info=True)
         raise
