@@ -2,6 +2,7 @@ import logging
 import os
 import sys
 import socket
+from datetime import datetime
 from flask import Flask, render_template, request
 from flask_sqlalchemy import SQLAlchemy
 from services.crypto_analysis import CryptoAnalysisService
@@ -43,17 +44,29 @@ def dashboard():
         # Initialize the crypto service
         crypto_service = CryptoAnalysisService()
         
+        # Map common symbols to CoinGecko IDs
+        symbol_map = {
+            'BTC': 'bitcoin',
+            'ETH': 'ethereum',
+            'SOL': 'solana'
+        }
+        
         # Get default market data for Bitcoin
         symbol = request.args.get('symbol', 'BTC')
-        market_data = crypto_service.get_market_summary(symbol)
-        sentiment_data = crypto_service.get_market_sentiment(symbol)
+        coin_id = symbol_map.get(symbol, symbol.lower())
+        
+        market_data = crypto_service.get_market_summary(coin_id)
+        sentiment_data = crypto_service.get_market_sentiment(coin_id)
+        
+        # Parse the ISO date string to datetime object
+        last_updated = datetime.fromisoformat(market_data.get('last_updated').replace('Z', '+00:00'))
         
         return render_template(
             'dashboard.html',
             market_data=market_data,
             market_insights={'sentiment': sentiment_data},
             symbol=symbol,
-            last_updated=market_data.get('last_updated')
+            last_updated=last_updated
         )
     except Exception as e:
         logger.error(f"Dashboard error: {str(e)}")
