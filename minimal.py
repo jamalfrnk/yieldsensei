@@ -94,6 +94,22 @@ def dashboard():
         'day': {
             'high': market_data.get('high_24h', 0),
             'low': market_data.get('low_24h', 0)
+        },
+        'week': {
+            'high': market_data.get('high_24h', 0),  # Fallback to 24h data
+            'low': market_data.get('low_24h', 0)
+        },
+        'month': {
+            'high': market_data.get('high_24h', 0),
+            'low': market_data.get('low_24h', 0)
+        },
+        'quarter': {
+            'high': market_data.get('high_24h', 0),
+            'low': market_data.get('low_24h', 0)
+        },
+        'year': {
+            'high': market_data.get('high_24h', 0),
+            'low': market_data.get('low_24h', 0)
         }
     }
     
