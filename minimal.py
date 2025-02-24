@@ -1,37 +1,42 @@
 import logging
+import os
 import sys
 import socket
-from flask import Flask
-from models import db
+from flask import Flask, render_template
+from flask_sqlalchemy import SQLAlchemy
 
 # Configure logging
 logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - [%(funcName)s] %(message)s'
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - [%(funcName)s] %(message)s',
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler('flask_app.log')
+    ]
 )
 logger = logging.getLogger(__name__)
 
 # Create Flask app
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'dev'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:postgres@localhost:5432/postgres'
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///app.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Initialize SQLAlchemy
-db.init_app(app)
+db = SQLAlchemy(app)
 
 @app.route('/')
-def hello():
-    return "Hello World! Minimal Flask Test Server"
+def index():
+    logger.info("Handling request for index page")
+    return render_template('index.html')
 
 if __name__ == '__main__':
     try:
-        # Check if port is already in use
+        # Less intrusive port check: Log a warning instead of exiting
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        result = sock.connect_ex(('0.0.0.0', 5000))
+        result = sock.connect_ex(('0.0.0.0', 3000))
         if result == 0:
-            logger.error("Port 5000 is already in use!")
-            sys.exit(1)
+            logger.warning("Port 3000 may already be in use.  Continuing anyway.")
         sock.close()
 
         with app.app_context():
