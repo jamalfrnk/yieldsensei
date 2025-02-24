@@ -38,8 +38,11 @@ def check_port_available(port):
         return False
 
 if __name__ == "__main__":
-    port = int(os.environ.get('PORT', 5000))
+    default_port = 5000
+    port = int(os.environ.get('PORT', default_port))
     logger.info(f"Current process ID: {os.getpid()}")
+    logger.info(f"Starting server with port from environment variable: {port}")
+
 
     # Add retry logic for port availability
     max_retries = 3
@@ -59,5 +62,5 @@ if __name__ == "__main__":
         logger.info(f"Starting production server on port {port}...")
         serve(app, host='0.0.0.0', port=port, threads=6)
     except Exception as e:
-        logger.error(f"Failed to start server: {str(e)}")
+        logger.exception(f"Failed to start server: {str(e)}") #Improved logging for exceptions
         sys.exit(1)

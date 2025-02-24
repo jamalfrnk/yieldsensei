@@ -7,8 +7,16 @@ channel = "stable-24_05"
 runButton = "Project"
 
 [[workflows.workflow]]
-name = "Production Server"
+name = "Project"
 mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Production Server"
+
+[[workflows.workflow]]
+name = "Production Server"
 author = "agent"
 
 [workflows.workflow.metadata]
@@ -22,37 +30,8 @@ task = "shell.exec"
 args = "python wsgi.py"
 waitForPort = 5000
 
-[[workflows.workflow]]
-name = "Flask Server"
-mode = "parallel"
-author = "agent"
-
-[workflows.workflow.metadata]
-agentRequireRestartOnSave = false
-
-[[workflows.workflow.tasks]]
-task = "packager.installForAll"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "PYTHONUNBUFFERED=1 FLASK_ENV=development python app.py"
-waitForPort = 5000
-
-[[workflows.workflow]]
-name = "Project"
-mode = "parallel"
-author = "agent"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Flask Server"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Production Server"
-
 [deployment]
-run = ["sh", "-c", "PYTHONUNBUFFERED=1 FLASK_ENV=development python app.py"]
+run = ["sh", "-c", "python wsgi.py"]
 deploymentTarget = "gce"
 
 [[ports]]
