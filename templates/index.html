@@ -2,68 +2,103 @@
 
 {% block content %}
 <!-- Beta Launch Announcement Banner -->
-<div class="bg-orange-500 text-white px-4 py-3">
+<div class="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-4 py-3 fade-in">
     <div class="container mx-auto text-center">
-        <p class="text-sm md:text-base">
+        <p class="text-sm md:text-base font-medium">
             🚀 <span class="font-bold">Beta Launch Announcement:</span>
-            YieldSensei is now in 90-day beta testing! Both our Telegram bot (@yieldsensei_bot) and web application (YieldSensei.ai) are live for real-time market analysis. We're collecting user feedback to refine and enhance our platform—join us and be part of the evolution!
+            YieldSensei is now in 90-day beta testing! Join us in shaping the future of DeFi analytics.
         </p>
     </div>
 </div>
 
 <div class="min-h-screen">
     <!-- Hero Section -->
-    <div class="container mx-auto px-4 py-12 text-center">
-        <h1 class="text-4xl md:text-5xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-orange-500 to-orange-400">
+    <div class="container mx-auto px-4 py-16 text-center fade-in">
+        <h1 class="text-4xl md:text-6xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-orange-500 to-orange-300">
             Welcome to YieldSensei
         </h1>
-
-        <!-- YieldSensei Image -->
-        <div class="mb-8 flex justify-center">
-            <div class="hover-scale">
-                <img src="{{ url_for('static', filename='assets/blackyieldsensei.webp') }}" 
-                     alt="YieldSensei Master" 
-                     class="w-64 h-64 object-contain rounded-lg shadow-2xl border-2 border-orange-500/20">
-            </div>
-        </div>
-
         <p class="text-xl md:text-2xl mb-4 text-orange-400">AI-Powered Crypto Intelligence</p>
-        <p class="text-lg text-gray-300 mb-8 max-w-2xl mx-auto">
+        <p class="text-lg text-gray-300 mb-12 max-w-2xl mx-auto">
             Experience the future of crypto trading with our AI-driven analytics platform,
             delivering real-time insights and predictive market analysis.
         </p>
 
         <!-- Action Buttons -->
-        <div class="flex flex-col md:flex-row justify-center gap-4 mb-12">
+        <div class="flex flex-col md:flex-row justify-center gap-4 mb-16 scale-up">
             <a href="/dashboard" 
-               class="bg-orange-500 text-white px-8 py-3 rounded-lg hover:bg-orange-600 transition-all duration-300 hover-scale">
-                Launch Dashboard
+               class="group relative px-8 py-3 bg-orange-500 rounded-lg overflow-hidden">
+                <div class="absolute inset-0 bg-gradient-to-r from-orange-600 to-orange-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <span class="relative text-white font-semibold">Launch Dashboard</span>
             </a>
             <a href="https://t.me/yieldsensei_bot" 
                target="_blank"
-               class="bg-blue-500 text-white px-8 py-3 rounded-lg hover:bg-blue-600 transition-all duration-300 hover-scale">
-                Try Telegram Bot
+               class="group relative px-8 py-3 bg-blue-500 rounded-lg overflow-hidden">
+                <div class="absolute inset-0 bg-gradient-to-r from-blue-600 to-blue-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <span class="relative text-white font-semibold">Try Telegram Bot</span>
             </a>
             <a href="https://yieldsensei.gitbook.io/yieldsensei-docs" 
                target="_blank"
-               class="bg-gray-700 text-white px-8 py-3 rounded-lg hover:bg-gray-600 transition-all duration-300 hover-scale">
-                View Documentation
+               class="group relative px-8 py-3 bg-gray-700 rounded-lg overflow-hidden">
+                <div class="absolute inset-0 bg-gradient-to-r from-gray-800 to-gray-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <span class="relative text-white font-semibold">View Documentation</span>
             </a>
         </div>
 
-        <!-- Feature Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            <div class="bg-gray-800 p-6 rounded-lg hover:bg-gray-700 transition-all duration-300 hover-scale">
+        <!-- Features Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto mb-16">
+            <!-- Real-Time Analysis -->
+            <div class="bg-black/30 backdrop-blur-lg p-8 rounded-2xl border border-orange-500/10 hover:border-orange-500/30 transition-all duration-300 slide-in">
+                <div class="h-16 w-16 bg-orange-500/10 rounded-lg flex items-center justify-center mb-6 mx-auto">
+                    <svg class="w-8 h-8 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                    </svg>
+                </div>
                 <h3 class="text-xl font-semibold text-orange-500 mb-3">Real-Time Analysis</h3>
-                <p class="text-gray-300">Get instant market insights powered by advanced AI algorithms</p>
+                <p class="text-gray-400">Get instant market insights powered by advanced AI algorithms</p>
             </div>
-            <div class="bg-gray-800 p-6 rounded-lg hover:bg-gray-700 transition-all duration-300 hover-scale">
+
+            <!-- Smart Predictions -->
+            <div class="bg-black/30 backdrop-blur-lg p-8 rounded-2xl border border-orange-500/10 hover:border-orange-500/30 transition-all duration-300 slide-in">
+                <div class="h-16 w-16 bg-orange-500/10 rounded-lg flex items-center justify-center mb-6 mx-auto">
+                    <svg class="w-8 h-8 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                </div>
                 <h3 class="text-xl font-semibold text-orange-500 mb-3">Smart Predictions</h3>
-                <p class="text-gray-300">AI-driven price predictions and trend analysis</p>
+                <p class="text-gray-400">AI-driven price predictions and trend analysis</p>
             </div>
-            <div class="bg-gray-800 p-6 rounded-lg hover:bg-gray-700 transition-all duration-300 hover-scale">
+
+            <!-- Portfolio Insights -->
+            <div class="bg-black/30 backdrop-blur-lg p-8 rounded-2xl border border-orange-500/10 hover:border-orange-500/30 transition-all duration-300 slide-in">
+                <div class="h-16 w-16 bg-orange-500/10 rounded-lg flex items-center justify-center mb-6 mx-auto">
+                    <svg class="w-8 h-8 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
                 <h3 class="text-xl font-semibold text-orange-500 mb-3">Portfolio Insights</h3>
-                <p class="text-gray-300">Track and optimize your crypto portfolio performance</p>
+                <p class="text-gray-400">Track and optimize your crypto portfolio performance</p>
+            </div>
+        </div>
+
+        <!-- Stats Section -->
+        <div class="bg-black/30 backdrop-blur-lg rounded-2xl border border-orange-500/10 p-8 max-w-4xl mx-auto scale-up">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-orange-500">500+</div>
+                    <div class="text-gray-400 text-sm">Active Users</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-orange-500">10K+</div>
+                    <div class="text-gray-400 text-sm">Predictions Made</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-orange-500">95%</div>
+                    <div class="text-gray-400 text-sm">Accuracy Rate</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-orange-500">24/7</div>
+                    <div class="text-gray-400 text-sm">Market Analysis</div>
+                </div>
             </div>
         </div>
     </div>
