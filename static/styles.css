@@ -7,89 +7,151 @@
     --text-secondary: #9ca3af; /* gray-400 */
 }
 
-/* Global styles */
+/* Base styles */
 body {
     background-color: var(--background-dark);
     color: var(--text-primary);
+    font-family: 'Inter', sans-serif;
 }
 
-/* Card styles */
+/* Modern card styles with hover effects */
 .feature-card {
-    @apply bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-700 hover:border-orange-500/20 transition-all duration-300;
+    @apply bg-gray-800/50 backdrop-blur-sm p-6 rounded-xl shadow-lg border border-orange-500/10 
+    hover:border-orange-500/30 hover:transform hover:scale-[1.02] transition-all duration-300;
 }
 
-/* Component styles */
+/* Interactive buttons with gradients */
 .btn-primary {
-    @apply bg-orange-500 text-white px-6 py-3 rounded-lg hover:bg-orange-400 transition-all duration-300 font-semibold;
+    @apply relative px-8 py-3 bg-gradient-to-r from-orange-500 to-orange-400 
+    rounded-lg overflow-hidden hover:to-orange-300 transition-all duration-300 font-semibold
+    hover:shadow-lg hover:shadow-orange-500/20;
 }
 
 .btn-secondary {
-    @apply bg-gray-700 text-white px-6 py-3 rounded-lg hover:bg-gray-600 transition-all duration-300 font-semibold;
+    @apply relative px-8 py-3 bg-gray-700 text-white rounded-lg overflow-hidden 
+    hover:bg-gray-600 transition-all duration-300 font-semibold
+    hover:shadow-lg hover:shadow-gray-500/20;
 }
 
+/* Modern form inputs */
 .input-field {
-    @apply bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent;
+    @apply bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-lg px-4 py-3 
+    text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500/50 
+    focus:border-transparent transition-all duration-300;
 }
 
-/* Section headers */
+/* Section styling */
 .section-title {
-    @apply text-3xl md:text-4xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-orange-500 to-orange-400;
+    @apply text-3xl md:text-4xl font-bold mb-6 bg-clip-text text-transparent 
+    bg-gradient-to-r from-orange-500 to-orange-300;
 }
 
 .section-subtitle {
-    @apply text-xl text-gray-300 mb-8;
+    @apply text-xl text-gray-300 mb-8 leading-relaxed;
 }
 
-/* Card grid layouts */
+/* Responsive card grid */
 .card-grid {
     @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6;
 }
 
-/* Stats and metrics */
+/* Stats and metrics with hover effects */
 .stat-card {
-    @apply bg-gray-800 p-6 rounded-lg hover:bg-gray-700 transition-all duration-300 hover-scale shadow-lg;
+    @apply bg-gray-800/50 backdrop-blur-sm p-6 rounded-xl border border-orange-500/10 
+    hover:border-orange-500/30 transition-all duration-300 transform hover:scale-[1.02] shadow-lg;
 }
 
 .stat-label {
-    @apply text-gray-400 text-sm mb-2;
+    @apply text-gray-400 text-sm font-medium mb-2;
 }
 
 .stat-value {
-    @apply text-2xl font-bold text-white;
+    @apply text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-orange-500 to-orange-300;
 }
 
-/* Animations */
-.hover-scale {
-    transition: transform 0.3s ease-in-out;
+/* Navigation styles */
+.nav-link {
+    @apply px-4 py-2 rounded-lg hover:bg-orange-500/10 transition-all duration-300 
+    hover:text-orange-500 relative after:absolute after:bottom-0 after:left-0 after:h-0.5 
+    after:bg-orange-500 after:w-0 hover:after:w-full after:transition-all after:duration-300;
 }
 
-.hover-scale:hover {
-    transform: scale(1.02);
+/* Mobile menu button */
+.hamburger-line {
+    @apply absolute h-0.5 w-6 bg-white transform transition-all duration-300;
 }
 
-/* Form components */
-.form-group {
-    @apply mb-4;
+.hamburger-line:first-child {
+    @apply top-0;
 }
 
-.form-label {
-    @apply block text-sm font-medium text-gray-400 mb-2;
+.hamburger-line:nth-child(2) {
+    @apply top-2;
 }
 
-/* Alert and notification styles */
-.alert {
-    @apply p-4 rounded-lg mb-4;
+.hamburger-line:last-child {
+    @apply top-4;
 }
 
-.alert-success {
-    @apply bg-green-500 bg-opacity-10 text-green-400 border border-green-500;
+#mobileMenuBtn.active .hamburger-line:first-child {
+    @apply rotate-45 translate-y-2;
 }
 
-.alert-error {
-    @apply bg-red-500 bg-opacity-10 text-red-400 border border-red-500;
+#mobileMenuBtn.active .hamburger-line:nth-child(2) {
+    @apply opacity-0;
 }
 
-/* Mobile responsiveness */
+#mobileMenuBtn.active .hamburger-line:last-child {
+    @apply -rotate-45 -translate-y-2;
+}
+
+/* Chart container styles */
+.chart-container {
+    @apply bg-gray-800/50 backdrop-blur-sm p-4 rounded-xl border border-orange-500/10 
+    hover:border-orange-500/30 transition-all duration-300;
+}
+
+/* Animation classes */
+.fade-in {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeIn 0.6s ease-out forwards;
+}
+
+.slide-in {
+    opacity: 0;
+    transform: translateX(-50px);
+    animation: slideIn 0.6s ease-out forwards;
+}
+
+.scale-up {
+    opacity: 0;
+    transform: scale(0.95);
+    animation: scaleUp 0.6s ease-out forwards;
+}
+
+@keyframes fadeIn {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideIn {
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes scaleUp {
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Responsive adjustments */
 @media (max-width: 768px) {
     .section-title {
         @apply text-2xl;
@@ -98,24 +160,8 @@ body {
     .card-grid {
         @apply grid-cols-1;
     }
-}
 
-/* Placeholder for social media links -  requires actual links to be added */
-.social-media-links {
-    margin-top: 2rem;
-}
-
-.social-media-links a {
-    margin-right: 1rem;
-    color: var(--primary-color);
-    text-decoration: none;
-}
-
-/* Placeholder for YieldSensei bot integration - requires actual implementation */
-.yieldsensei-bot {
-  margin-top: 2rem;
-  padding: 1rem;
-  background-color: #f0f0f0;
-  border: 1px solid #ccc;
-  border-radius: 0.5rem;
+    .stat-card {
+        @apply text-center;
+    }
 }
