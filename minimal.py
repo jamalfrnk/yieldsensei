@@ -39,7 +39,28 @@ def index():
 
 @app.route('/dashboard')
 def dashboard():
-    return render_template('dashboard.html')
+    try:
+        # Initialize the crypto service
+        crypto_service = CryptoAnalysisService()
+        
+        # Get default market data for Bitcoin
+        symbol = request.args.get('symbol', 'BTC')
+        market_data = crypto_service.get_market_summary(symbol)
+        sentiment_data = crypto_service.get_market_sentiment(symbol)
+        
+        return render_template(
+            'dashboard.html',
+            market_data=market_data,
+            market_insights={'sentiment': sentiment_data},
+            symbol=symbol,
+            last_updated=market_data.get('last_updated')
+        )
+    except Exception as e:
+        logger.error(f"Dashboard error: {str(e)}")
+        return render_template(
+            'error.html',
+            error_message="Failed to load market data. Please try again later."
+        )
 
 @app.route('/documentation')
 def documentation():
