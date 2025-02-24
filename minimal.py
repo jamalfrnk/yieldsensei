@@ -2,7 +2,7 @@ import logging
 import os
 import sys
 import socket
-from flask import Flask, render_template
+from flask import Flask, render_template, request
 from flask_sqlalchemy import SQLAlchemy
 from services.crypto_analysis import CryptoAnalysisService
 from services.ml_prediction_service import MLPredictionService
