@@ -4,7 +4,7 @@ import asyncio
 import aiohttp
 from datetime import datetime, timedelta
 import json
-from services.birdeye_service import get_historical_data, get_token_price, get_token_market_data
+from services.free_crypto_service import get_historical_data, get_token_price, get_token_market_data
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -240,6 +240,69 @@ class CryptoAnalysisService:
             logger.error(f"Error calculating market sentiment: {str(e)}")
             return None
 
+    def get_signal_analysis(self, coin_id="bitcoin"):
+        """Get signal analysis for a cryptocurrency"""
+        if not HAVE_ANALYTICS:
+            logger.warning("Analytics features not available - skipping signal analysis")
+            return None
+        try:
+            logger.debug(f"Generating signal analysis for {coin_id}")
+            df = self.get_historical_data(coin_id)
+            
+            if df is None or df.empty:
+                return None
+                
+            # Get current market data
+            market_summary = self.get_market_summary(coin_id)
+            current_price = market_summary.get('current_price', 0)
+            
+            # Calculate support and resistance levels
+            if len(df) >= 20:
+                support_1 = df['support_1'].iloc[-1]
+                support_2 = df['support_2'].iloc[-1]
+                resistance_1 = df['resistance_1'].iloc[-1]
+                resistance_2 = df['resistance_2'].iloc[-1]
+            else:
+                # If not enough data, use percentages of current price
+                support_1 = current_price * 0.95
+                support_2 = current_price * 0.90
+                resistance_1 = current_price * 1.05
+                resistance_2 = current_price * 1.10
+            
+            # Calculate RSI signal strength
+            rsi = df['rsi'].iloc[-1] if 'rsi' in df.columns else 50
+            if rsi > 70:
+                signal_strength = rsi - 70  # Overbought (positive)
+            elif rsi < 30:
+                signal_strength = 30 - rsi  # Oversold (negative)
+            else:
+                signal_strength = 0  # Neutral
+                
+            # Adjust signal strength based on MACD
+            if 'macd' in df.columns and 'macd_signal' in df.columns:
+                macd = df['macd'].iloc[-1]
+                macd_signal = df['macd_signal'].iloc[-1]
+                
+                if macd > macd_signal:
+                    signal_strength += 10  # Bullish MACD
+                else:
+                    signal_strength -= 10  # Bearish MACD
+                    
+            return {
+                'current_price': current_price,
+                'price_levels': {
+                    'support_1': support_1,
+                    'support_2': support_2,
+                    'resistance_1': resistance_1,
+                    'resistance_2': resistance_2
+                },
+                'signal_strength': signal_strength
+            }
+            
+        except Exception as e:
+            logger.error(f"Error generating signal analysis: {str(e)}")
+            return None
+
     def get_dca_recommendations(self, coin_id="bitcoin"):
         """Get DCA (Dollar Cost Averaging) recommendations"""
         if not HAVE_ANALYTICS:
@@ -247,7 +310,7 @@ class CryptoAnalysisService:
             return None
         try:
             logger.debug(f"Generating DCA recommendations for {coin_id}")
-            signal_data = get_signal_analysis(coin_id)
+            signal_data = self.get_signal_analysis(coin_id)
 
             if not signal_data:
                 return None
