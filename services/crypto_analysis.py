@@ -1,8 +1,10 @@
 import logging
 from typing import Optional, Dict, Any, List
-import requests
+import asyncio
+import aiohttp
 from datetime import datetime, timedelta
 import json
+from services.birdeye_service import get_historical_data, get_token_price, get_token_market_data
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -19,8 +21,8 @@ except ImportError as e:
 
 class CryptoAnalysisService:
     def __init__(self):
-        self.base_url = "https://api.coingecko.com/api/v3"
-        logger.info("Initializing CryptoAnalysisService with CoinGecko API")
+        self.base_url = "https://public-api.birdeye.so"
+        logger.info("Initializing CryptoAnalysisService with BirdEye API")
         try:
             self._test_api_connection()
         except Exception as e:
@@ -28,47 +30,56 @@ class CryptoAnalysisService:
             # Don't raise the error, allow the service to initialize with degraded functionality
             pass
 
+    async def _test_api_connection_async(self):
+        """Test the API connection asynchronously"""
+        async with aiohttp.ClientSession() as session:
+            try:
+                headers = {"X-API-KEY": "a2f6b375cc2c4afbb5fdb456d7bdc4ff"}
+                # Test with a simple token metadata request for SOL
+                url = f"{self.base_url}/defi/token_metadata"
+                params = {"address": "So11111111111111111111111111111111111111112"}
+                
+                async with session.get(url, params=params, headers=headers) as response:
+                    response.raise_for_status()
+                    data = await response.json()
+                    if data.get('success') == True:
+                        logger.info("Successfully connected to BirdEye API")
+                        return True
+                    else:
+                        raise ConnectionError(f"BirdEye API error: {data.get('message', 'Unknown error')}")
+            except Exception as e:
+                logger.error(f"Failed to connect to BirdEye API: {str(e)}")
+                raise ConnectionError(f"Cannot connect to BirdEye API: {str(e)}")
+
     def _test_api_connection(self):
-        """Test the API connection during initialization"""
+        """Test the API connection during initialization (synchronous wrapper)"""
         try:
-            response = requests.get(f"{self.base_url}/ping", timeout=5)
-            response.raise_for_status()
-            logger.info("Successfully connected to CoinGecko API")
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Failed to connect to CoinGecko API: {str(e)}")
-            raise ConnectionError("Cannot connect to CoinGecko API")
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+        
+        return loop.run_until_complete(self._test_api_connection_async())
 
     def get_historical_data(self, coin_id="bitcoin", days=90):
-        """Fetch historical price data for a cryptocurrency"""
+        """Fetch historical price data for a cryptocurrency using BirdEye API"""
         if not HAVE_ANALYTICS:
             logger.warning("Analytics features not available - missing required packages")
             return pd.DataFrame()
 
         try:
             logger.debug(f"Fetching historical data for {coin_id}")
-            url = f"{self.base_url}/coins/{coin_id}/market_chart"
-            params = {
-                'vs_currency': 'usd',
-                'days': days,
-                'interval': 'daily'
-            }
-            logger.debug(f"Making API request to: {url}")
-
-            response = requests.get(url, params=params, timeout=10)
-            if response.status_code == 404:
-                logger.error(f"Token '{coin_id}' not found")
-                return pd.DataFrame()  # Return empty DataFrame instead of None
-            response.raise_for_status()
-
-            data = response.json()
-            if not data or "prices" not in data:
-                logger.error("Invalid response format from API")
+            
+            # Use the imported function from birdeye_service
+            df = get_historical_data(coin_id, days)
+            
+            if df.empty:
+                logger.warning(f"No historical data available for {coin_id}")
                 return pd.DataFrame()
-
-            df = pd.DataFrame(data['prices'], columns=['timestamp', 'price'])
-            df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
-            df.set_index('timestamp', inplace=True)
-
+            
+            # Apply technical indicators if data is available
+            df = self._add_technical_indicators(df)
+            
             logger.debug(f"Successfully fetched {len(df)} price points for {coin_id}")
             return df
 
@@ -112,31 +123,25 @@ class CryptoAnalysisService:
             logger.error(f"Error calculating technical indicators: {str(e)}")
             return df
 
-    def get_market_summary(self, coin_id="bitcoin"):
-        """Get current market summary for a cryptocurrency"""
+    async def get_market_summary_async(self, coin_id="bitcoin"):
+        """Get current market summary for a cryptocurrency using BirdEye API (async)"""
         try:
             logger.debug(f"Fetching market summary for {coin_id}")
-            url = f"{self.base_url}/coins/{coin_id}"
-            params = {
-                'localization': 'false',
-                'tickers': 'false',
-                'community_data': 'false',
-                'developer_data': 'false',
-                'sparkline': 'false'
-            }
-
-            response = requests.get(url, params=params, timeout=10)
-            response.raise_for_status()
-
-            data = response.json()
-            market_data = data.get('market_data', {})
-
+            
+            # Use the imported function from birdeye_service
+            market_data = await get_token_market_data(coin_id)
+            
+            # Get the current price
+            price_data = await get_token_price(coin_id)
+            
             summary = {
-                'current_price': market_data.get('current_price', {}).get('usd', 0.0),
-                'market_cap': market_data.get('market_cap', {}).get('usd', 0),
-                'volume': market_data.get('total_volume', {}).get('usd', 0),
+                'current_price': price_data.get('usd', 0.0),
+                'market_cap': market_data.get('market_cap', 0),
+                'volume': market_data.get('total_volume', 0),
                 'price_change_24h': market_data.get('price_change_percentage_24h', 0.0),
-                'last_updated': data.get('last_updated', datetime.now().isoformat())
+                'last_updated': datetime.now().isoformat(),
+                'high_24h': market_data.get('high_24h', 0.0),
+                'low_24h': market_data.get('low_24h', 0.0)
             }
 
             logger.debug(f"Successfully fetched market summary for {coin_id}")
@@ -150,8 +155,20 @@ class CryptoAnalysisService:
                 'market_cap': 0,
                 'volume': 0,
                 'price_change_24h': 0.0,
+                'high_24h': 0.0,
+                'low_24h': 0.0,
                 'last_updated': datetime.now().isoformat()
             }
+            
+    def get_market_summary(self, coin_id="bitcoin"):
+        """Synchronous wrapper for get_market_summary_async"""
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+        
+        return loop.run_until_complete(self.get_market_summary_async(coin_id))
 
     def get_market_sentiment(self, coin_id="bitcoin"):
         """Get market sentiment analysis"""

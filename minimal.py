@@ -3,7 +3,7 @@ import os
 import sys
 import socket
 from datetime import datetime
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from services.crypto_analysis import CryptoAnalysisService
 from services.ml_prediction_service import MLPredictionService
@@ -173,13 +173,38 @@ def price_history(symbol):
         days_map = {'24h': '1', '7d': '7', '30d': '30', '90d': '90', '1y': '365'}
         days = days_map.get(days, '1')
         
+        logger.info(f"Fetching price history for {symbol} over {days} days")
         df = crypto_service.get_historical_data(symbol.lower(), int(days))
+        
         if df.empty:
+            logger.warning(f"No price history data available for {symbol}")
             return jsonify([])
             
-        price_data = df.reset_index().values.tolist()
-        formatted_data = [{'timestamp': ts.isoformat(), 'price': price} for ts, price in price_data]
-        return jsonify(formatted_data)
+        # Convert DataFrame to list of dictionaries
+        try:
+            df = df.reset_index()
+            formatted_data = []
+            
+            for _, row in df.iterrows():
+                timestamp = row['timestamp']
+                price = row['price']
+                
+                # Handle timestamp formatting
+                if hasattr(timestamp, 'isoformat'):
+                    timestamp = timestamp.isoformat()
+                
+                formatted_data.append({
+                    'timestamp': timestamp,
+                    'price': float(price)
+                })
+                
+            logger.info(f"Successfully formatted {len(formatted_data)} price points for {symbol}")
+            return jsonify(formatted_data)
+            
+        except Exception as e:
+            logger.error(f"Error formatting price history data: {str(e)}")
+            return jsonify({'error': 'Failed to format price history data'}), 500
+            
     except Exception as e:
         logger.error(f"Error fetching price history: {str(e)}")
         return jsonify({'error': 'Failed to fetch price history'}), 500
@@ -187,20 +212,34 @@ def price_history(symbol):
 @app.route('/api/market-intelligence/<symbol>')
 def market_intelligence(symbol):
     try:
-        crypto_service = CryptoAnalysisService()
+        # Use existing crypto_service instance
+        logger.info(f"Fetching market intelligence for {symbol}")
         sentiment_data = crypto_service.get_market_sentiment(symbol)
         market_data = crypto_service.get_market_summary(symbol)
         
-        return jsonify({
+        # Prepare response with more data points
+        intelligence_data = {
             'sentiment': sentiment_data,
             'volume': {
-                'total_24h': market_data['volume'],
-                'change_24h': market_data['price_change_24h']
-            }
-        })
+                'total_24h': market_data.get('volume', 0),
+                'change_24h': market_data.get('price_change_24h', 0)
+            },
+            'price': {
+                'current': market_data.get('current_price', 0),
+                'high_24h': market_data.get('high_24h', 0),
+                'low_24h': market_data.get('low_24h', 0)
+            },
+            'last_updated': market_data.get('last_updated')
+        }
+        
+        logger.info(f"Successfully fetched market intelligence for {symbol}")
+        return jsonify(intelligence_data)
     except Exception as e:
         logger.error(f"Error in market intelligence: {str(e)}")
-        return jsonify({'error': 'Failed to fetch market intelligence'}), 500
+        return jsonify({
+            'error': 'Failed to fetch market intelligence',
+            'message': str(e)
+        }), 500
 
 if __name__ == '__main__':
     try:
