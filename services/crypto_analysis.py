@@ -21,7 +21,7 @@ except ImportError as e:
 
 class CryptoAnalysisService:
     def __init__(self):
-        self.base_url = "https://public-api.birdeye.so"
+        self.base_url = "https://api.birdeye.so/v1"
         logger.info("Initializing CryptoAnalysisService with BirdEye API")
         try:
             self._test_api_connection()
@@ -36,7 +36,7 @@ class CryptoAnalysisService:
             try:
                 headers = {"X-API-KEY": "a2f6b375cc2c4afbb5fdb456d7bdc4ff"}
                 # Test with a simple token metadata request for SOL
-                url = f"{self.base_url}/defi/token_metadata"
+                url = f"{self.base_url}/public/tokenlist"
                 params = {"address": "So11111111111111111111111111111111111111112"}
                 
                 async with session.get(url, params=params, headers=headers) as response:

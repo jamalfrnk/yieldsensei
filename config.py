@@ -22,7 +22,7 @@ CACHE_EXPIRY = int(os.environ.get("CACHE_EXPIRY", "300"))  # 5 minutes in second
 ERROR_INVALID_TOKEN = "Invalid token/coin ID. Please provide a valid token symbol or ID."
 ALPHA_VANTAGE_API_KEY = os.environ.get('ALPHA_VANTAGE_API_KEY', '')
 COINGECKO_BASE_URL = "https://api.coingecko.com/api/v3"
-BIRDEYE_BASE_URL = "https://public-api.birdeye.so"
+BIRDEYE_BASE_URL = "https://api.birdeye.so/v1"
 BIRDEYE_API_KEY = os.environ.get('BIRDEYE_API_KEY', 'a2f6b375cc2c4afbb5fdb456d7bdc4ff')
 
 # Production Settings
