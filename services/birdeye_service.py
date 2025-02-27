@@ -1,20 +1,11 @@
 """
-BirdEye API service - CURRENTLY DISABLED to prevent rate limiting
+BirdEye API service - COMPLETELY DISABLED due to API connection issues
 This module is kept for reference but all functionality is now provided by free_crypto_service.py
+Do not attempt to use or import functions from this module.
 """
 
-# import aiohttp
-# import asyncio
-# import logging
-# import os
-# import pandas as pd
-# import numpy as np
-# import json
-# from datetime import datetime, timedelta
-# from typing import Dict, List, Optional, Any, Union
+# IMPORTANT: This module has been disabled due to API connection issues
+# All functionality is now provided by free_crypto_service.py
 
-# # Configure logging
-# logger = logging.getLogger(__name__)
-
-# # This file is commented out to prevent unnecessary API calls
-# # All functionality is now provided by free_crypto_service.py
+# DO NOT UNCOMMENT OR USE THESE FUNCTIONS
+# THEY WILL CAUSE API CONNECTION ERRORS

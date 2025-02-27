@@ -273,6 +273,10 @@ def dashboard():
 def documentation():
     return render_template('documentation.html')
 
+# Ensure pandas is properly imported
+import pandas as pd
+from datetime import datetime, timedelta
+
 @app.route('/api/price-history/<symbol>')
 def price_history(symbol):
     try:
@@ -282,7 +286,7 @@ def price_history(symbol):
         days_value = days_map.get(days, '1')
 
         df = crypto_service.get_historical_data(symbol.lower(), int(days_value))
-        if df.empty:
+        if df is None or df.empty:
             logger.warning(f"No price history data available for {symbol}")
             # Return sample data to avoid frontend errors
             return jsonify(generate_sample_price_data(int(days_value)))

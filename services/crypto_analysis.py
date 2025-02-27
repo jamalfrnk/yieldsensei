@@ -4,6 +4,7 @@ import asyncio
 import aiohttp
 from datetime import datetime, timedelta
 import json
+import random  # Added for fallback data generation
 from services.free_crypto_service import get_historical_data, get_token_price, get_token_market_data
 
 # Configure logging
@@ -21,45 +22,11 @@ except ImportError as e:
 
 class CryptoAnalysisService:
     def __init__(self):
-        self.base_url = "https://api.birdeye.so/v1"
-        logger.info("Initializing CryptoAnalysisService with BirdEye API")
-        try:
-            self._test_api_connection()
-        except Exception as e:
-            logger.error(f"Failed to initialize CryptoAnalysisService: {str(e)}")
-            # Don't raise the error, allow the service to initialize with degraded functionality
-            pass
-
-    async def _test_api_connection_async(self):
-        """Test the API connection asynchronously"""
-        async with aiohttp.ClientSession() as session:
-            try:
-                headers = {"X-API-KEY": "a2f6b375cc2c4afbb5fdb456d7bdc4ff"}
-                # Test with a simple token metadata request for SOL
-                url = f"{self.base_url}/public/tokenlist"
-                params = {"address": "So11111111111111111111111111111111111111112"}
-                
-                async with session.get(url, params=params, headers=headers) as response:
-                    response.raise_for_status()
-                    data = await response.json()
-                    if data.get('success') == True:
-                        logger.info("Successfully connected to BirdEye API")
-                        return True
-                    else:
-                        raise ConnectionError(f"BirdEye API error: {data.get('message', 'Unknown error')}")
-            except Exception as e:
-                logger.error(f"Failed to connect to BirdEye API: {str(e)}")
-                raise ConnectionError(f"Cannot connect to BirdEye API: {str(e)}")
-
-    def _test_api_connection(self):
-        """Test the API connection during initialization (synchronous wrapper)"""
-        try:
-            loop = asyncio.get_event_loop()
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
+        logger.info("Initializing CryptoAnalysisService with free crypto data services")
+        # No API connection testing - we're using free services only
+        pass
         
-        return loop.run_until_complete(self._test_api_connection_async())
+    # BirdEye API connection tests have been removed as we're using free data sources
 
     def get_historical_data(self, coin_id="bitcoin", days=90):
         """Fetch historical price data for a cryptocurrency using BirdEye API"""
