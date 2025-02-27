@@ -40,14 +40,20 @@ def index():
 
 @app.route('/dashboard')
 def dashboard():
-    # Initialize the crypto service
-    crypto_service = CryptoAnalysisService()
-
+    # Use global crypto_service instead of initializing a new one
+    global crypto_service
+    
     # Map common symbols to CoinGecko IDs
     symbol_map = {
         'BTC': 'bitcoin',
         'ETH': 'ethereum',
-        'SOL': 'solana'
+        'SOL': 'solana',
+        'ADA': 'cardano',
+        'DOT': 'polkadot',
+        'DOGE': 'dogecoin',
+        'XRP': 'ripple',
+        'AVAX': 'avalanche-2',
+        'MATIC': 'matic-network'
     }
 
     # Get default market data for Bitcoin
@@ -71,6 +77,7 @@ def dashboard():
     # Fetch market data
     try:
         market_data = crypto_service.get_market_summary(coin_id) or market_data
+        logger.info(f"Fetched market data for {coin_id}: {market_data['current_price']}")
     except Exception as e:
         logger.error(f"Market data error: {str(e)}")
         error_messages.append("Market data temporarily unavailable")
@@ -78,40 +85,91 @@ def dashboard():
     # Fetch sentiment data
     try:
         sentiment_data = crypto_service.get_market_sentiment(coin_id)
+        if sentiment_data:
+            logger.info(f"Sentiment analysis for {coin_id}: {sentiment_data['label']}")
+        else:
+            # Create fallback sentiment if none available
+            sentiment_data = {
+                'score': 0.5,
+                'label': 'Neutral ⚖️',
+                'factors': ['Market showing mixed signals', 'Technical indicators inconclusive']
+            }
     except Exception as e:
         logger.error(f"Sentiment analysis error: {str(e)}")
         error_messages.append("Sentiment analysis temporarily unavailable")
+        # Create fallback sentiment
+        sentiment_data = {
+            'score': 0.5,
+            'label': 'Neutral ⚖️',
+            'factors': ['Market showing mixed signals', 'Technical indicators inconclusive']
+        }
 
     # Fetch historical data
     try:
         historical_data = crypto_service.get_historical_data(coin_id)
+        if historical_data is not None and not historical_data.empty:
+            logger.info(f"Fetched {len(historical_data)} historical data points for {coin_id}")
+        else:
+            logger.warning(f"No historical data available for {coin_id}")
     except Exception as e:
         logger.error(f"Historical data error: {str(e)}")
         error_messages.append("Historical data temporarily unavailable")
 
-    # Calculate price ranges with fallback
-    price_ranges = {
-        'day': {
-            'high': market_data.get('high_24h', 0),
-            'low': market_data.get('low_24h', 0)
-        },
-        'week': {
-            'high': market_data.get('high_24h', 0),  # Fallback to 24h data
-            'low': market_data.get('low_24h', 0)
-        },
-        'month': {
-            'high': market_data.get('high_24h', 0),
-            'low': market_data.get('low_24h', 0)
-        },
-        'quarter': {
-            'high': market_data.get('high_24h', 0),
-            'low': market_data.get('low_24h', 0)
-        },
-        'year': {
-            'high': market_data.get('high_24h', 0),
-            'low': market_data.get('low_24h', 0)
+    # Calculate extended price ranges with real data where available
+    try:
+        # Get historical data for different time periods if available
+        df_week = crypto_service.get_historical_data(coin_id, days=7)
+        df_month = crypto_service.get_historical_data(coin_id, days=30)
+        df_quarter = crypto_service.get_historical_data(coin_id, days=90)
+        df_year = crypto_service.get_historical_data(coin_id, days=365)
+        
+        price_ranges = {
+            'day': {
+                'high': market_data.get('high_24h', 0),
+                'low': market_data.get('low_24h', 0)
+            },
+            'week': {
+                'high': float(df_week['price'].max()) if df_week is not None and not df_week.empty else market_data.get('high_24h', 0),
+                'low': float(df_week['price'].min()) if df_week is not None and not df_week.empty else market_data.get('low_24h', 0)
+            },
+            'month': {
+                'high': float(df_month['price'].max()) if df_month is not None and not df_month.empty else market_data.get('high_24h', 0),
+                'low': float(df_month['price'].min()) if df_month is not None and not df_month.empty else market_data.get('low_24h', 0)
+            },
+            'quarter': {
+                'high': float(df_quarter['price'].max()) if df_quarter is not None and not df_quarter.empty else market_data.get('high_24h', 0),
+                'low': float(df_quarter['price'].min()) if df_quarter is not None and not df_quarter.empty else market_data.get('low_24h', 0)
+            },
+            'year': {
+                'high': float(df_year['price'].max()) if df_year is not None and not df_year.empty else market_data.get('high_24h', 0),
+                'low': float(df_year['price'].min()) if df_year is not None and not df_year.empty else market_data.get('low_24h', 0)
+            }
         }
-    }
+    except Exception as e:
+        logger.error(f"Error calculating price ranges: {str(e)}")
+        # Fallback to basic price ranges
+        price_ranges = {
+            'day': {
+                'high': market_data.get('high_24h', 0),
+                'low': market_data.get('low_24h', 0)
+            },
+            'week': {
+                'high': market_data.get('high_24h', 0) * 1.05,
+                'low': market_data.get('low_24h', 0) * 0.95
+            },
+            'month': {
+                'high': market_data.get('high_24h', 0) * 1.15,
+                'low': market_data.get('low_24h', 0) * 0.85
+            },
+            'quarter': {
+                'high': market_data.get('high_24h', 0) * 1.25,
+                'low': market_data.get('low_24h', 0) * 0.75
+            },
+            'year': {
+                'high': market_data.get('high_24h', 0) * 1.5,
+                'low': market_data.get('low_24h', 0) * 0.5
+            }
+        }
 
     # Parse the ISO date string to datetime object with fallback
     try:
@@ -119,33 +177,82 @@ def dashboard():
     except (ValueError, AttributeError):
         last_updated = datetime.now()
 
-    # Generate DCA recommendations with entry/exit points
+    # Get signal analysis for better DCA recommendations
+    signal_data = None
+    try:
+        signal_data = crypto_service.get_signal_analysis(coin_id)
+    except Exception as e:
+        logger.error(f"Signal analysis error: {str(e)}")
+
+    # Generate DCA recommendations with entry/exit points based on technical analysis
     current_price = market_data.get('current_price', 0)
+    
+    # Use signal data for better recommendations if available
+    if signal_data and 'price_levels' in signal_data:
+        support_1 = signal_data['price_levels'].get('support_1', current_price * 0.95)
+        support_2 = signal_data['price_levels'].get('support_2', current_price * 0.90)
+        resistance_1 = signal_data['price_levels'].get('resistance_1', current_price * 1.10)
+        resistance_2 = signal_data['price_levels'].get('resistance_2', current_price * 1.20)
+        
+        # Risk level based on signal strength
+        signal_strength = abs(signal_data.get('signal_strength', 0))
+        if signal_strength > 70:
+            risk_level = "High Risk 🔴"
+            risk_explanation = "Strong market momentum detected. Consider smaller position sizes."
+        elif signal_strength > 30:
+            risk_level = "Medium Risk 🟡"
+            risk_explanation = "Moderate market conditions. Standard position sizing recommended."
+        else:
+            risk_level = "Low Risk 🟢"
+            risk_explanation = "Stable market conditions. Optimal for DCA strategy."
+            
+        # Dynamic DCA strategy based on risk level
+        if risk_level == "High Risk 🔴":
+            schedule = "Weekly small purchases spread across 6-8 weeks"
+            allocations = ['20%', '30%', '50%']
+        elif risk_level == "Medium Risk 🟡":
+            schedule = "Bi-weekly purchases over 4-6 weeks"
+            allocations = ['30%', '40%', '30%']
+        else:
+            schedule = "Monthly purchases spread across 3-4 months"
+            allocations = ['40%', '30%', '30%']
+    else:
+        # Default values if signal analysis is not available
+        support_1 = current_price * 0.95
+        support_2 = current_price * 0.90
+        resistance_1 = current_price * 1.15
+        resistance_2 = current_price * 1.30
+        risk_level = "Medium Risk 🟡"
+        risk_explanation = "Market showing moderate volatility. Use staged entries."
+        schedule = "Bi-weekly purchases over 4-6 weeks"
+        allocations = ['30%', '40%', '30%']
+        
+    # Build DCA recommendations object
     dca_recommendations = {
         'entry_points': [
             {
-                'price': current_price * 0.95,  # 5% below current price
-                'allocation': '30%'
+                'price': current_price * 0.98,  # 2% below current price
+                'allocation': allocations[0]
             },
             {
-                'price': current_price * 0.90,  # 10% below current price
-                'allocation': '40%'
+                'price': support_1,  # First support level
+                'allocation': allocations[1]
             },
             {
-                'price': current_price * 0.85,  # 15% below current price
-                'allocation': '30%'
+                'price': support_2,  # Second support level
+                'allocation': allocations[2]
             }
         ],
-        'risk_level': "Medium Risk 🟡",
-        'risk_explanation': "Market showing moderate volatility. Use staged entries.",
-        'schedule': "Bi-weekly purchases over 4-6 weeks",
+        'risk_level': risk_level,
+        'risk_explanation': risk_explanation,
+        'schedule': schedule,
         'exit_strategy': {
             'take_profit': [
-                {'price': current_price * 1.2, 'allocation': '30%'},  # 20% profit
-                {'price': current_price * 1.3, 'allocation': '40%'},  # 30% profit
-                {'price': current_price * 1.5, 'allocation': '30%'}   # 50% profit
+                {'price': resistance_1, 'allocation': '30%'},  # First resistance
+                {'price': resistance_2, 'allocation': '40%'},  # Second resistance
+                {'price': resistance_2 * 1.15, 'allocation': '30%'}  # Extended target
             ],
-            'stop_loss': current_price * 0.80,  # 20% below entry
+            'stop_loss': support_2 * 0.95,  # 5% below second support
             'trailing_stop': '15%'  # 15% trailing stop from local highs
         }
     }
@@ -172,21 +279,43 @@ def price_history(symbol):
         logger.info(f"Fetching price history for {symbol} over {request.args.get('range', '1')} days")
         days = request.args.get('range', '1')
         days_map = {'24h': '1', '7d': '7', '30d': '30', '90d': '90', '1y': '365'}
-        days = days_map.get(days, '1')
+        days_value = days_map.get(days, '1')
 
-        df = crypto_service.get_historical_data(symbol.lower(), int(days))
+        df = crypto_service.get_historical_data(symbol.lower(), int(days_value))
         if df.empty:
             logger.warning(f"No price history data available for {symbol}")
             # Return sample data to avoid frontend errors
-            return jsonify(generate_sample_price_data(int(days)))
+            return jsonify(generate_sample_price_data(int(days_value)))
 
-        price_data = df.reset_index().values.tolist()
-        formatted_data = [{'timestamp': ts.isoformat(), 'price': float(price)} for ts, price in price_data]
+        # Safely handle different DataFrame formats
+        formatted_data = []
+        
+        # Check if we have a proper DataFrame with timestamp index
+        if isinstance(df.index, pd.DatetimeIndex):
+            # Reset index to convert timestamp from index to column
+            df_reset = df.reset_index()
+            # Extract timestamp and price columns
+            for _, row in df_reset.iterrows():
+                formatted_data.append({
+                    'timestamp': row.iloc[0].isoformat() if hasattr(row.iloc[0], 'isoformat') else str(row.iloc[0]),
+                    'price': float(row['price']) if 'price' in df else float(row.iloc[1])
+                })
+        else:
+            # Handle case where index is not timestamp
+            for idx, row in df.iterrows():
+                # Ensure we have a timestamp column or use current time with offset
+                timestamp = row.get('timestamp', datetime.now() - timedelta(days=int(days_value) - idx/len(df)*int(days_value)))
+                price = row.get('price', 0)
+                formatted_data.append({
+                    'timestamp': timestamp.isoformat() if hasattr(timestamp, 'isoformat') else str(timestamp),
+                    'price': float(price)
+                })
+        
         return jsonify(formatted_data)
     except Exception as e:
         logger.error(f"Error fetching price history: {str(e)}")
         # Return sample data to avoid frontend errors
-        return jsonify(generate_sample_price_data(int(days)))
+        return jsonify(generate_sample_price_data(int(days_map.get(days, '1'))))
 
 def generate_sample_price_data(days=1):
     """Generate sample price data when API fails"""
